@@ -1,3 +1,6 @@
+# Use the offical LinuxServer.io image
+FROM linuxserver/radarr:latest
+
 # Build-time metadata as defined at http://label-schema.org
 ARG BUILD_DATE
 ARG VERSION
@@ -7,9 +10,6 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.url="https://hub.docker.com/r/thecaptain989/radarr" \
       org.label-schema.version=$VERSION \
       org.label-schema.schema-version="1.0"
-
-# Use the offical LinuxServer.io image
-FROM linuxserver/radarr:latest
 
 # Copy shell script that can be called by Radarr
 COPY striptracks.sh /usr/local/bin/striptracks.sh
