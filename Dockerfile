@@ -1,3 +1,13 @@
+# Build-time metadata as defined at http://label-schema.org
+ARG BUILD_DATE
+ARG VERSION
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.name="thecaptain989/radarr" \
+      org.label-schema.description="The LinuxServer.io Radarr container plus mkvtoolniox and script for remuxing video files" \
+      org.label-schema.url="https://hub.docker.com/r/thecaptain989/radarr" \
+      org.label-schema.version=$VERSION \
+      org.label-schema.schema-version="1.0"
+
 # Use the offical LinuxServer.io image
 FROM linuxserver/radarr:latest
 
