@@ -1,0 +1,11 @@
+#!/bin/bash
+# hooks/build
+# https://docs.docker.com/docker-cloud/builds/advanced/
+
+# $IMAGE_NAME and $DOCKERFILE_PATH vars are injected into the build by the automated build service. 
+echo "[TC9] Build hook running"
+
+docker build --build-arg VCS_REF=$(git rev-parse --short HEAD) \
+             --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+             --file $DOCKERFILE_PATH \
+             --tag $IMAGE_NAME .
