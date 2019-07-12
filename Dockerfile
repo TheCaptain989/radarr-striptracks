@@ -2,14 +2,13 @@
 FROM linuxserver/radarr:latest
 
 # Build-time metadata as defined at http://label-schema.org
-ARG BUILD_DATE
-ARG VERSION
-LABEL org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.name="thecaptain989/radarr" \
+LABEL org.label-schema.name="thecaptain989/radarr" \
       org.label-schema.description="The LinuxServer.io Radarr container plus mkvtoolniox and script for remuxing video files" \
       org.label-schema.url="https://hub.docker.com/r/thecaptain989/radarr" \
-      org.label-schema.version=$VERSION \
-      org.label-schema.schema-version="1.0"
+      org.label-schema.version=1.0 \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.vcs-url="https://github.com/TheCaptain989/striptracks" \
+      org.label-schema.vcs-ref = "7315bf7"
 
 # Copy shell script that can be called by Radarr
 COPY striptracks.sh /usr/local/bin/striptracks.sh
