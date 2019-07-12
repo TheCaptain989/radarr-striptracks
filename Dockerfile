@@ -14,15 +14,15 @@ ARG BUILD_DATE
 ARG VCS_REF
 
 # Build-time metadata as defined at http://label-schema.org
-LABEL org.label-schema.name=$NAME
-LABEL org.label-schema.description=$DESCRIPTION
-LABEL org.label-schema.url=$URL
-LABEL org.label-schema.version=$VERSION
-LABEL org.label-schema.build-date=$BUILD_DATE
-LABEL org.label-schema.vendor=$VENDOR
-LABEL org.label-schema.schema-version="1.0"
-LABEL org.label-schema.vcs-url=$VCS_URL
-LABEL org.label-schema.vcs-ref=$VCS_REF
+LABEL org.label-schema.name=$NAME \
+      org.label-schema.description=$DESCRIPTION \
+      org.label-schema.url=$URL\
+      org.label-schema.version=$VERSION \
+      org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.vendor=$VENDOR \
+      org.label-schema.schema-version="1.0" \
+      org.label-schema.vcs-url=$VCS_URL \
+      org.label-schema.vcs-ref=$VCS_REF
 
 # Build-time metadata as defined at https://github.com/opencontainers/image-spec
 LABEL org.opencontainers.image.title=$NAME
