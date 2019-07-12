@@ -14,26 +14,25 @@ ARG BUILD_DATE
 ARG VCS_REF
 
 # Build-time metadata as defined at http://label-schema.org
-LABEL org.label-schema.name=$NAME \
-      org.label-schema.description=$DESCRIPTION \
-      org.label-schema.url=$URL \
-      org.label-schema.version=$VERSION \
-      org.label-schema.build-date=$BUILD_DATE \
-      org.label-schema.vendor=$VENDOR \
-      org.label-schema.schema-version="1.0" \
-      org.label-schema.vcs-url=$VCS_URL \
-      org.label-schema.vcs-ref=$VCS_REF
+LABEL org.label-schema.name=$NAME
+LABEL org.label-schema.description=$DESCRIPTION
+LABEL org.label-schema.url=$URL
+LABEL org.label-schema.version=$VERSION
+LABEL org.label-schema.build-date=$BUILD_DATE
+LABEL org.label-schema.vendor=$VENDOR
+LABEL org.label-schema.schema-version="1.0"
+LABEL org.label-schema.vcs-url=$VCS_URL
+LABEL org.label-schema.vcs-ref=$VCS_REF
 
 # Build-time metadata as defined at https://github.com/opencontainers/image-spec
-LABEL org.opencontainers.image.title=$NAME \
-      org.opencontainers.image.description=$DESCRIPTION \
-      org.opencontainers.image.url=$URL \
-      org.opencontainers.image.version=$VERSION \
-      org.opencontainers.image.created=$BUILD_DATE \
-      org.opencontainers.image.vendor=$VENDOR \
-      org.opencontainers.image.source=$VCS_URL \
-      org.opencontainers.image.revision=$VCS_REF \
-      
+LABEL org.opencontainers.image.title=$NAME
+LABEL org.opencontainers.image.description=$DESCRIPTION
+LABEL org.opencontainers.image.url=$URL
+LABEL org.opencontainers.image.version=$VERSION
+LABEL org.opencontainers.image.created=$BUILD_DATE
+LABEL org.opencontainers.image.vendor=$VENDOR
+LABEL org.opencontainers.image.source=$VCS_URL
+LABEL org.opencontainers.image.revision=$VCS_REF
 
 # Copy shell script that can be called by Radarr
 COPY striptracks.sh /usr/local/bin/striptracks.sh
@@ -43,5 +42,5 @@ COPY 98-motd /etc/cont-init.d/98-motd
 
 # Install mkvtoolnix which included mkvmerge
 RUN apt-get update &&\
-	apt-get -y install mkvtoolnix \
+    apt-get -y install mkvtoolnix \
  && rm -rf /var/lib/apt/lists/*
