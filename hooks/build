@@ -2,8 +2,8 @@
 # hooks/build
 # https://docs.docker.com/docker-cloud/builds/advanced/
 
-set VCS_REF=$(git rev-parse --short HEAD)
-set BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+VCS_REF=$(git rev-parse --short HEAD)
+BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
 # $IMAGE_NAME and $DOCKERFILE_PATH vars are injected into the build by the automated build service. 
 echo "[TC989] Build hook running"
