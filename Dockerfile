@@ -25,14 +25,14 @@ LABEL org.label-schema.name=$NAME \
       org.label-schema.vcs-ref=$VCS_REF
 
 # Build-time metadata as defined at https://github.com/opencontainers/image-spec
-LABEL org.opencontainers.image.title=$NAME
-LABEL org.opencontainers.image.description=$DESCRIPTION
-LABEL org.opencontainers.image.url=$URL
-LABEL org.opencontainers.image.version=$VERSION
-LABEL org.opencontainers.image.created=$BUILD_DATE
-LABEL org.opencontainers.image.vendor=$VENDOR
-LABEL org.opencontainers.image.source=$VCS_URL
-LABEL org.opencontainers.image.revision=$VCS_REF
+LABEL org.opencontainers.image.title=$NAME \
+      org.opencontainers.image.description=$DESCRIPTION \
+      org.opencontainers.image.url=$URL \
+      org.opencontainers.image.version=$VERSION \
+      org.opencontainers.image.created=$BUILD_DATE \
+      org.opencontainers.image.vendor=$VENDOR \
+      org.opencontainers.image.source=$VCS_URL \
+      org.opencontainers.image.revision=$VCS_REF
 
 # Copy shell script that can be called by Radarr
 COPY striptracks.sh /usr/local/bin/striptracks.sh
