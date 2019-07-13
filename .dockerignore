@@ -1,0 +1,5 @@
+# ignore
+.git
+hooks/*
+images/*
+README.md
