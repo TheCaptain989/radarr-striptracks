@@ -1,30 +1,60 @@
-<p>Radarr with a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages.  Chapters, if they exist, are preserved.  Also sets the Title attribute to the name of the file minus extension.</p>
-<h1>First Things First</h1>
-Configure the container with all the port, volume, and environment settings from the original container documentation here:<br>
-<b><a href="https://hub.docker.com/r/linuxserver/radarr">linuxserver/radarr</a></b>
+Radarr with a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages. Chapters, if they exist, are preserved. Also sets the Title attribute to the name of the file minus extension.
 
-<h2>Usage</h2>
-After all of the above configuration is complete, to use mkvmerge, configure a custom script from the Settings-&gt;Connect screen to call:
-<p><code><b>/usr/local/bin/striptracks.sh</b></code></p>
-<p>Add the codes for the audio and subtitle languages you want to keep as Arguments, as specified below.</p>
-<p>The source video can be any mkvtoolnix supported video format.  The output is an MKV file with the same name.</p>
-<p><b>NOTE:</b>The original video file will be deleted/overwritten and permanently lost.</p>
-<h3>Syntax</h3>
-<p>It accepts two arguments:</p>
-<p><code>striptracks.sh [audio_languages] [subtitle_languages]</code></p>
-<p>The arguments are language codes is <a href="https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes">ISO639-2</a> format.  These are three letter abbreviations prefixed with a colon `:` such as:</p>
-<ul>
-<li>:eng</li>
-<li>:fre</li>
-<li>:esp</li>
-</ul>
-...etc.<br>
-Multiple codes may be concatenated, such as <code>:eng:esp</code> for both English and Spanish.<br>
-<p>Suggested to use <code>:eng:und :eng</code> if you are unsure of what to choose.  This will keep English and Undetermined audio and English subtitles, if they exist.</p>
-The only events/notification triggers that have been tested are <b>On Download</b> and <b>On Upgrade</b>
-<h2>Credits</h2>
+# First Things First
+
+Configure the container with all the port, volume, and environment settings from the original container documentation here:  
+**[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr)**
+
+## Usage
+
+After all of the above configuration is complete, to use mkvmerge, configure a custom script from the Settings->Connect screen to call:
+
+**`/usr/local/bin/striptracks.sh`**
+
+Add the codes for the audio and subtitle languages you want to keep as Arguments, as specified below.
+
+The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name.
+
+**NOTE:** The original video file will be deleted/overwritten and permanently lost.
+
+### Syntax
+
+It accepts two arguments:
+
+`striptracks.sh [audio_languages] [subtitle_languages]`
+
+The arguments are language codes is [ISO639-2](https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes) format. These are three letter abbreviations prefixed with a colon ':' such as:
+
+* :eng
+* :fre
+* :esp
+
+...etc.  
+
+Multiple codes may be concatenated, such as `:eng:esp` for both English and Spanish.  
+
+Suggested to use `:eng:und :eng` if you are unsure of what to choose. This will keep English and Undetermined audio and English subtitles, if they exist.
+
+The only events/notification triggers that have been tested are **On Download** and **On Upgrade**
+
+### Example
+![striptracks](/images/striptracks.png)
+
+### Logs
+A new log file is created for the script activity called:
+
+`/config/logs/striptracks.txt`
+
+This log can be inspected from the GUI under System->Logs->Files
+
+## Credits
+
 This would not be possible without the following:
-<p><a href="http://radarr.video/">Radarr</a></p>
-<p><a href="https://hub.docker.com/r/linuxserver/radarr">LinuxServer.io Radarr</a> container</p>
-<p><a href="https://mkvtoolnix.download/">mkvtoolnix</a> by Moritz Bunkus</p>
-<p>The AWK script parsing mkvmerge output is adapted from Endoro's post on <a href="https://forum.videohelp.com/threads/343271-BULK-remove-non-English-tracks-from-MKV-container#post2292889">VideoHelp</a>.</p>
+
+[Radarr](http://radarr.video/)
+
+[LinuxServer.io Radarr](https://hub.docker.com/r/linuxserver/radarr) container
+
+[mkvtoolnix](https://mkvtoolnix.download/) by Moritz Bunkus
+
+The AWK script parsing mkvmerge output is adapted from Endoro's post on [VideoHelp](https://forum.videohelp.com/threads/343271-BULK-remove-non-English-tracks-from-MKV-container#post2292889).
