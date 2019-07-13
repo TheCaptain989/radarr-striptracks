@@ -29,11 +29,11 @@ LABEL org.opencontainers.image.title="thecaptain989/radarr" \
       org.opencontainers.image.source="https://github.com/TheCaptain989/striptracks" \
       org.opencontainers.image.revision=$VCS_REF
 
-# Copy shell script that can be called by Radarr
-COPY striptracks.sh /usr/local/bin/striptracks.sh
-
 # Add custom branding to container init script
 COPY 98-motd /etc/cont-init.d/98-motd
+
+# Copy shell script that can be called by Radarr
+COPY --chown:abc:abc striptracks.sh /usr/local/bin/striptracks.sh
 
 # Install mkvtoolnix which included mkvmerge
 RUN apt-get update &&\
