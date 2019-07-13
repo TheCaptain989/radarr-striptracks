@@ -33,9 +33,11 @@ LABEL org.opencontainers.image.title="thecaptain989/radarr" \
 COPY 98-motd /etc/cont-init.d/98-motd
 
 # Copy shell script that can be called by Radarr
-COPY --chown=abc:abc striptracks.sh /usr/local/bin/striptracks.sh
+COPY --chown=root:users striptracks.sh /usr/local/bin/striptracks.sh
 
 # Install mkvtoolnix which included mkvmerge
-RUN apt-get update &&\
-    apt-get -y install mkvtoolnix \
- && rm -rf /var/lib/apt/lists/*
+RUN 
+    chmod +x /usr/local/bin/striptracks.sh &&\
+    apt-get update &&\
+    apt-get -y install mkvtoolnix &&\
+    rm -rf /var/lib/apt/lists/*
