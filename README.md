@@ -41,7 +41,7 @@ Suggested to use `:eng:und :eng` if you are unsure of what to choose. This will 
 The only events/notification triggers that have been tested are **On Download** and **On Upgrade**
 
 ### Example
-![striptracks](/images/striptracks.png)
+![striptracks](https://raw.githubusercontent.com/TheCaptain989/striptracks/master/images/striptracks.png)
 
 ### Logs
 A new log file is created for the script activity called:
