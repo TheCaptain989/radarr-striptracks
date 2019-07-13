@@ -36,8 +36,7 @@ COPY 98-motd /etc/cont-init.d/98-motd
 COPY --chown=root:users striptracks.sh /usr/local/bin/striptracks.sh
 
 # Install mkvtoolnix which included mkvmerge
-RUN 
-    chmod +x /usr/local/bin/striptracks.sh &&\
+RUN chmod +x /usr/local/bin/striptracks.sh &&\
     apt-get update &&\
     apt-get -y install mkvtoolnix &&\
     rm -rf /var/lib/apt/lists/*
