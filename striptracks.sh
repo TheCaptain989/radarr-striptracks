@@ -114,13 +114,19 @@ BEGIN {
   } else {print "Tracks:", NoTr}
   for (i=1; i<=NoTr; i++) {
     if (Track[i, "typ"]=="audio") {
-      if (AudioKeep~Track[i, "lang"] || AudTr==1) {
+      if (AudioKeep~Track[i, "lang"]) {
         print "Keep:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
         if (AudioCommand=="") {
           AudioCommand=Track[i, "id"]
         } else {
           AudioCommand=AudioCommand","Track[i, "id"]
         }
+      } else if(AudTr==1) {
+        print "Keeping only audio track:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
+        AudioCommand=Track[i, "id"]
+      } else if(AudioCommand=="" && i==AudTr) {
+        print "Keeping last audio track:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
+        AudioCommand=Track[i, "id"]
       } else {
         print "\tRemove:", Track[i, "typ"], "rrack", Track[i, "id"], Track[i, "lang"]
       }
