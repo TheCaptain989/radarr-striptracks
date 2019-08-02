@@ -5,6 +5,7 @@
 #
 # Put a colon `:` in front of every language code.  Expects ISO639-2 codes
 
+RADARR_CONFIG=/config/config.xml
 LOG=/config/logs/striptracks.txt
 MAXLOGSIZE=1048576
 MAXLOG=4
@@ -20,7 +21,7 @@ NEWMOVIE=${MOVIE::-4}.new.mkv
 
 function usage {
   [ -z "$MOVIE" ] && MOVIE=/path_to_movie/video.mkv
-  echo Examples:
+  echo "Examples:"
   echo " - keep English and Japanase audio and English subtitles"
   echo "   $0 $MOVIE :eng:jpn :eng"
   echo " - keep English audio and no subtitles"
@@ -102,7 +103,7 @@ BEGIN {
       NoTr++
       Track[NoTr, "id"]=Fields[3]
       Track[NoTr, "typ"]=Fields[5]
-      if (Track[NoTr, "typ"]=="audio") AudTr++
+      if (Track[NoTr, "typ"]=="audio") AudCnt++
       for (i=6; i<=FieldCount; i++) {
         if (Fields[i]=="language") Track[NoTr, "lang"]=Fields[++i]
       }
@@ -111,8 +112,9 @@ BEGIN {
   if (NoTr==0) {
     print "ERROR: No tracks found in "MKVVideo"."
     exit
-  } else {print "Tracks:", NoTr}
+  } else {print "Tracks:",NoTr,", Audio Tracks:",AudCnt}
   for (i=1; i<=NoTr; i++) {
+    #print "i:"i,"Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"]
     if (Track[i, "typ"]=="audio") {
       if (AudioKeep~Track[i, "lang"]) {
         print "Keep:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
@@ -121,14 +123,14 @@ BEGIN {
         } else {
           AudioCommand=AudioCommand","Track[i, "id"]
         }
-      } else if(AudTr==1) {
+      } else if(AudCnt==1) {
         print "Keeping only audio track:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
         AudioCommand=Track[i, "id"]
-      } else if(AudioCommand=="" && i==AudTr) {
+      } else if(AudioCommand=="" && Track[i, "id"]==AudCnt) {
         print "Keeping last audio track:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
         AudioCommand=Track[i, "id"]
       } else {
-        print "\tRemove:", Track[i, "typ"], "rrack", Track[i, "id"], Track[i, "lang"]
+        print "\tRemove:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
       }
     } else {
       if (Track[i, "typ"]=="subtitles") {
@@ -160,16 +162,49 @@ BEGIN {
   if (Result>1) print "ERROR: "Result" muxing \""MKVVideo"\""
 }' "$MOVIE" "$1" "$2" | log
 
-[ -f "$NEWMOVIE" ] && {
+# Replace downloaded movie file
+if [ -f "$NEWMOVIE" ]
+then
   echo "Deleting: \"$MOVIE\"" | log
   rm "$MOVIE"
   echo "Moving: \"$NEWMOVIE\" to \"${MOVIE::-4}.mkv\"" | log
   mv "$NEWMOVIE" "${MOVIE::-4}.mkv"
-} || {
+else
   MSG="ERROR: Unable to locate remuxed file: \"$NEWMOVIE\""
   echo "$MSG" | log
   echo "$MSG"
   exit 10
-}
+fi
+
+# Call Radarr API to RescanMovie
+if [ ! -z "$radarr_movie_id" ]
+then
+  # Inspired by https://stackoverflow.com/questions/893585/how-to-parse-xml-in-bash
+  read_xml () {
+    local IFS=\>
+    read -d \< ENTITY CONTENT
+  }
+  
+  # Read Radarr config.xml
+  while read_xml; do
+    [[ $ENTITY = "Port" ]] && PORT=$CONTENT
+    [[ $ENTITY = "UrlBase" ]] && URLBASE=$CONTENT
+    [[ $ENTITY = "BindAddress" ]] && BINDADDRESS=$CONTENT
+    [[ $ENTITY = "ApiKey" ]] && APIKEY=$CONTENT
+  done < $RADARR_CONFIG
+  
+  [[ $BINDADDRESS = "*" ]] && BINDADDRESS=localhost
+  
+  echo "Calling Radarr API using movied id '$radarr_movie_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY'" | log
+  # Calling API
+  RESULT=$(curl -s -d '{name: "RescanMovie", movieId: "$radarr_movie_id"}' -H "Content-Type: application/json" \
+    -X POST http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY | jq -c '. | {MovieId: .id, Message: .body.completionMessage, When: .queued}')
+  echo "API returned: $RESULT" | log
+else
+  MSG="ERROR: Missing environment variable radarr_movie_id"
+  echo "$MSG" | log
+  echo "$MSG"
+  exit 11
+fi
 
 echo "Done" | log

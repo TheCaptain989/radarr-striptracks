@@ -24,9 +24,9 @@ The source video can be any mkvtoolnix supported video format. The output is an 
 
 It accepts two arguments:
 
-`striptracks.sh [audio_languages] [subtitle_languages]`
+`[audio_languages] [subtitle_languages]`
 
-The arguments are language codes is [ISO639-2](https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes) format. These are three letter abbreviations prefixed with a colon ':' such as:
+The arguments are language codes in [ISO639-2](https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes) format. These are three letter abbreviations prefixed with a colon ':' such as:
 
 * :eng
 * :fre
@@ -49,6 +49,8 @@ A new log file is created for the script activity called:
 `/config/logs/striptracks.txt`
 
 This log can be inspected from the GUI under System->Logs->Files
+
+Log rotation is performed, and 5 logs files of 1MB each are kept, matching Radarr's log retention.
 
 ## Credits
 
