@@ -20,7 +20,7 @@ NEWMOVIE=${MOVIE::-4}.new.mkv
 
 function usage {
   [ -z "$MOVIE" ] && MOVIE=/path_to_movie/video.mkv
-  echo Examples:
+  echo "Examples:"
   echo " - keep English and Japanase audio and English subtitles"
   echo "   $0 $MOVIE :eng:jpn :eng"
   echo " - keep English audio and no subtitles"
