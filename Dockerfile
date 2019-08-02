@@ -16,7 +16,7 @@ LABEL org.label-schema.name="thecaptain989/radarr" \
       org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.vendor="TheCaptain989" \
       org.label-schema.schema-version="1.0" \
-      org.label-schema.vcs-url="https://github.com/TheCaptain989/striptracks" \
+      org.label-schema.vcs-url="https://github.com/TheCaptain989/radarr-striptracks" \
       org.label-schema.vcs-ref=$VCS_REF
 
 # Build-time metadata as defined at https://github.com/opencontainers/image-spec
@@ -26,7 +26,7 @@ LABEL org.opencontainers.image.title="thecaptain989/radarr" \
       org.opencontainers.image.version=$VERSION \
       org.opencontainers.image.created=$BUILD_DATE \
       org.opencontainers.image.vendor="TheCaptain989" \
-      org.opencontainers.image.source="https://github.com/TheCaptain989/striptracks" \
+      org.opencontainers.image.source="https://github.com/TheCaptain989/radarr-striptracks" \
       org.opencontainers.image.revision=$VCS_REF
 
 # Add custom branding to container init script
