@@ -6,13 +6,13 @@ LABEL maintainer="TheCaptain989"
 # Build arguments
 ARG BUILD_DATE
 ARG VCS_REF
-ARG VERSION=1.0.1
+ENV TC9_VERSION=1.0.1
 
 # Build-time metadata as defined at http://label-schema.org
 LABEL org.label-schema.name="thecaptain989/radarr" \
       org.label-schema.description="The LinuxServer.io Radarr container plus mkvtoolniox and script for remuxing video files" \
       org.label-schema.url="https://hub.docker.com/r/thecaptain989/radarr" \
-      org.label-schema.version=$VERSION \
+      org.label-schema.version=$TC9_VERSION \
       org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.vendor="TheCaptain989" \
       org.label-schema.schema-version="1.0" \
@@ -23,7 +23,7 @@ LABEL org.label-schema.name="thecaptain989/radarr" \
 LABEL org.opencontainers.image.title="thecaptain989/radarr" \
       org.opencontainers.image.description="The LinuxServer.io Radarr container plus mkvtoolniox and script for remuxing video files" \
       org.opencontainers.image.url="https://hub.docker.com/r/thecaptain989/radarr" \
-      org.opencontainers.image.version=$VERSION \
+      org.opencontainers.image.version=$TC9_VERSION \
       org.opencontainers.image.created=$BUILD_DATE \
       org.opencontainers.image.vendor="TheCaptain989" \
       org.opencontainers.image.source="https://github.com/TheCaptain989/radarr-striptracks" \
