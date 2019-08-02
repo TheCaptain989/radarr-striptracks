@@ -49,6 +49,7 @@ A new log file is created for the script activity called:
 `/config/logs/striptracks.txt`
 
 This log can be inspected from the GUI under System->Logs->Files
+Log rotation is performed, and 5 logs files of 1MB each are kept, matching Radarr's log retention.
 
 ## Credits
 
