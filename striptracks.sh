@@ -5,6 +5,7 @@
 #
 # Put a colon `:` in front of every language code.  Expects ISO639-2 codes
 
+RADARR_CONFIG=/config/config.xml
 LOG=/config/logs/striptracks.txt
 MAXLOGSIZE=1048576
 MAXLOG=4
@@ -161,16 +162,49 @@ BEGIN {
   if (Result>1) print "ERROR: "Result" muxing \""MKVVideo"\""
 }' "$MOVIE" "$1" "$2" | log
 
-[ -f "$NEWMOVIE" ] && {
+# Replace downloaded movie file
+if [ -f "$NEWMOVIE" ]
+then
   echo "Deleting: \"$MOVIE\"" | log
   rm "$MOVIE"
   echo "Moving: \"$NEWMOVIE\" to \"${MOVIE::-4}.mkv\"" | log
   mv "$NEWMOVIE" "${MOVIE::-4}.mkv"
-} || {
+else
   MSG="ERROR: Unable to locate remuxed file: \"$NEWMOVIE\""
   echo "$MSG" | log
   echo "$MSG"
   exit 10
-}
+fi
+
+# Call Radarr API to RescanMovie
+if [ ! -z "$radarr_movie_id" ]
+then
+  # Inspired by https://stackoverflow.com/questions/893585/how-to-parse-xml-in-bash
+  read_xml () {
+    local IFS=\>
+    read -d \< ENTITY CONTENT
+  }
+  
+  # Read Radarr config.xml
+  while read_xml; do
+    [[ $ENTITY = "Port" ]] && PORT=$CONTENT
+    [[ $ENTITY = "UrlBase" ]] && URLBASE=$CONTENT
+    [[ $ENTITY = "BindAddress" ]] && BINDADDRESS=$CONTENT
+    [[ $ENTITY = "ApiKey" ]] && APIKEY=$CONTENT
+  done < $RADARR_CONFIG
+  
+  [[ $BINDADDRESS = "*" ]] && BINDADDRESS=localhost
+  
+  echo "Calling Radarr API using movied id '$radarr_movie_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY'" | log
+  # Calling API
+  RESULT=$(curl -s -d '{name: "RescanMovie", movieId: "$radarr_movie_id"}' -H "Content-Type: application/json" \
+    -X POST http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY | jq -c '. | {MovieId: .id, Message: .body.completionMessage, When: .queued}')
+  echo "API returned: $RESULT" | log
+else
+  MSG="ERROR: Missing environment variable radarr_movie_id"
+  echo "$MSG" | log
+  echo "$MSG"
+  exit 11
+fi
 
 echo "Done" | log
