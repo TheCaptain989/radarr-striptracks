@@ -102,7 +102,7 @@ BEGIN {
       NoTr++
       Track[NoTr, "id"]=Fields[3]
       Track[NoTr, "typ"]=Fields[5]
-      if (Track[NoTr, "typ"]=="audio") AudTr++
+      if (Track[NoTr, "typ"]=="audio") AudCnt++
       for (i=6; i<=FieldCount; i++) {
         if (Fields[i]=="language") Track[NoTr, "lang"]=Fields[++i]
       }
@@ -111,8 +111,9 @@ BEGIN {
   if (NoTr==0) {
     print "ERROR: No tracks found in "MKVVideo"."
     exit
-  } else {print "Tracks:", NoTr}
+  } else {print "Tracks:",NoTr,", Audio Tracks:",AudCnt}
   for (i=1; i<=NoTr; i++) {
+    #print "i:"i,"Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"]
     if (Track[i, "typ"]=="audio") {
       if (AudioKeep~Track[i, "lang"]) {
         print "Keep:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
@@ -121,10 +122,10 @@ BEGIN {
         } else {
           AudioCommand=AudioCommand","Track[i, "id"]
         }
-      } else if(AudTr==1) {
+      } else if(AudCnt==1) {
         print "Keeping only audio track:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
         AudioCommand=Track[i, "id"]
-      } else if(AudioCommand=="" && i==AudTr) {
+      } else if(AudioCommand=="" && Track[i, "id"]==AudCnt) {
         print "Keeping last audio track:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
         AudioCommand=Track[i, "id"]
       } else {
