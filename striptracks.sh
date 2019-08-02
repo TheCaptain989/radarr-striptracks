@@ -128,7 +128,7 @@ BEGIN {
         print "Keeping last audio track:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
         AudioCommand=Track[i, "id"]
       } else {
-        print "\tRemove:", Track[i, "typ"], "rrack", Track[i, "id"], Track[i, "lang"]
+        print "\tRemove:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
       }
     } else {
       if (Track[i, "typ"]=="subtitles") {
