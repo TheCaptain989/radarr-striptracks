@@ -37,7 +37,7 @@ COPY --chown=root:users striptracks.sh /usr/local/bin/striptracks.sh
 
 # Install mkvtoolnix which included mkvmerge
 RUN chmod +x /usr/local/bin/striptracks.sh &&\
-    echo "$VERSION" > /etc/TC9_VERSION &&\
+    echo "$VERSION" > /etc/TC989_VERSION &&\
     apt-get update &&\
     apt-get -y install mkvtoolnix &&\
     rm -rf /var/lib/apt/lists/*
