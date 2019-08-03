@@ -6,7 +6,7 @@ LABEL maintainer="TheCaptain989"
 # Build arguments
 ARG BUILD_DATE
 ARG VCS_REF
-ENV TC9_VERSION=1.0.4
+ARG TC9_VERSION=1.0.4
 
 # Build-time metadata as defined at http://label-schema.org
 LABEL org.label-schema.name="thecaptain989/radarr" \
