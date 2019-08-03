@@ -197,7 +197,7 @@ then
   
   echo "Calling Radarr API using movie id '$radarr_movie_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY'" | log
   # Calling API
-  RESULT=$(curl -s -d '{name: "RescanMovie", movieId: "$radarr_movie_id"}' -H "Content-Type: application/json" \
+  RESULT=$(curl -s -d "{name: 'RescanMovie', movieId: $radarr_movie_id}" -H "Content-Type: application/json" \
     -X POST http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY | jq -c '. | {JobId: .id, MovieId: .body.movieId, Message: .body.completionMessage, DateStarted: .queued}')
   echo "API returned: $RESULT" | log
 else
