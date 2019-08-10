@@ -12,7 +12,7 @@ MAXLOG=4
 MOVIE="$radarr_moviefile_path"
 
 # Not the most robust way to do this.  Expects 3 character file extension (i.e. ".avi")
-NEWMOVIE=${MOVIE::-4}.new.mkv
+TEMPMOVIE=${MOVIE::-4}.tmp
 
 # For debug purposes only
 #ENVLOG=/config/logs/debugenv.txt
@@ -48,8 +48,7 @@ function log {(
   done
 )}
 
-if [ -z "$MOVIE" ]
-then
+if [ -z "$MOVIE" ]; then
   MSG="ERROR: No movie file specified! Not called from Radarr?"
   echo "$MSG" | log
   echo "$MSG"
@@ -57,16 +56,14 @@ then
   exit 1
 fi
 
-if [ ! -f "$MOVIE" ]
-then
+if [ ! -f "$MOVIE" ]; then
   MSG="ERROR: Input file not found: \"$MOVIE\""
   echo "$MSG" | log
   echo "$MSG"
   exit 5
 fi
 
-if [ -z "$1" ]
-then
+if [ -z "$1" ]; then
   MSG="ERROR: No audio languages specified!"
   echo "$MSG" | log
   echo "$MSG"
@@ -74,8 +71,7 @@ then
   exit 2
 fi
 
-if [ -z "$2" ]
-then
+if [ -z "$2" ]; then
   MSG="ERROR: No subtitles languages specified!"
   echo "$MSG" | log
   echo "$MSG"
@@ -90,12 +86,20 @@ BEGIN {
   FS="[\t\n: ]"
   IGNORECASE=1
   MKVVideo=ARGV[1]
-  AudioKeep=ARGV[2]
-  SubsKeep=ARGV[3]
-  NewVideo=substr(MKVVideo, 1, length(MKVVideo)-4)".new.mkv"
+  TempVideo=ARGV[2]
+  AudioKeep=ARGV[3]
+  SubsKeep=ARGV[4]
   Title=substr(MKVVideo, 1, length(MKVVideo)-4)
   sub(".*/", "", Title)
-  exe=MKVMerge" --identify-verbose \""MKVVideo"\""
+
+  print "Renaming: \""MKVVideo"\" to \""TempVideo"\""
+  Result=system("mv \""MKVVideo"\" \""TempVideo"\"")
+  if (Result) {
+    print "ERROR: "Result" renaming \""MKVVideo"\""
+    exit
+  }
+
+  exe=MKVMerge" --identify-verbose \""TempVideo"\""
   while ((exe | getline Line) > 0) {
     print Line
     FieldCount=split(Line, Fields)
@@ -110,9 +114,10 @@ BEGIN {
     }
   }
   if (NoTr==0) {
-    print "ERROR: No tracks found in "MKVVideo"."
+    print "ERROR: No tracks found in "TempVideo"."
     exit
-  } else {print "Tracks:",NoTr,", Audio Tracks:",AudCnt}
+  }
+  print "Tracks: "NoTr", Audio Tracks: "AudCnt
   for (i=1; i<=NoTr; i++) {
     #print "i:"i,"Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"]
     if (Track[i, "typ"]=="audio") {
@@ -157,53 +162,52 @@ BEGIN {
   } else {
     CommandLine=CommandLine" -s "SubsCommand
   }
-  print "Executing: "MKVMerge" -o \""NewVideo"\" "CommandLine" \""MKVVideo"\""
-  Result=system(MKVMerge" --title \""Title"\" -q -o \""NewVideo"\" "CommandLine" \""MKVVideo"\"")
-  if (Result>1) print "ERROR: "Result" muxing \""MKVVideo"\""
-}' "$MOVIE" "$1" "$2" | log
+  print "Executing: "MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\""
+  Result=system(MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\"")
+  if (Result>1) print "ERROR: "Result" remuxing \""TempVideo"\""
+}' "$MOVIE" "$TEMPMOVIE" "$1" "$2" | log
 
-# Replace downloaded movie file
-if [ -f "$NEWMOVIE" ]
-then
-  echo "Deleting: \"$MOVIE\"" | log
-  rm "$MOVIE"
-  echo "Moving: \"$NEWMOVIE\" to \"${MOVIE::-4}.mkv\"" | log
-  mv "$NEWMOVIE" "${MOVIE::-4}.mkv"
+# Check for script completion and non-empty file
+if [ -s "$MOVIE" ]; then
+  echo "Deleting: \"$TEMPMOVIE\"" | log
+  rm "$TEMPMOVIE" | log
 else
-  MSG="ERROR: Unable to locate remuxed file: \"$NEWMOVIE\""
-  echo "$MSG" | log
-  echo "$MSG"
+  echo "ERROR: Unable to locate or invalid remuxed file: \"$MOVIE\". Undoing rename." | log
+  echo "Renaming: \"$TEMPMOVIE\" to \"$MOVIE\"" | log
+  mv "$TEMPMOVIE" "$MOVIE" | log
   exit 10
 fi
 
 # Call Radarr API to RescanMovie
-if [ ! -z "$radarr_movie_id" ]
-then
-  # Inspired by https://stackoverflow.com/questions/893585/how-to-parse-xml-in-bash
-  read_xml () {
-    local IFS=\>
-    read -d \< ENTITY CONTENT
-  }
-  
-  # Read Radarr config.xml
-  while read_xml; do
-    [[ $ENTITY = "Port" ]] && PORT=$CONTENT
-    [[ $ENTITY = "UrlBase" ]] && URLBASE=$CONTENT
-    [[ $ENTITY = "BindAddress" ]] && BINDADDRESS=$CONTENT
-    [[ $ENTITY = "ApiKey" ]] && APIKEY=$CONTENT
-  done < $RADARR_CONFIG
-  
-  [[ $BINDADDRESS = "*" ]] && BINDADDRESS=localhost
-  
-  echo "Calling Radarr API using movie id '$radarr_movie_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY'" | log
-  # Calling API
-  RESULT=$(curl -s -d "{name: 'RescanMovie', movieId: $radarr_movie_id}" -H "Content-Type: application/json" \
-    -X POST http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY | jq -c '. | {JobId: .id, MovieId: .body.movieId, Message: .body.completionMessage, DateStarted: .queued}')
-  echo "API returned: $RESULT" | log
+if [ ! -z "$radarr_movie_id" ]; then
+  if [ -f "$RADARR_CONFIG" ]; then
+    # Inspired by https://stackoverflow.com/questions/893585/how-to-parse-xml-in-bash
+    read_xml () {
+      local IFS=\>
+      read -d \< ENTITY CONTENT
+    }
+    
+    # Read Radarr config.xml
+    while read_xml; do
+      [[ $ENTITY = "Port" ]] && PORT=$CONTENT
+      [[ $ENTITY = "UrlBase" ]] && URLBASE=$CONTENT
+      [[ $ENTITY = "BindAddress" ]] && BINDADDRESS=$CONTENT
+      [[ $ENTITY = "ApiKey" ]] && APIKEY=$CONTENT
+    done < $RADARR_CONFIG
+    
+    [[ $BINDADDRESS = "*" ]] && BINDADDRESS=localhost
+    
+    echo "Calling Radarr API using movie id '$radarr_movie_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY'" | log
+    # Calling API
+    RESULT=$(curl -s -d "{name: 'RescanMovie', movieId: $radarr_movie_id}" -H "Content-Type: application/json" \
+      -X POST http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY | jq -c '. | {JobId: .id, MovieId: .body.movieId, Message: .body.completionMessage, DateStarted: .queued}')
+    echo "API returned: $RESULT" | log
+  else
+    echo "ERROR: Unable to locate Radarr config file: '$RADARR_CONFIG'" | log
+    exit 12
+  fi
 else
-  MSG="ERROR: Missing environment variable radarr_movie_id"
-  echo "$MSG" | log
-  echo "$MSG"
+  echo "ERROR: Missing environment variable radarr_movie_id" | log
   exit 11
 fi
 
