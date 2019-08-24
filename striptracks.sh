@@ -36,7 +36,7 @@ Examples:
   striptracks.sh :eng:und :eng              # keep English and Undetermined audio and
                                               English subtitles
   striptracks.sh :eng \"\"                    # keep English audio and no subtitles
-  striptracks.sh -d :eng:kor:jpn :eng:esp   # Enable debugging, keeping English, Korean,
+  striptracks.sh -d :eng:kor:jpn :eng:spa   # Enable debugging, keeping English, Korean,
                                               and Japanese audio, and English and
                                               Spanish subtitles
 "
