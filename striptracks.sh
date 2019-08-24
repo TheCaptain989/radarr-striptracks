@@ -10,24 +10,37 @@ LOG=/config/logs/striptracks.txt
 MAXLOGSIZE=1048576
 MAXLOG=4
 MOVIE="$radarr_moviefile_path"
-
-# Not the most robust way to do this.  Expects 3 character file extension (i.e. ".avi")
-TEMPMOVIE=${MOVIE::-4}.tmp
-
-# For debug purposes only
-#ENVLOG=/config/logs/debugenv.txt
-#echo --------$(date +"%F %T")-------- >>"$ENVLOG"
-#printenv | sort >>"$ENVLOG"
+TEMPMOVIE="$MOVIE.tmp"
+NEWMOVIE="${MOVIE%.*}.mkv"
 
 function usage {
-  [ -z "$MOVIE" ] && MOVIE=/path_to_movie/video.mkv
-  echo "Examples:"
-  echo " - keep English and Japanase audio and English subtitles"
-  echo "   $0 $MOVIE :eng:jpn :eng"
-  echo " - keep English audio and no subtitles"
-  echo "   $0 $MOVIE :eng \"\""
-  echo
-  echo " Put a colon \`:\` in front of every language code.  Expects ISO639-2 codes"
+  usage="
+Striptracks.sh
+Video remuxing script designed for use with Radarr
+
+Source: https://github.com/TheCaptain989/radarr-striptracks
+
+Usage:
+  $0 [-d] <audio_languages> <subtitle_languages>
+
+Arguments:
+  audio_languages       # ISO639-2 code(s) prefixed with a colon \`:\`
+                          Multiple codes may be concatenated.
+  subtitle_languages    # ISO639-2 code(s) prefixed with a colon \`:\`
+                          Multiple codes may be concatenated.
+
+Options:
+  -d    # enable debug logging
+
+Examples:
+  striptracks.sh :eng:und :eng              # keep English and Undetermined audio and
+                                              English subtitles
+  striptracks.sh :eng \"\"                    # keep English audio and no subtitles
+  striptracks.sh -d :eng:kor:jpn :eng:spa   # Enable debugging, keeping English, Korean,
+                                              and Japanese audio, and English and
+                                              Spanish subtitles
+"
+  echo "$usage"
 }
 
 # Can still go over MAXLOG if read line is too long
@@ -47,6 +60,21 @@ function log {(
     fi
   done
 )}
+
+# Process options
+while getopts ":d" opt; do
+  case ${opt} in
+    d ) # For debug purposes only
+      MSG="DEBUG: Enabling debug logging."
+      echo "$MSG" | log
+      echo "$MSG"
+      ENVLOG=/config/logs/debugenv.txt
+      echo "--------$(date +"%F %T")--------" >>"$ENVLOG"
+      printenv | sort >>"$ENVLOG"
+    ;;
+  esac
+done
+shift $((OPTIND -1))
 
 if [ -z "$MOVIE" ]; then
   MSG="ERROR: No movie file specified! Not called from Radarr?"
@@ -85,17 +113,18 @@ BEGIN {
   MKVMerge="/usr/bin/mkvmerge"
   FS="[\t\n: ]"
   IGNORECASE=1
-  MKVVideo=ARGV[1]
+  OrgVideo=ARGV[1]
   TempVideo=ARGV[2]
-  AudioKeep=ARGV[3]
-  SubsKeep=ARGV[4]
+  MKVVideo=ARGV[3]
+  AudioKeep=ARGV[4]
+  SubsKeep=ARGV[5]
   Title=substr(MKVVideo, 1, length(MKVVideo)-4)
   sub(".*/", "", Title)
 
-  print "Renaming: \""MKVVideo"\" to \""TempVideo"\""
-  Result=system("mv \""MKVVideo"\" \""TempVideo"\"")
+  print "Renaming: \""OrgVideo"\" to \""TempVideo"\""
+  Result=system("mv \""OrgVideo"\" \""TempVideo"\"")
   if (Result) {
-    print "ERROR: "Result" renaming \""MKVVideo"\""
+    print "ERROR: "Result" renaming \""OrgVideo"\""
     exit
   }
 
@@ -165,14 +194,14 @@ BEGIN {
   print "Executing: "MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\""
   Result=system(MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\"")
   if (Result>1) print "ERROR: "Result" remuxing \""TempVideo"\""
-}' "$MOVIE" "$TEMPMOVIE" "$1" "$2" | log
+}' "$MOVIE" "$TEMPMOVIE" "$NEWMOVIE" "$1" "$2" | log
 
 # Check for script completion and non-empty file
-if [ -s "$MOVIE" ]; then
+if [ -s "$NEWMOVIE" ]; then
   echo "Deleting: \"$TEMPMOVIE\"" | log
   rm "$TEMPMOVIE" | log
 else
-  echo "ERROR: Unable to locate or invalid remuxed file: \"$MOVIE\". Undoing rename." | log
+  echo "ERROR: Unable to locate or invalid remuxed file: \"$NEWMOVIE\". Undoing rename." | log
   echo "Renaming: \"$TEMPMOVIE\" to \"$MOVIE\"" | log
   mv "$TEMPMOVIE" "$MOVIE" | log
   exit 10
@@ -197,7 +226,7 @@ if [ ! -z "$radarr_movie_id" ]; then
     
     [[ $BINDADDRESS = "*" ]] && BINDADDRESS=localhost
     
-    echo "Calling Radarr API using movie id '$radarr_movie_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY'" | log
+    echo "Calling Radarr API 'RescanMovie' using movie id '$radarr_movie_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY'" | log
     # Calling API
     RESULT=$(curl -s -d "{name: 'RescanMovie', movieId: $radarr_movie_id}" -H "Content-Type: application/json" \
       -X POST http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY | jq -c '. | {JobId: .id, MovieId: .body.movieId, Message: .body.completionMessage, DateStarted: .queued}')
