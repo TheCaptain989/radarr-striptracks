@@ -1,7 +1,7 @@
 [![](https://images.microbadger.com/badges/image/thecaptain989/radarr.svg)](https://microbadger.com/images/thecaptain989/radarr "Get your own image badge on microbadger.com")
 [![](https://images.microbadger.com/badges/version/thecaptain989/radarr.svg)](https://microbadger.com/images/thecaptain989/radarr "Get your own version badge on microbadger.com")
 
-Radarr with a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages. Chapters, if they exist, are preserved. Also sets the Title attribute to the name of the file minus extension.
+Radarr with a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages. Uses mkvmerge. Chapters, if they exist, are preserved. It also sets the Title attribute in the MKV to the name of the file minus extension.
 
 # First Things First
 
@@ -22,11 +22,11 @@ The source video can be any mkvtoolnix supported video format. The output is an 
 
 ### Syntax
 
-It accepts two arguments:
+The script accepts two arguments and one option:
 
-`[audio_languages] [subtitle_languages]`
+`[-d] <audio_languages> <subtitle_languages>`
 
-The arguments are language codes in [ISO639-2](https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes) format. These are three letter abbreviations prefixed with a colon ':' such as:
+The arguments are language codes in [ISO639-2](https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes) format. These are three letter abbreviations prefixed with a colon ':', such as:
 
 * :eng
 * :fre
@@ -40,17 +40,30 @@ Suggested to use `:eng:und :eng` if you are unsure of what to choose. This will 
 
 The only events/notification triggers that have been tested are **On Download** and **On Upgrade**
 
-### Example
+The `-d` option enables debug logging.
+
+### Examples
+    :eng:und :eng              # keep English and Undetermined audio and English subtitles
+    :eng ""                    # keep English audio and no subtitles
+    -d :eng:kor:jpn :eng:esp   # Enable debugging, keeping English, Korean, and Japanese audio, and English and 
+                                 Spanish subtitles
+
 ![striptracks](https://raw.githubusercontent.com/TheCaptain989/striptracks/master/images/striptracks.png)
 
 ### Logs
-A new log file is created for the script activity called:
+A log file is created for the script activity called:
 
 `/config/logs/striptracks.txt`
 
-This log can be inspected from the GUI under System->Logs->Files
+This log can be inspected or downloaded from the Radarr GUI under System->Logs->Files
 
 Log rotation is performed, and 5 log files of 1MB each are kept, matching Radarr's log retention.
+
+If debug logging is enabled, the following log file is also created:
+
+`/config/logs/debugenv.txt`
+
+**This log file will grow indefinitely!** Do not leave debugging enabled permanently.
 
 ## Credits
 
