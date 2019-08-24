@@ -30,11 +30,11 @@ The arguments are language codes in [ISO639-2](https://en.wikipedia.org/wiki/Lis
 
 * :eng
 * :fre
-* :esp
+* :spa
 
 ...etc.  
 
-Multiple codes may be concatenated, such as `:eng:esp` for both English and Spanish.  
+Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.  
 
 Suggested to use `:eng:und :eng` if you are unsure of what to choose. This will keep English and Undetermined audio and English subtitles, if they exist.
 
@@ -45,7 +45,7 @@ The `-d` option enables debug logging.
 ### Examples
     :eng:und :eng              # keep English and Undetermined audio and English subtitles
     :eng ""                    # keep English audio and no subtitles
-    -d :eng:kor:jpn :eng:esp   # Enable debugging, keeping English, Korean, and Japanese audio, and English and 
+    -d :eng:kor:jpn :eng:spa   # Enable debugging, keeping English, Korean, and Japanese audio, and English and 
                                  Spanish subtitles
 
 ![striptracks](https://raw.githubusercontent.com/TheCaptain989/striptracks/master/images/striptracks.png)
