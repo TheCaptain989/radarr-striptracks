@@ -120,6 +120,11 @@ BEGIN {
   SubsKeep=ARGV[5]
   Title=substr(MKVVideo, 1, length(MKVVideo)-4)
   sub(".*/", "", Title)
+  if (match(Title,/[a-zA-Z0-9]- /)) {
+    Arr[1]=substr(Title,1,RSTART)
+    Arr[2]=substr(Title,RSTART+RLENGTH-1)
+    Title=Arr[1]":"Arr[2]
+  }  # mawk does not have gensub function
 
   print "Renaming: \""OrgVideo"\" to \""TempVideo"\""
   Result=system("mv \""OrgVideo"\" \""TempVideo"\"")
