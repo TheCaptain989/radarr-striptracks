@@ -7,7 +7,7 @@
 
 RADARR_CONFIG=/config/config.xml
 LOG=/config/logs/striptracks.txt
-MAXLOGSIZE=1048576
+MAXLOGSIZE=1024000
 MAXLOG=4
 MOVIE="$radarr_moviefile_path"
 TEMPMOVIE="$MOVIE.tmp"
@@ -56,6 +56,7 @@ function log {(
       do
         [ -f "${LOG::-4}.$i.txt" ] && mv "${LOG::-4}."{$i,$((i+1))}".txt"
       done
+        [ -f "${LOG::-4}.txt" ] && mv "${LOG::-4}.txt" "${LOG::-4}.0.txt"
       touch "$LOG"
     fi
   done
