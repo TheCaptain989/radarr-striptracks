@@ -1,9 +1,27 @@
 #!/bin/bash
 
+# Video remuxing script designed for use with Radarr
+# Automatically strips out unwanted audio and subtitle streams, keeping only the desired languages.
+#  https://github.com/TheCaptain989/radarr-striptracks
+
 # Adapated and corrected from Endoro's post 1/5/2014:
 #  https://forum.videohelp.com/threads/343271-BULK-remove-non-English-tracks-from-MKV-container#post2292889
 #
 # Put a colon `:` in front of every language code.  Expects ISO639-2 codes
+
+# Dependencies:
+#  mkvmerge
+#  awk
+
+# Exit codes:
+#  0 - success
+#  1 - no movie file specified on command line
+#  2 - no audio language specified on command line
+#  3 - no subtitle language specified on command line
+#  5 - specified movie file not found
+# 10 - remuxing completed, but no output file found
+# 11 - success, but unable to access Radarr API due to missing Movie ID
+# 12 - success, but unable to access Radarr API due to missing config file
 
 RADARR_CONFIG=/config/config.xml
 LOG=/config/logs/striptracks.txt
