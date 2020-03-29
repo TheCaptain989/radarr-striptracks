@@ -59,11 +59,7 @@ This log can be inspected or downloaded from the Radarr GUI under System->Logs->
 
 Log rotation is performed, and 5 log files of 1MB each are kept, matching Radarr's log retention.
 
-If debug logging is enabled, the following log file is also created:
-
-`/config/logs/debugenv.txt`
-
-**This log file will grow indefinitely!** Do not leave debugging enabled permanently.
+If debug logging is enabled, the log file can grow very large very quickly:
 
 ## Credits
 
