@@ -23,17 +23,20 @@
 # 11 - success, but unable to access Radarr API due to missing Movie ID
 # 12 - success, but unable to access Radarr API due to missing config file
 
+SCRIPT=$(basename "$0")
 RADARR_CONFIG=/config/config.xml
 LOG=/config/logs/striptracks.txt
 MAXLOGSIZE=1024000
 MAXLOG=4
+DEBUG=0
 MOVIE="$radarr_moviefile_path"
 TEMPMOVIE="$MOVIE.tmp"
 NEWMOVIE="${MOVIE%.*}.mkv"
+TITLE=$(basename "${MOVIE%.*}")
 
 function usage {
   usage="
-Striptracks.sh
+$SCRIPT
 Video remuxing script designed for use with Radarr
 
 Source: https://github.com/TheCaptain989/radarr-striptracks
@@ -51,10 +54,10 @@ Options:
   -d    # enable debug logging
 
 Examples:
-  striptracks.sh :eng:und :eng              # keep English and Undetermined audio and
+  $SCRIPT :eng:und :eng              # keep English and Undetermined audio and
                                               English subtitles
-  striptracks.sh :eng \"\"                    # keep English audio and no subtitles
-  striptracks.sh -d :eng:kor:jpn :eng:spa   # Enable debugging, keeping English, Korean,
+  $SCRIPT :eng \"\"                    # keep English audio and no subtitles
+  $SCRIPT -d :eng:kor:jpn :eng:spa   # Enable debugging, keeping English, Korean,
                                               and Japanese audio, and English and
                                               Spanish subtitles
 "
@@ -88,7 +91,7 @@ while getopts ":d" opt; do
       echo "$MSG" | log
       echo "$MSG"
       DEBUG=1
-      printenv | sort | log
+      printenv | sort | sed 's/^/Debug|/' | log
     ;;
   esac
 done
@@ -125,22 +128,14 @@ if [ -z "$2" ]; then
   exit 3
 fi
 
-MSG="Info|StripTracks|Radarr event: $radarr_eventtype, Movie: $MOVIE, AudioKeep: $1, SubsKeep: $2"
+MSG="Info|$SCRIPT|Radarr event: $radarr_eventtype, Movie: $MOVIE, AudioKeep: $1, SubsKeep: $2"
 echo "$MSG" | log
 echo "$MSG"
-echo "" | awk '
+echo "" | awk -v Debug=$Debug -v OrgVideo="$MOVIE" -v TempVideo="$TEMPMOVIE" -v MKVVideo="$NEWMOVIE" -v Title="$TITLE" -v AudioKeep="$1" -v SubsKeep="$2" '
 BEGIN {
   MKVMerge="/usr/bin/mkvmerge"
   FS="[\t\n: ]"
   IGNORECASE=1
-  Debug='$DEBUG'
-  OrgVideo='"$MOVIE"'
-  TempVideo='"$TEMPMOVIE"'
-  MKVVideo='"$NEWMOVIE"'
-  AudioKeep='"$1"'
-  SubsKeep='"$2"'
-  Title=substr(MKVVideo, 1, length(MKVVideo)-4)
-  sub(".*/", "", Title)
   if (match(Title,/[a-zA-Z0-9]- /)) {
     Arr[1]=substr(Title,1,RSTART)
     Arr[2]=substr(Title,RSTART+RLENGTH-1)
@@ -174,9 +169,10 @@ BEGIN {
     print "Error|No tracks found in \""TempVideo"\""
     exit
   }
+  if (!AudCnt) AudCnt=0; if (!SubsCnt) SubsCnt=0
   print "Info|Total tracks: "NoTr", Audio Tracks: "AudCnt", Subtitle Tracks: "SubsCnt
   for (i=1; i<=NoTr; i++) {
-    #if (Debug) print "Debug|i:"i,"Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"]
+    if (Debug) print "Debug|i:"i,"Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"]
     if (Track[i, "typ"]=="audio") {
       if (AudioKeep~Track[i, "lang"]) {
         if (Debug) print "Debug|Keep:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
