@@ -66,7 +66,7 @@ Examples:
 function log {(
   while read
   do
-    echo $(date +"%F %T")\|"$REPLY" >>"$LOG"
+    echo $(date +"%Y-%-m-%-d %H:%M:%S.%1N")\|"$REPLY" >>"$LOG"
     FILESIZE=`wc -c "$LOG" | cut -d' ' -f1`
     if [ $FILESIZE -gt $MAXLOGSIZE ]
     then
@@ -84,19 +84,18 @@ function log {(
 while getopts ":d" opt; do
   case ${opt} in
     d ) # For debug purposes only
-      MSG="DEBUG: Enabling debug logging."
+      MSG="Debug|Enabling debug logging."
       echo "$MSG" | log
       echo "$MSG"
-      ENVLOG=/config/logs/debugenv.txt
-      echo "--------$(date +"%F %T")--------" >>"$ENVLOG"
-      printenv | sort >>"$ENVLOG"
+      DEBUG=1
+      printenv | sort | log
     ;;
   esac
 done
 shift $((OPTIND -1))
 
 if [ -z "$MOVIE" ]; then
-  MSG="ERROR: No movie file specified! Not called from Radarr?"
+  MSG="Error|No movie file specified! Not called from Radarr?"
   echo "$MSG" | log
   echo "$MSG"
   usage 
@@ -104,14 +103,14 @@ if [ -z "$MOVIE" ]; then
 fi
 
 if [ ! -f "$MOVIE" ]; then
-  MSG="ERROR: Input file not found: \"$MOVIE\""
+  MSG="Error|Input file not found: \"$MOVIE\""
   echo "$MSG" | log
   echo "$MSG"
   exit 5
 fi
 
 if [ -z "$1" ]; then
-  MSG="ERROR: No audio languages specified!"
+  MSG="Error|No audio languages specified!"
   echo "$MSG" | log
   echo "$MSG"
   usage
@@ -119,24 +118,27 @@ if [ -z "$1" ]; then
 fi
 
 if [ -z "$2" ]; then
-  MSG="ERROR: No subtitles languages specified!"
+  MSG="Error|No subtitles languages specified!"
   echo "$MSG" | log
   echo "$MSG"
   usage
   exit 3
 fi
 
-echo "Radarr event: $radarr_eventtype|Movie: $MOVIE|AudioKeep: $1|SubsKeep: $2" | log
-awk '
+MSG="Info|StripTracks|Radarr event: $radarr_eventtype, Movie: $MOVIE, AudioKeep: $1, SubsKeep: $2"
+echo "$MSG" | log
+echo "$MSG"
+echo "" | awk '
 BEGIN {
   MKVMerge="/usr/bin/mkvmerge"
   FS="[\t\n: ]"
   IGNORECASE=1
-  OrgVideo=ARGV[1]
-  TempVideo=ARGV[2]
-  MKVVideo=ARGV[3]
-  AudioKeep=ARGV[4]
-  SubsKeep=ARGV[5]
+  Debug='$DEBUG'
+  OrgVideo='"$MOVIE"'
+  TempVideo='"$TEMPMOVIE"'
+  MKVVideo='"$NEWMOVIE"'
+  AudioKeep='"$1"'
+  SubsKeep='"$2"'
   Title=substr(MKVVideo, 1, length(MKVVideo)-4)
   sub(".*/", "", Title)
   if (match(Title,/[a-zA-Z0-9]- /)) {
@@ -145,66 +147,71 @@ BEGIN {
     Title=Arr[1]":"Arr[2]
   }  # mawk does not have gensub function
 
-  print "Renaming: \""OrgVideo"\" to \""TempVideo"\""
+  if (Debug) print "Debug|Renaming: \""OrgVideo"\" to \""TempVideo"\""
   Result=system("mv \""OrgVideo"\" \""TempVideo"\"")
   if (Result) {
-    print "ERROR: "Result" renaming \""OrgVideo"\""
+    print "Error|"Result" renaming \""OrgVideo"\""
     exit
   }
 
+  # Read in the output of mkvmerge
   exe=MKVMerge" --identify-verbose \""TempVideo"\""
   while ((exe | getline Line) > 0) {
-    print Line
+    if (Debug) print "Debug|"Line
     FieldCount=split(Line, Fields)
     if (Fields[1]=="Track") {
       NoTr++
       Track[NoTr, "id"]=Fields[3]
       Track[NoTr, "typ"]=Fields[5]
       if (Track[NoTr, "typ"]=="audio") AudCnt++
+      if (Track[NoTr, "typ"]=="subtitles") SubsCnt++
       for (i=6; i<=FieldCount; i++) {
         if (Fields[i]=="language") Track[NoTr, "lang"]=Fields[++i]
       }
     }
   }
   if (NoTr==0) {
-    print "ERROR: No tracks found in "TempVideo"."
+    print "Error|No tracks found in \""TempVideo"\""
     exit
   }
-  print "Tracks: "NoTr", Audio Tracks: "AudCnt
+  print "Info|Total tracks: "NoTr", Audio Tracks: "AudCnt", Subtitle Tracks: "SubsCnt
   for (i=1; i<=NoTr; i++) {
-    #print "i:"i,"Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"]
+    #if (Debug) print "Debug|i:"i,"Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"]
     if (Track[i, "typ"]=="audio") {
       if (AudioKeep~Track[i, "lang"]) {
-        print "Keep:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
+        if (Debug) print "Debug|Keep:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
         if (AudioCommand=="") {
           AudioCommand=Track[i, "id"]
         } else {
           AudioCommand=AudioCommand","Track[i, "id"]
         }
+      # Special case if there is only one audio track, even if it was not specified
       } else if(AudCnt==1) {
-        print "Keeping only audio track:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
+        if (Debug) print "Debug|Keeping only audio track:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
         AudioCommand=Track[i, "id"]
+      # Special case if there were multiple tracks, none were selected, and this is the last one.
       } else if(AudioCommand=="" && Track[i, "id"]==AudCnt) {
-        print "Keeping last audio track:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
+        if (Debug) print "Debug|Keeping last audio track:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
         AudioCommand=Track[i, "id"]
       } else {
-        print "\tRemove:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
+        if (Debug) print "Debug|\tRemove:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
       }
     } else {
       if (Track[i, "typ"]=="subtitles") {
         if (SubsKeep~Track[i, "lang"]) {
-          print "Keep:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
+          if (Debug) print "Debug|Keep:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
           if (SubsCommand=="") {
             SubsCommand=Track[i, "id"]
           } else {
             SubsCommand=SubsCommand","Track[i, "id"]
           }
         } else {
-          print "\tRemove:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
+          if (Debug) print "Debug|\tRemove:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
         }
       }
     }
   }
+  # This should never happen, but belt and suspenders
   if (AudioCommand=="") {
     CommandLine="-A"
   } else {
@@ -215,18 +222,18 @@ BEGIN {
   } else {
     CommandLine=CommandLine" -s "SubsCommand
   }
-  print "Executing: "MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\""
+  if (Debug) print "Debug|Executing: "MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\""
   Result=system(MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\"")
-  if (Result>1) print "ERROR: "Result" remuxing \""TempVideo"\""
-}' "$MOVIE" "$TEMPMOVIE" "$NEWMOVIE" "$1" "$2" | log
+  if (Result>1) print "Error|"Result" remuxing \""TempVideo"\""
+}' | log
 
 # Check for script completion and non-empty file
 if [ -s "$NEWMOVIE" ]; then
-  echo "Deleting: \"$TEMPMOVIE\"" | log
+  [ $DEBUG -eq 1 ] && echo "Debug|Deleting: \"$TEMPMOVIE\"" | log
   rm "$TEMPMOVIE" | log
 else
-  echo "ERROR: Unable to locate or invalid remuxed file: \"$NEWMOVIE\". Undoing rename." | log
-  echo "Renaming: \"$TEMPMOVIE\" to \"$MOVIE\"" | log
+  echo "Error|Unable to locate or invalid remuxed file: \"$NEWMOVIE\". Undoing rename." | log
+  [ $DEBUG -eq 1 ] && echo "Debug|Renaming: \"$TEMPMOVIE\" to \"$MOVIE\"" | log
   mv "$TEMPMOVIE" "$MOVIE" | log
   exit 10
 fi
@@ -250,18 +257,18 @@ if [ ! -z "$radarr_movie_id" ]; then
     
     [[ $BINDADDRESS = "*" ]] && BINDADDRESS=localhost
     
-    echo "Calling Radarr API 'RescanMovie' using movie id '$radarr_movie_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY'" | log
+    [ $DEBUG -eq 1 ] && echo "Debug|Calling Radarr API 'RescanMovie' using movie id '$radarr_movie_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY'" | log
     # Calling API
     RESULT=$(curl -s -d "{name: 'RescanMovie', movieId: $radarr_movie_id}" -H "Content-Type: application/json" \
       -X POST http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY | jq -c '. | {JobId: .id, MovieId: .body.movieId, Message: .body.completionMessage, DateStarted: .queued}')
-    echo "API returned: $RESULT" | log
+    [ $DEBUG -eq 1 ] && echo "Debug|API returned: $RESULT" | log
   else
-    echo "ERROR: Unable to locate Radarr config file: '$RADARR_CONFIG'" | log
+    echo "Warn|Unable to locate Radarr config file: '$RADARR_CONFIG'" | log
     exit 12
   fi
 else
-  echo "ERROR: Missing environment variable radarr_movie_id" | log
+  echo "Warn|Missing environment variable radarr_movie_id" | log
   exit 11
 fi
 
-echo "Done" | log
+[ $DEBUG -eq 1 ] && echo "Debug|Done" | log
