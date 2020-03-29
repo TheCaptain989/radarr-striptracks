@@ -33,6 +33,7 @@ MOVIE="$radarr_moviefile_path"
 TEMPMOVIE="$MOVIE.tmp"
 NEWMOVIE="${MOVIE%.*}.mkv"
 TITLE=$(basename "${MOVIE%.*}")
+RECYCLEBIN=$(sqlite3 /config/nzbdrone.db 'SELECT Value FROM Config WHERE Key="recyclebin"')
 
 function usage {
   usage="
@@ -224,12 +225,18 @@ BEGIN {
 
 # Check for script completion and non-empty file
 if [ -s "$NEWMOVIE" ]; then
-  [ $DEBUG -eq 1 ] && echo "Debug|Deleting: \"$TEMPMOVIE\"" | log
-  rm "$TEMPMOVIE" | log
+  # Use Recycle Bin if configured
+  if [ "$RECYCLEBIN" ]; then
+    [ $DEBUG -eq 1 ] && echo "Debug|Moving: \"$TEMPMOVIE\" to \"$RECYCLEBIN\"" | log
+    mv "$TEMPMOVIE" "$RECYCLEBIN" | log
+  else
+    [ $DEBUG -eq 1 ] && echo "Debug|Deleting: \"$TEMPMOVIE\"" | log
+    rm "$TEMPMOVIE" | log
+  fi
 else
   echo "Error|Unable to locate or invalid remuxed file: \"$NEWMOVIE\". Undoing rename." | log
   [ $DEBUG -eq 1 ] && echo "Debug|Renaming: \"$TEMPMOVIE\" to \"$MOVIE\"" | log
-  mv "$TEMPMOVIE" "$MOVIE" | log
+  mv -f "$TEMPMOVIE" "$MOVIE" | log
   exit 10
 fi
 
