@@ -128,7 +128,7 @@ if [ -z "$2" ]; then
   exit 3
 fi
 
-MSG="Info|$SCRIPT|Radarr event: $radarr_eventtype, Movie: $MOVIE, AudioKeep: $1, SubsKeep: $2"
+MSG="Info|Radarr event: $radarr_eventtype, Movie: $MOVIE, AudioKeep: $1, SubsKeep: $2"
 echo "$MSG" | log
 echo "" | awk -v Debug=$Debug -v OrgVideo="$MOVIE" -v TempVideo="$TEMPMOVIE" -v MKVVideo="$NEWMOVIE" -v Title="$TITLE" -v AudioKeep="$1" -v SubsKeep="$2" '
 BEGIN {
@@ -266,4 +266,4 @@ else
   exit 11
 fi
 
-echo "Info|$SCRIPT|Done" | log
+echo "Info|Done" | log
