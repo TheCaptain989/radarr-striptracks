@@ -18,7 +18,8 @@ Add the codes for the audio and subtitle languages you want to keep as Arguments
 
 The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name.
 
-**NOTE:** The original video file will be deleted/overwritten and permanently lost.
+If you've configured the Radarr Recycle Bin path correctly, the original video will be moved here.  
+**NOTE:** If you have *not* configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
 
 ### Syntax
 
