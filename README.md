@@ -1,11 +1,11 @@
 [![](https://images.microbadger.com/badges/image/thecaptain989/radarr.svg)](https://microbadger.com/images/thecaptain989/radarr "Get your own image badge on microbadger.com")
 [![](https://images.microbadger.com/badges/version/thecaptain989/radarr.svg)](https://microbadger.com/images/thecaptain989/radarr "Get your own version badge on microbadger.com")
 
-Radarr with a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages. Uses mkvmerge. Chapters, if they exist, are preserved. It also sets the Title attribute in the MKV to the name of the file minus extension.
+A Radarr Docker container with a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages, using mkvmerge. Chapters, if they exist, are preserved. It also sets the Title attribute in the MKV to the filename minus its extension.
 
 # First Things First
 
-Configure the container with all the port, volume, and environment settings from the original container documentation here:  
+Configure the Docker container with all the port, volume, and environment settings from the original container documentation here:  
 **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr)**
 
 ## Usage
@@ -18,7 +18,7 @@ Add the codes for the audio and subtitle languages you want to keep as Arguments
 
 The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name.
 
-If you've configured the Radarr Recycle Bin path correctly, the original video will be moved here.  
+If you've configured the Radarr Recycle Bin path correctly, the original video will be moved there.  
 **NOTE:** If you have *not* configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
 
 ### Syntax
@@ -60,7 +60,7 @@ This log can be inspected or downloaded from the Radarr GUI under System->Logs->
 
 Log rotation is performed, and 5 log files of 1MB each are kept, matching Radarr's log retention.
 
-If debug logging is enabled, the log file can grow very large very quickly:
+If debug logging is enabled, the log file can grow very large very quickly.
 
 ## Credits
 
