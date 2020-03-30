@@ -4,9 +4,10 @@
 A Radarr Docker container with a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages, using mkvmerge. Chapters, if they exist, are preserved. It also sets the Title attribute in the MKV to the filename minus its extension.
 
 # First Things First
-
 Configure the Docker container with all the port, volume, and environment settings from the original container documentation here:  
 **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr)**
+
+This container supports Linux OSes only.
 
 ## Usage
 
