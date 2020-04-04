@@ -131,7 +131,7 @@ fi
 
 MSG="Info|Radarr event: $radarr_eventtype, Movie: $MOVIE, AudioKeep: $1, SubsKeep: $2"
 echo "$MSG" | log
-echo "" | awk -v Debug=$Debug -v OrgVideo="$MOVIE" -v TempVideo="$TEMPMOVIE" -v MKVVideo="$NEWMOVIE" -v Title="$TITLE" -v AudioKeep="$1" -v SubsKeep="$2" '
+echo "" | awk -v Debug=$DEBUG -v OrgVideo="$MOVIE" -v TempVideo="$TEMPMOVIE" -v MKVVideo="$NEWMOVIE" -v Title="$TITLE" -v AudioKeep="$1" -v SubsKeep="$2" '
 BEGIN {
   MKVMerge="/usr/bin/mkvmerge"
   FS="[\t\n: ]"
@@ -158,36 +158,39 @@ BEGIN {
       NoTr++
       Track[NoTr, "id"]=Fields[3]
       Track[NoTr, "typ"]=Fields[5]
+      Track[NoTr, "code"]=Line; sub(/^[^\(]+/,"",Track[NoTr, "code"]); sub(/[^\)]+$/,"",Track[NoTr, "code"])
+      if (Track[NoTr, "typ"]=="video") VidCnt++
       if (Track[NoTr, "typ"]=="audio") AudCnt++
       if (Track[NoTr, "typ"]=="subtitles") SubsCnt++
       for (i=6; i<=FieldCount; i++) {
         if (Fields[i]=="language") Track[NoTr, "lang"]=Fields[++i]
       }
+    } else if (Fields[1]=="Chapters") {
+      Chapters=Fields[3]
     }
   }
-  if (NoTr==0) {
-    print "Error|No tracks found in \""TempVideo"\""
-    exit
-  }
+  if (!NoTr) { print "Error|No tracks found in \""TempVideo"\""; exit }
   if (!AudCnt) AudCnt=0; if (!SubsCnt) SubsCnt=0
-  print "Info|Total tracks: "NoTr", Audio Tracks: "AudCnt", Subtitle Tracks: "SubsCnt
+  print "Info|Original tracks: "NoTr" (audio: "AudCnt", subtitles: "SubsCnt")"
+  if (Chapters) print "Info|Chapters: "Chapters
   for (i=1; i<=NoTr; i++) {
-    if (Debug) print "Debug|i:"i,"Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"]
+    if (Debug) print "Debug|i:"i,"Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"],"Code:"Track[i, "code"]
     if (Track[i, "typ"]=="audio") {
       if (AudioKeep~Track[i, "lang"]) {
-        if (Debug) print "Debug|Keep:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
+        AudKpCnt++
+        print "Info|Keeping audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "code"]
         if (AudioCommand=="") {
           AudioCommand=Track[i, "id"]
         } else {
           AudioCommand=AudioCommand","Track[i, "id"]
         }
       # Special case if there is only one audio track, even if it was not specified
-      } else if(AudCnt==1) {
-        if (Debug) print "Debug|Keeping only audio track:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
+      } else if (AudCnt==1) {
+        print "Info|Keeping only audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "code"]
         AudioCommand=Track[i, "id"]
       # Special case if there were multiple tracks, none were selected, and this is the last one.
-      } else if(AudioCommand=="" && Track[i, "id"]==AudCnt) {
-        if (Debug) print "Debug|Keeping last audio track:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
+      } else if (AudioCommand=="" && Track[i, "id"]==AudCnt) {
+        print "Info|Keeping last audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "code"]
         AudioCommand=Track[i, "id"]
       } else {
         if (Debug) print "Debug|\tRemove:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
@@ -195,7 +198,8 @@ BEGIN {
     } else {
       if (Track[i, "typ"]=="subtitles") {
         if (SubsKeep~Track[i, "lang"]) {
-          if (Debug) print "Debug|Keep:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"]
+          SubsKpCnt++
+          print "Info|Keeping subtitle track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "code"]
           if (SubsCommand=="") {
             SubsCommand=Track[i, "id"]
           } else {
@@ -207,8 +211,10 @@ BEGIN {
       }
     }
   }
-  # This should never happen, but belt and suspenders
+  if (!AudKpCnt) AudKpCnt=0; if (!SubsKpCnt) SubsKpCnt=0
+  print "Info|Kept tracks: "AudKpCnt+SubsKpCnt+VidCnt" (audio: "AudKpCnt", subtitles: "SubsKpCnt")"
   if (AudioCommand=="") {
+    # This should never happen, but belt and suspenders
     CommandLine="-A"
   } else {
     CommandLine="-a "AudioCommand
@@ -227,8 +233,8 @@ BEGIN {
 if [ -s "$NEWMOVIE" ]; then
   # Use Recycle Bin if configured
   if [ "$RECYCLEBIN" ]; then
-    [ $DEBUG -eq 1 ] && echo "Debug|Moving: \"$TEMPMOVIE\" to \"$RECYCLEBIN\"" | log
-    mv "$TEMPMOVIE" "$RECYCLEBIN" | log
+    [ $DEBUG -eq 1 ] && echo "Debug|Moving: \"$TEMPMOVIE\" to \"$RECYCLEBIN/$(basename "$MOVIE")"\" | log
+    mv "$TEMPMOVIE" "$RECYCLEBIN/$(basename "$MOVIE")" | log
   else
     [ $DEBUG -eq 1 ] && echo "Debug|Deleting: \"$TEMPMOVIE\"" | log
     rm "$TEMPMOVIE" | log
@@ -273,4 +279,4 @@ else
   exit 11
 fi
 
-echo "Info|Done" | log
+echo "Info|Completed in $(($SECONDS/60))m $(($SECONDS%60))s" | log
