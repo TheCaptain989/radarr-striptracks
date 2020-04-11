@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Video remuxing script designed for use with Radarr
+# Video remuxing script designed for use with Radarr and Sonarr
 # Automatically strips out unwanted audio and subtitle streams, keeping only the desired languages.
 #  https://github.com/TheCaptain989/radarr-striptracks
+#  https://github.com/TheCaptain989/sonarr-striptracks
 
 # Adapated and corrected from Endoro's post 1/5/2014:
 #  https://forum.videohelp.com/threads/343271-BULK-remove-non-English-tracks-from-MKV-container#post2292889
@@ -15,32 +16,48 @@
 
 # Exit codes:
 #  0 - success
-#  1 - no movie file specified on command line
+#  1 - no video file specified on command line
 #  2 - no audio language specified on command line
 #  3 - no subtitle language specified on command line
-#  5 - specified movie file not found
+#  4 - mkvmerge not found
+#  5 - specified video file not found
 # 10 - remuxing completed, but no output file found
-# 11 - success, but unable to access Radarr API due to missing Movie ID
-# 12 - success, but unable to access Radarr API due to missing config file
 
-SCRIPT=$(basename "$0")
-RADARR_CONFIG=/config/config.xml
-LOG=/config/logs/striptracks.txt
-MAXLOGSIZE=1024000
-MAXLOG=4
-DEBUG=0
-MOVIE="$radarr_moviefile_path"
-TEMPMOVIE="$MOVIE.tmp"
-NEWMOVIE="${MOVIE%.*}.mkv"
-TITLE=$(basename "${MOVIE%.*}")
-RECYCLEBIN=$(sqlite3 /config/nzbdrone.db 'SELECT Value FROM Config WHERE Key="recyclebin"')
+### Variables
+export striptracks_script=$(basename "$0")
+export striptracks_arr_config=/config/config.xml
+export striptracks_log=/config/logs/striptracks.txt
+export striptracks_maxlogsize=512000
+export striptracks_maxlog=4
+export striptracks_debug=0
+export striptracks_video="$radarr_moviefile_path"
+if [ "$striptracks_video" ]; then
+  export striptracks_type="Radarr"
+  export striptracks_video_type="movie"
+else
+  export striptracks_video="$sonarr_episodefile_path"
+  if [ "$striptracks_video" ]; then
+    export striptracks_type="Sonarr"
+    export striptracks_video_type="series"
+  fi
+fi
+export striptracks_api="Rescan${striptracks_video_type^}"
+export striptracks_json_key="${striptracks_video_type}Id"
+export striptracks_video_idname="${striptracks_type,,}_${striptracks_video_type}_id"
+export striptracks_video_id="${!striptracks_video_idname}"
+export striptracks_tempvideo="$striptracks_video.tmp"
+export striptracks_newvideo="${striptracks_video%.*}.mkv"
+export striptracks_title=$(basename "${striptracks_video%.*}")
+export striptracks_recyclebin=$(sqlite3 /config/nzbdrone.db 'SELECT Value FROM Config WHERE Key="recyclebin"')
 
+### Functions
 function usage {
   usage="
-$SCRIPT
-Video remuxing script designed for use with Radarr
+$striptracks_script
+Video remuxing script designed for use with Radarr and Sonarr
 
 Source: https://github.com/TheCaptain989/radarr-striptracks
+        https://github.com/TheCaptain989/sonarr-striptracks
 
 Usage:
   $0 [-d] <audio_languages> <subtitle_languages>
@@ -55,34 +72,38 @@ Options:
   -d    # enable debug logging
 
 Examples:
-  $SCRIPT :eng:und :eng              # keep English and Undetermined audio and
+  $striptracks_script :eng:und :eng              # keep English and Undetermined audio and
                                               English subtitles
-  $SCRIPT :eng \"\"                    # keep English audio and no subtitles
-  $SCRIPT -d :eng:kor:jpn :eng:spa   # Enable debugging, keeping English, Korean,
+  $striptracks_script :eng \"\"                    # keep English audio and no subtitles
+  $striptracks_script -d :eng:kor:jpn :eng:spa   # Enable debugging, keeping English, Korean,
                                               and Japanese audio, and English and
                                               Spanish subtitles
 "
-  echo "$usage"
+  >&2 echo "$usage"
 }
-
-# Can still go over MAXLOG if read line is too long
+# Can still go over striptracks_maxlog if read line is too long
 #  Must include whole function in subshell for read to work!
 function log {(
   while read
   do
-    echo $(date +"%Y-%-m-%-d %H:%M:%S.%1N")\|"$REPLY" >>"$LOG"
-    FILESIZE=`wc -c "$LOG" | cut -d' ' -f1`
-    if [ $FILESIZE -gt $MAXLOGSIZE ]
+    echo $(date +"%Y-%-m-%-d %H:%M:%S.%1N")\|"$REPLY" >>"$striptracks_log"
+    FILESIZE=`wc -c "$striptracks_log" | cut -d' ' -f1`
+    if [ $FILESIZE -gt $striptracks_maxlogsize ]
     then
-      for i in `seq $((MAXLOG-1)) -1 0`
+      for i in `seq $((striptracks_maxlog-1)) -1 0`
       do
-        [ -f "${LOG::-4}.$i.txt" ] && mv "${LOG::-4}."{$i,$((i+1))}".txt"
+        [ -f "${striptracks_log::-4}.$i.txt" ] && mv "${striptracks_log::-4}."{$i,$((i+1))}".txt"
       done
-        [ -f "${LOG::-4}.txt" ] && mv "${LOG::-4}.txt" "${LOG::-4}.0.txt"
-      touch "$LOG"
+        [ -f "${striptracks_log::-4}.txt" ] && mv "${striptracks_log::-4}.txt" "${striptracks_log::-4}.0.txt"
+      touch "$striptracks_log"
     fi
   done
 )}
+# Inspired by https://stackoverflow.com/questions/893585/how-to-parse-xml-in-bash
+read_xml () {
+  local IFS=\>
+  read -d \< ENTITY CONTENT
+}
 
 # Process options
 while getopts ":d" opt; do
@@ -90,33 +111,26 @@ while getopts ":d" opt; do
     d ) # For debug purposes only
       MSG="Debug|Enabling debug logging."
       echo "$MSG" | log
-      echo "$MSG"
-      DEBUG=1
+      >&2 echo "$MSG"
+      striptracks_debug=1
       printenv | sort | sed 's/^/Debug|/' | log
     ;;
   esac
 done
 shift $((OPTIND -1))
 
-if [ -z "$MOVIE" ]; then
-  MSG="Error|No movie file specified! Not called from Radarr?"
+if [ -z "$striptracks_video" ]; then
+  MSG="Error|No video file specified! Not called from Radarr/Sonarr?"
   echo "$MSG" | log
-  echo "$MSG"
+  >&2 echo "$MSG"
   usage 
   exit 1
-fi
-
-if [ ! -f "$MOVIE" ]; then
-  MSG="Error|Input file not found: \"$MOVIE\""
-  echo "$MSG" | log
-  echo "$MSG"
-  exit 5
 fi
 
 if [ -z "$1" ]; then
   MSG="Error|No audio languages specified!"
   echo "$MSG" | log
-  echo "$MSG"
+  >&2 echo "$MSG"
   usage
   exit 2
 fi
@@ -124,14 +138,32 @@ fi
 if [ -z "$2" ]; then
   MSG="Error|No subtitles languages specified!"
   echo "$MSG" | log
-  echo "$MSG"
+  >&2 echo "$MSG"
   usage
   exit 3
 fi
 
-MSG="Info|Radarr event: $radarr_eventtype, Movie: $MOVIE, AudioKeep: $1, SubsKeep: $2"
+if [ ! -f "/usr/bin/mkvmerge" ]; then
+  MSG="Error|/usr/bin/mkvmerge is required by this script"
+  echo "$MSG" | log
+  >&2 echo "$MSG"
+  exit 4
+fi
+
+if [ ! -f "$striptracks_video" ]; then
+  MSG="Error|Input file not found: \"$striptracks_video\""
+  echo "$MSG" | log
+  >&2 echo "$MSG"
+  exit 5
+fi
+
+if [ "$striptracks_type" = "Radarr" ]; then 
+  MSG="Info|Radarr event: $radarr_eventtype, Movie: $striptracks_video, AudioKeep: $1, SubsKeep: $2"
+else
+  MSG="Info|Sonarr event: $sonarr_eventtype, Episode: $striptracks_video, AudioKeep: $1, SubsKeep: $2"
+fi
 echo "$MSG" | log
-echo "" | awk -v Debug=$DEBUG -v OrgVideo="$MOVIE" -v TempVideo="$TEMPMOVIE" -v MKVVideo="$NEWMOVIE" -v Title="$TITLE" -v AudioKeep="$1" -v SubsKeep="$2" '
+echo "" | awk -v Debug=$striptracks_debug -v OrgVideo="$striptracks_video" -v TempVideo="$striptracks_tempvideo" -v MKVVideo="$striptracks_newvideo" -v Title="$striptracks_title" -v AudioKeep="$1" -v SubsKeep="$2" '
 BEGIN {
   MKVMerge="/usr/bin/mkvmerge"
   FS="[\t\n: ]"
@@ -145,7 +177,7 @@ BEGIN {
   if (Debug) print "Debug|Renaming: \""OrgVideo"\" to \""TempVideo"\""
   Result=system("mv \""OrgVideo"\" \""TempVideo"\"")
   if (Result) {
-    print "Error|"Result" renaming \""OrgVideo"\""
+    print "Error|"Result" renaming \""OrgVideo"\"" > "/dev/stderr"
     exit
   }
 
@@ -158,7 +190,10 @@ BEGIN {
       NoTr++
       Track[NoTr, "id"]=Fields[3]
       Track[NoTr, "typ"]=Fields[5]
-      Track[NoTr, "code"]=Line; sub(/^[^\(]+/,"",Track[NoTr, "code"]); sub(/[^\)]+$/,"",Track[NoTr, "code"])
+      if (Fields[6]~/^\(/) {
+        Track[NoTr, "code"]=substr(Line,1,match(Line,/\)/))
+        sub(/^[^\(]+/,"",Track[NoTr, "code"])
+      }
       if (Track[NoTr, "typ"]=="video") VidCnt++
       if (Track[NoTr, "typ"]=="audio") AudCnt++
       if (Track[NoTr, "typ"]=="subtitles") SubsCnt++
@@ -169,7 +204,7 @@ BEGIN {
       Chapters=Fields[3]
     }
   }
-  if (!NoTr) { print "Error|No tracks found in \""TempVideo"\""; exit }
+  if (!NoTr) { print "Error|No tracks found in \""TempVideo"\"" > "/dev/stderr"; exit }
   if (!AudCnt) AudCnt=0; if (!SubsCnt) SubsCnt=0
   print "Info|Original tracks: "NoTr" (audio: "AudCnt", subtitles: "SubsCnt")"
   if (Chapters) print "Info|Chapters: "Chapters
@@ -226,57 +261,56 @@ BEGIN {
   }
   if (Debug) print "Debug|Executing: "MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\""
   Result=system(MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\"")
-  if (Result>1) print "Error|"Result" remuxing \""TempVideo"\""
+  if (Result>1) print "Error|"Result" remuxing \""TempVideo"\"" > "/dev/stderr"
 }' | log
 
 # Check for script completion and non-empty file
-if [ -s "$NEWMOVIE" ]; then
+if [ -s "$striptracks_newvideo" ]; then
   # Use Recycle Bin if configured
-  if [ "$RECYCLEBIN" ]; then
-    [ $DEBUG -eq 1 ] && echo "Debug|Moving: \"$TEMPMOVIE\" to \"$RECYCLEBIN/$(basename "$MOVIE")"\" | log
-    mv "$TEMPMOVIE" "$RECYCLEBIN/$(basename "$MOVIE")" | log
+  if [ "$striptracks_recyclebin" ]; then
+    [ $striptracks_debug -eq 1 ] && echo "Debug|Moving: \"$striptracks_tempvideo\" to \"${striptracks_recyclebin%/}/$(basename "$striptracks_video")"\" | log
+    mv "$striptracks_tempvideo" "${striptracks_recyclebin%/}/$(basename "$striptracks_video")" | log
   else
-    [ $DEBUG -eq 1 ] && echo "Debug|Deleting: \"$TEMPMOVIE\"" | log
-    rm "$TEMPMOVIE" | log
+    [ $striptracks_debug -eq 1 ] && echo "Debug|Deleting: \"$striptracks_tempvideo\"" | log
+    rm "$striptracks_tempvideo" | log
   fi
 else
-  echo "Error|Unable to locate or invalid remuxed file: \"$NEWMOVIE\". Undoing rename." | log
-  [ $DEBUG -eq 1 ] && echo "Debug|Renaming: \"$TEMPMOVIE\" to \"$MOVIE\"" | log
-  mv -f "$TEMPMOVIE" "$MOVIE" | log
+  MSG="Error|Unable to locate or invalid remuxed file: \"$striptracks_newvideo\". Undoing rename."
+  echo "$MSG" | log
+  >&2 echo "$MSG"
+  [ $striptracks_debug -eq 1 ] && echo "Debug|Renaming: \"$striptracks_tempvideo\" to \"$striptracks_video\"" | log
+  mv -f "$striptracks_tempvideo" "$striptracks_video" | log
   exit 10
 fi
 
-# Call Radarr API to RescanMovie
-if [ ! -z "$radarr_movie_id" ]; then
-  if [ -f "$RADARR_CONFIG" ]; then
-    # Inspired by https://stackoverflow.com/questions/893585/how-to-parse-xml-in-bash
-    read_xml () {
-      local IFS=\>
-      read -d \< ENTITY CONTENT
-    }
-    
-    # Read Radarr config.xml
-    while read_xml; do
-      [[ $ENTITY = "Port" ]] && PORT=$CONTENT
-      [[ $ENTITY = "UrlBase" ]] && URLBASE=$CONTENT
-      [[ $ENTITY = "BindAddress" ]] && BINDADDRESS=$CONTENT
-      [[ $ENTITY = "ApiKey" ]] && APIKEY=$CONTENT
-    done < $RADARR_CONFIG
-    
-    [[ $BINDADDRESS = "*" ]] && BINDADDRESS=localhost
-    
-    [ $DEBUG -eq 1 ] && echo "Debug|Calling Radarr API 'RescanMovie' using movie id '$radarr_movie_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY'" | log
+# Call *arr API to RescanMovie/RescanSeries
+if [ -f "$striptracks_arr_config" ]; then
+  # Read *arr config.xml
+  while read_xml; do
+    [[ $ENTITY = "Port" ]] && PORT=$CONTENT
+    [[ $ENTITY = "UrlBase" ]] && URLBASE=$CONTENT
+    [[ $ENTITY = "BindAddress" ]] && BINDADDRESS=$CONTENT
+    [[ $ENTITY = "ApiKey" ]] && APIKEY=$CONTENT
+  done < $striptracks_arr_config
+  
+  [[ $BINDADDRESS = "*" ]] && BINDADDRESS=localhost
+  
+  if [ "$striptracks_video_id" ]; then
+    [ $striptracks_debug -eq 1 ] && echo "Debug|Calling $striptracks_type API '$striptracks_api' using series id '$striptracks_video_id' and URL 'http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY'" | log
     # Calling API
-    RESULT=$(curl -s -d "{name: 'RescanMovie', movieId: $radarr_movie_id}" -H "Content-Type: application/json" \
-      -X POST http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY | jq -c '. | {JobId: .id, MovieId: .body.movieId, Message: .body.completionMessage, DateStarted: .queued}')
-    [ $DEBUG -eq 1 ] && echo "Debug|API returned: $RESULT" | log
+    RESULT=$(curl -s -d "{name: '$striptracks_api', $striptracks_json_key: $striptracks_video_id}" -H "Content-Type: application/json" \
+      -X POST http://$BINDADDRESS:$PORT$URLBASE/api/command?apikey=$APIKEY | jq -c ". | {JobId: .id, ${striptracks_json_key^}: .body.$striptracks_json_key, Message: .body.completionMessage, DateStarted: .queued}")
+    [ $striptracks_debug -eq 1 ] && echo "Debug|API returned: $RESULT" | log
   else
-    echo "Warn|Unable to locate Radarr config file: '$RADARR_CONFIG'" | log
-    exit 12
+    MSG="Warn|Missing environment variable $striptracks_video_idname"
+    echo "$MSG" | log
+    >&2 echo "$MSG"
   fi
 else
-  echo "Warn|Missing environment variable radarr_movie_id" | log
-  exit 11
+  MSG="Warn|Unable to locate $striptracks_type config file: '$striptracks_arr_config'"
+  echo "$MSG" | log
+  >&2 echo "$MSG"
 fi
 
-echo "Info|Completed in $(($SECONDS/60))m $(($SECONDS%60))s" | log
+MSG="Info|Completed in $(($SECONDS/60))m $(($SECONDS%60))s"
+echo "$MSG" | log
