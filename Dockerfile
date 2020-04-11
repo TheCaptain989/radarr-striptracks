@@ -2,6 +2,7 @@
 # BRANCH=(radarr|sonarr)
 
 # Use the offical LinuxServer.io image
+ARG BRANCH
 FROM linuxserver/${BRANCH:-radarr}:latest
 
 LABEL maintainer="TheCaptain989"
@@ -10,6 +11,7 @@ LABEL maintainer="TheCaptain989"
 ARG BUILD_DATE
 ARG VCS_REF
 ARG VERSION
+ARG BRANCH
 
 # Build-time metadata as defined at http://label-schema.org
 LABEL org.label-schema.name="thecaptain989/${BRANCH:-radarr}" \
