@@ -3,7 +3,6 @@
 # Video remuxing script designed for use with Radarr and Sonarr
 # Automatically strips out unwanted audio and subtitle streams, keeping only the desired languages.
 #  https://github.com/TheCaptain989/radarr-striptracks
-#  https://github.com/TheCaptain989/sonarr-striptracks
 
 # Adapated and corrected from Endoro's post 1/5/2014:
 #  https://forum.videohelp.com/threads/343271-BULK-remove-non-English-tracks-from-MKV-container#post2292889
@@ -57,7 +56,6 @@ $striptracks_script
 Video remuxing script designed for use with Radarr and Sonarr
 
 Source: https://github.com/TheCaptain989/radarr-striptracks
-        https://github.com/TheCaptain989/sonarr-striptracks
 
 Usage:
   $0 [-d] <audio_languages> <subtitle_languages>
