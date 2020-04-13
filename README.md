@@ -1,26 +1,33 @@
 [![](https://images.microbadger.com/badges/image/thecaptain989/radarr.svg)](https://microbadger.com/images/thecaptain989/radarr "Get your own image badge on microbadger.com")
 [![](https://images.microbadger.com/badges/version/thecaptain989/radarr.svg)](https://microbadger.com/images/thecaptain989/radarr "Get your own version badge on microbadger.com")
 
-A Radarr Docker container with a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages, using mkvmerge. Chapters, if they exist, are preserved. It also sets the Title attribute in the MKV to the filename minus its extension.
+A Radarr/Sonarr Docker container with a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages, using mkvmerge. Chapters, if they exist, are preserved. It also sets the Title attribute in the MKV to the filename minus its extension.
 
-# First Things First
-Configure the Docker container with all the port, volume, and environment settings from the original container documentation here:  
-**[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr)**
+**One unified script works in either Radarr or Sonarr.  Both containers are auto-built when the script is updated on Github.**
 
-This container supports Linux OSes only.
+# Installation
+1. Either container can be downloaded from Docker Hub:  
+   **[thecaptain989/radarr](https://hub.docker.com/r/thecaptain989/radarr "TheCaptain989's Radarr container")**  
+   **[thecaptain989/sonarr](https://hub.docker.com/r/thecaptain989/sonarr "TheCaptain989's Sonarr container")**
 
-## Usage
+>NOTE: These containers supports Linux OSes only.
 
-After all of the above configuration is complete, to use mkvmerge, configure a custom script from the Settings->Connect screen to call:
+2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
+   **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "Docker container")**  
+   **[linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "Docker container")**
 
-**`/usr/local/bin/striptracks.sh`**
+3. After all of the above configuration is complete, to use mkvmerge, configure a custom script from the Settings->Connect screen to call:
+
+   **`/usr/local/bin/striptracks.sh`**
 
 Add the codes for the audio and subtitle languages you want to keep as Arguments, as specified below.
 
+## Usage
+
 The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name.
 
-If you've configured the Radarr Recycle Bin path correctly, the original video will be moved there.  
-**NOTE:** If you have *not* configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
+If you've configured the Radarr/Sonarr Recycle Bin path correctly, the original video will be moved there.  
+>**NOTE:** If you have *not* configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
 
 ### Syntax
 
@@ -28,7 +35,7 @@ The script accepts two arguments and one option:
 
 `[-d] <audio_languages> <subtitle_languages>`
 
-The arguments are language codes in [ISO639-2](https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes) format. These are three letter abbreviations prefixed with a colon ':', such as:
+The arguments are language codes in [ISO639-2](https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes "List of ISO 639-2 codes") format. These are three letter abbreviations prefixed with a colon ':', such as:
 
 * :eng
 * :fre
@@ -50,27 +57,27 @@ The `-d` option enables debug logging.
     -d :eng:kor:jpn :eng:spa   # Enable debugging, keeping English, Korean, and Japanese audio, and English and 
                                  Spanish subtitles
 
-![striptracks](https://raw.githubusercontent.com/TheCaptain989/striptracks/master/images/striptracks.png)
+![striptracks](https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/master/images/striptracks.png "Radarr/Sonarr custom script settings")
 
 ### Logs
 A log file is created for the script activity called:
 
 `/config/logs/striptracks.txt`
 
-This log can be inspected or downloaded from the Radarr GUI under System->Logs->Files
+This log can be inspected or downloaded from the Radarr/Sonarr GUI under System->Logs->Files
 
-Log rotation is performed, and 5 log files of 1MB each are kept, matching Radarr's log retention.
+Script errors will show up in both the script log and the native Radarr/Sonarr log.
 
-If debug logging is enabled, the log file can grow very large very quickly.
+Log rotation is performed, and 5 log files of 512KB each are kept.  
+If debug logging is enabled, the log file can grow very large very quickly.  *Do not leave debug logging enabled permanently.*
 
 ## Credits
 
 This would not be possible without the following:
 
-[Radarr](http://radarr.video/)
-
-[LinuxServer.io Radarr](https://hub.docker.com/r/linuxserver/radarr) container
-
-[mkvtoolnix](https://mkvtoolnix.download/) by Moritz Bunkus
-
+[Radarr](http://radarr.video/ "Radarr homepage")  
+[Sonarr](http://sonarr.tv/ "Sonarr homepage")  
+[LinuxServer.io Radarr](https://hub.docker.com/r/linuxserver/radarr "Docker container") container  
+[LinuxServer.io Sonarr](https://hub.docker.com/r/linuxserver/sonarr "Docker container") container  
+[MKVToolNix](https://mkvtoolnix.download/ "MKVToolNix homepage") by Moritz Bunkus  
 The AWK script parsing mkvmerge output is adapted from Endoro's post on [VideoHelp](https://forum.videohelp.com/threads/343271-BULK-remove-non-English-tracks-from-MKV-container#post2292889).

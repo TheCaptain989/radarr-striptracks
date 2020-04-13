@@ -1,5 +1,9 @@
+# Required environment variables are set in Docker Hub
+# BRANCH=(radarr|sonarr)
+
 # Use the offical LinuxServer.io image
-FROM linuxserver/radarr:latest
+ARG BRANCH
+FROM linuxserver/${BRANCH:-radarr}:latest
 
 LABEL maintainer="TheCaptain989"
 
@@ -7,11 +11,12 @@ LABEL maintainer="TheCaptain989"
 ARG BUILD_DATE
 ARG VCS_REF
 ARG VERSION
+ARG BRANCH
 
 # Build-time metadata as defined at http://label-schema.org
-LABEL org.label-schema.name="thecaptain989/radarr" \
-      org.label-schema.description="The LinuxServer.io Radarr container plus mkvtoolniox and script for remuxing video files" \
-      org.label-schema.url="https://hub.docker.com/r/thecaptain989/radarr" \
+LABEL org.label-schema.name="thecaptain989/${BRANCH:-radarr}" \
+      org.label-schema.description="The LinuxServer.io ${BRANCH:-radarr} container plus mkvtoolniox and script for remuxing video files" \
+      org.label-schema.url="https://hub.docker.com/r/thecaptain989/${BRANCH:-radarr}" \
       org.label-schema.version=$VERSION \
       org.label-schema.build-date=$BUILD_DATE \
       org.label-schema.vendor="TheCaptain989" \
@@ -20,9 +25,9 @@ LABEL org.label-schema.name="thecaptain989/radarr" \
       org.label-schema.vcs-ref=$VCS_REF
 
 # Build-time metadata as defined at https://github.com/opencontainers/image-spec
-LABEL org.opencontainers.image.title="thecaptain989/radarr" \
-      org.opencontainers.image.description="The LinuxServer.io Radarr container plus mkvtoolniox and script for remuxing video files" \
-      org.opencontainers.image.url="https://hub.docker.com/r/thecaptain989/radarr" \
+LABEL org.opencontainers.image.title="thecaptain989/${BRANCH:-radarr}" \
+      org.opencontainers.image.description="The LinuxServer.io ${BRANCH:-radarr} container plus mkvtoolniox and script for remuxing video files" \
+      org.opencontainers.image.url="https://hub.docker.com/r/thecaptain989/${BRANCH:-radarr}" \
       org.opencontainers.image.version=$VERSION \
       org.opencontainers.image.created=$BUILD_DATE \
       org.opencontainers.image.vendor="TheCaptain989" \
