@@ -6,9 +6,9 @@ A Radarr/Sonarr Docker container with a script to automatically strip out unwant
 **One unified script works in either Radarr or Sonarr.  Both containers are auto-built when the script is updated on Github.**
 
 # Installation
-1. Either container can be downloaded from Docker Hub:  
-   **[thecaptain989/radarr](https://hub.docker.com/r/thecaptain989/radarr "TheCaptain989's Radarr container")**  
-   **[thecaptain989/sonarr](https://hub.docker.com/r/thecaptain989/sonarr "TheCaptain989's Sonarr container")**
+1. Pull your selected container ([thecaptain989/radarr](https://hub.docker.com/r/thecaptain989/radarr "TheCaptain989's Radarr container") or [thecaptain989/sonarr](https://hub.docker.com/r/thecaptain989/sonarr "TheCaptain989's Sonarr container")) from Docker Hub:  
+  `docker pull thecaptain989/radarr:latest`   OR  
+  `docker pull thecaptain989/sonarr:latest`
 
 >NOTE: These containers supports Linux OSes only.
 
@@ -16,11 +16,15 @@ A Radarr/Sonarr Docker container with a script to automatically strip out unwant
    **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "Docker container")**  
    **[linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "Docker container")**
 
-3. After all of the above configuration is complete, to use mkvmerge, configure a custom script from the Settings->Connect screen to call:
+3. After all of the above configuration is complete, to use mkvmerge:
+  a. Configure a custom script from the Settings->Connect screen and type the following in the Path field:
 
    **`/usr/local/bin/striptracks.sh`**
 
-Add the codes for the audio and subtitle languages you want to keep as Arguments, as specified below.
+  b. Add the codes for the audio and subtitle languages you want to keep as Arguments (details in the [Syntax](./README.md#syntax) section below):
+
+   <ins>Example</ins>  
+   **`:eng:und :eng`**
 
 ## Usage
 
