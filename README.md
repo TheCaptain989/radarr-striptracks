@@ -16,15 +16,15 @@ A Radarr/Sonarr Docker container with a script to automatically strip out unwant
    **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "Docker container")**  
    **[linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "Docker container")**
 
-3. After all of the above configuration is complete, to use mkvmerge:
-  a. Configure a custom script from the Settings->Connect screen and type the following in the Path field:
+3. After all of the above configuration is complete, to use mkvmerge:  
+   1. Configure a custom script from the Settings->Connect screen and type the following in the Path field:  
 
-   **`/usr/local/bin/striptracks.sh`**
+      **`/usr/local/bin/striptracks.sh`**  
+  
+   2. Add the codes for the audio and subtitle languages you want to keep as Arguments (details in the [Syntax](./README.md#syntax) section below):
 
-  b. Add the codes for the audio and subtitle languages you want to keep as Arguments (details in the [Syntax](./README.md#syntax) section below):
-
-   <ins>Example</ins>  
-   **`:eng:und :eng`**
+      <ins>Example</ins>  
+      **`:eng:und :eng`**
 
 ## Usage
 
