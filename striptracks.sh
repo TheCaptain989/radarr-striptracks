@@ -14,8 +14,9 @@
 #  awk
 #  curl
 #  jq
-#  wc
-#  cut
+#  numfmt
+#  stat
+#  nice
 
 # Exit codes:
 #  0 - success
@@ -28,6 +29,7 @@
 
 ### Variables
 export striptracks_script=$(basename "$0")
+export striptracks_pid=$$
 export striptracks_arr_config=/config/config.xml
 export striptracks_log=/config/logs/striptracks.txt
 export striptracks_maxlogsize=512000
@@ -95,8 +97,8 @@ Examples:
 function log {(
   while read
   do
-    echo $(date +"%Y-%-m-%-d %H:%M:%S.%1N")\|"$REPLY" >>"$striptracks_log"
-    local FILESIZE=`wc -c "$striptracks_log" | cut -d' ' -f1`
+    echo $(date +"%Y-%-m-%-d %H:%M:%S.%1N")\|"[$striptracks_pid]$REPLY" >>"$striptracks_log"
+    local FILESIZE=$(stat -c %s "$striptracks_log")
     if [ $FILESIZE -gt $striptracks_maxlogsize ]
     then
       for i in $(seq $((striptracks_maxlog-1)) -1 0); do
@@ -217,7 +219,8 @@ if [ ! -f "$striptracks_video" ]; then
   exit 5
 fi
 
-MSG="Info|${striptracks_type} event: ${!striptracks_eventtype}, Video: $striptracks_video, AudioKeep: $1, SubsKeep: $2"
+FILESIZE=$(numfmt --to iec --format "%.3f" $(stat -c %s "$striptracks_video"))
+MSG="Info|${striptracks_type} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $FILESIZE, AudioKeep: $1, SubsKeep: $2"
 echo "$MSG" | log
 echo "" | awk -v Debug=$striptracks_debug \
 -v OrgVideo="$striptracks_video" \
@@ -283,10 +286,12 @@ BEGIN {
         }
       # Special case if there is only one audio track, even if it was not specified
       } else if (AudCnt==1) {
+        AudKpCnt++
         print "Info|Keeping only audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "code"]
         AudioCommand=Track[i, "id"]
       # Special case if there were multiple tracks, none were selected, and this is the last one.
       } else if (AudioCommand=="" && Track[i, "id"]==AudCnt) {
+        AudKpCnt++
         print "Info|Keeping last audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "code"]
         AudioCommand=Track[i, "id"]
       } else {
@@ -321,8 +326,8 @@ BEGIN {
   } else {
     CommandLine=CommandLine" -s "SubsCommand
   }
-  if (Debug) print "Debug|Executing: "MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\""
-  Result=system(MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\"")
+  if (Debug) print "Debug|Executing: nice "MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\""
+  Result=system("nice "MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\"")
   if (Result>1) print "Error|"Result" remuxing \""TempVideo"\"" > "/dev/stderr"
 }' | log
 
@@ -344,6 +349,10 @@ else
   mv -f "$striptracks_tempvideo" "$striptracks_video" | log
   exit 10
 fi
+
+FILESIZE=$(numfmt --to iec --format "%.3f" $(stat -c %s "$striptracks_newvideo"))
+MSG="Info|New size: $FILESIZE"
+echo "$MSG" | log
 
 # Call *arr API to RescanMovie/RescanSeries
 if [ -f "$striptracks_arr_config" ]; then
@@ -387,7 +396,7 @@ if [ -f "$striptracks_arr_config" ]; then
                     -X PUT http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_video_id?apikey=$striptracks_apikey)
                   [ $striptracks_debug -eq 1 ] && echo "Debug|API returned: $RESULT" | log
                   if [ "$(echo $RESULT | jq -crM ${striptracks_json_quality_root}.quality.quality.name)" = "Unknown" ]; then
-                    MSG="Warn|Unable to update $striptracks_type $striptracks_api_endpoint to quality '$(echo $ORGQUALITY | jq -crM .quality.name)'"
+                    MSG="Warn|Unable to update $striptracks_type $striptracks_api_endpoint ID $striptracks_video_id to quality '$(echo $ORGQUALITY | jq -crM .quality.name)'"
                     echo "$MSG" | log
                     >&2 echo "$MSG"
                   fi
