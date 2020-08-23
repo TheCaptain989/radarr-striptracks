@@ -283,10 +283,12 @@ BEGIN {
         }
       # Special case if there is only one audio track, even if it was not specified
       } else if (AudCnt==1) {
+        AudKpCnt++
         print "Info|Keeping only audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "code"]
         AudioCommand=Track[i, "id"]
       # Special case if there were multiple tracks, none were selected, and this is the last one.
       } else if (AudioCommand=="" && Track[i, "id"]==AudCnt) {
+        AudKpCnt++
         print "Info|Keeping last audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "code"]
         AudioCommand=Track[i, "id"]
       } else {
