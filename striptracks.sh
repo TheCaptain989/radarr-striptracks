@@ -14,8 +14,8 @@
 #  awk
 #  curl
 #  jq
-#  wc
-#  cut
+#  numfmt
+#  stat
 
 # Exit codes:
 #  0 - success
@@ -28,6 +28,7 @@
 
 ### Variables
 export striptracks_script=$(basename "$0")
+export striptracks_pid=$$
 export striptracks_arr_config=/config/config.xml
 export striptracks_log=/config/logs/striptracks.txt
 export striptracks_maxlogsize=512000
@@ -95,8 +96,8 @@ Examples:
 function log {(
   while read
   do
-    echo $(date +"%Y-%-m-%-d %H:%M:%S.%1N")\|"$REPLY" >>"$striptracks_log"
-    local FILESIZE=`wc -c "$striptracks_log" | cut -d' ' -f1`
+    echo $(date +"%Y-%-m-%-d %H:%M:%S.%1N")\|"[$striptracks_pid]$REPLY" >>"$striptracks_log"
+    local FILESIZE=$(stat -c %s "$striptracks_log")
     if [ $FILESIZE -gt $striptracks_maxlogsize ]
     then
       for i in $(seq $((striptracks_maxlog-1)) -1 0); do
@@ -217,7 +218,8 @@ if [ ! -f "$striptracks_video" ]; then
   exit 5
 fi
 
-MSG="Info|${striptracks_type} event: ${!striptracks_eventtype}, Video: $striptracks_video, AudioKeep: $1, SubsKeep: $2"
+FILESIZE=$(numfmt --to iec --format "%.3f" $(stat -c %s "$striptracks_video"))
+MSG="Info|${striptracks_type} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $FILESIZE, AudioKeep: $1, SubsKeep: $2"
 echo "$MSG" | log
 echo "" | awk -v Debug=$striptracks_debug \
 -v OrgVideo="$striptracks_video" \
@@ -346,6 +348,10 @@ else
   mv -f "$striptracks_tempvideo" "$striptracks_video" | log
   exit 10
 fi
+
+FILESIZE=$(numfmt --to iec --format "%.3f" $(stat -c %s "$striptracks_newvideo"))
+MSG="Info|New size: $FILESIZE"
+echo "$MSG" | log
 
 # Call *arr API to RescanMovie/RescanSeries
 if [ -f "$striptracks_arr_config" ]; then
