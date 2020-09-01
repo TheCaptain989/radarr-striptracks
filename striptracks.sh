@@ -396,7 +396,7 @@ if [ -f "$striptracks_arr_config" ]; then
                     -X PUT http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_video_id?apikey=$striptracks_apikey)
                   [ $striptracks_debug -eq 1 ] && echo "Debug|API returned: $RESULT" | log
                   if [ "$(echo $RESULT | jq -crM ${striptracks_json_quality_root}.quality.quality.name)" = "Unknown" ]; then
-                    MSG="Warn|Unable to update $striptracks_type $striptracks_api_endpoint ID $striptracks_video_id to quality '$(echo $ORGQUALITY | jq -crM .quality.name)'"
+                    MSG="Warn|Unable to update $striptracks_type $striptracks_api_endpoint '$striptracks_title' to quality '$(echo $ORGQUALITY | jq -crM .quality.name)'"
                     echo "$MSG" | log
                     >&2 echo "$MSG"
                   fi
