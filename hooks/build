@@ -16,9 +16,9 @@ echo "DOCKERFILE_PATH=$DOCKERFILE_PATH"
 echo "IMAGE_NAME=$IMAGE_NAME"
 echo "BRANCH=$BRANCH"
 
-docker buildx create --use --name $IMAGE_NAME node-amd64
-docker buildx create --append --name $IMAGE_NAME node-arm64
-docker buildx create --append --name $IMAGE_NAME node-arm
+docker buildx create --use --name striptracks node-amd64
+docker buildx create --append --name striptracks node-arm64
+docker buildx create --append --name striptracks node-arm
 docker buildx \
        build --platform linux/arm/v7,linux/arm64/v8,linux/amd64 \
              --build-arg VERSION=$VERSION \
