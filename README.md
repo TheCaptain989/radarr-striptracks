@@ -1,5 +1,5 @@
-[![](https://images.microbadger.com/badges/image/thecaptain989/radarr.svg)](https://microbadger.com/images/thecaptain989/radarr "Get your own image badge on microbadger.com")
-[![](https://images.microbadger.com/badges/version/thecaptain989/radarr.svg)](https://microbadger.com/images/thecaptain989/radarr "Get your own version badge on microbadger.com")
+[![](https://images.microbadger.com/badges/image/thecaptain989/radarr:preview.svg)](https://microbadger.com/images/thecaptain989/radarr:preview "Get your own image badge on microbadger.com")
+[![](https://images.microbadger.com/badges/version/thecaptain989/radarr:preview.svg)](https://microbadger.com/images/thecaptain989/radarr:preview "Get your own version badge on microbadger.com")
 
 A Radarr/Sonarr Docker container with a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages, using mkvmerge. Chapters, if they exist, are preserved. The Title attribute in the MKV is sset to the video title plus year (ex: `The Sting (1973)`).
 
