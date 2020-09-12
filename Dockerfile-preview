@@ -3,7 +3,7 @@
 
 # Use the offical LinuxServer.io image
 ARG BRANCH
-FROM linuxserver/${BRANCH:-radarr}:latest
+FROM linuxserver/${BRANCH:-radarr}:preview
 
 LABEL maintainer="TheCaptain989"
 
@@ -14,7 +14,7 @@ ARG VERSION
 ARG BRANCH
 
 # Build-time metadata as defined at http://label-schema.org
-LABEL org.label-schema.name="thecaptain989/${BRANCH:-radarr}" \
+LABEL org.label-schema.name="thecaptain989/${BRANCH:-radarr}:preview" \
       org.label-schema.description="The LinuxServer.io ${BRANCH:-radarr} container plus mkvtoolniox and script for remuxing video files" \
       org.label-schema.url="https://hub.docker.com/r/thecaptain989/${BRANCH:-radarr}" \
       org.label-schema.version=$VERSION \
@@ -25,7 +25,7 @@ LABEL org.label-schema.name="thecaptain989/${BRANCH:-radarr}" \
       org.label-schema.vcs-ref=$VCS_REF
 
 # Build-time metadata as defined at https://github.com/opencontainers/image-spec
-LABEL org.opencontainers.image.title="thecaptain989/${BRANCH:-radarr}" \
+LABEL org.opencontainers.image.title="thecaptain989/${BRANCH:-radarr}:preview" \
       org.opencontainers.image.description="The LinuxServer.io ${BRANCH:-radarr} container plus mkvtoolniox and script for remuxing video files" \
       org.opencontainers.image.url="https://hub.docker.com/r/thecaptain989/${BRANCH:-radarr}" \
       org.opencontainers.image.version=$VERSION \
@@ -41,7 +41,7 @@ COPY 98-motd /etc/cont-init.d/98-motd
 COPY --chown=root:users striptracks.sh /usr/local/bin/striptracks.sh
 
 # Install mkvtoolnix which included mkvmerge
-RUN chmod +x /usr/local/bin/striptracks.sh &&\
+RUN chmod +x /usr/local/bin/striptracks*.sh &&\
     echo "$VERSION" > /etc/version.tc989 &&\
     apt-get update &&\
     apt-get -y install mkvtoolnix &&\
