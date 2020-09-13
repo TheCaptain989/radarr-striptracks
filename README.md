@@ -25,12 +25,10 @@ Sonarr container info:
 
 3. After all of the above configuration is complete, to use mkvmerge:  
    1. Configure a custom script from the Settings->Connect screen and type the following in the **Path** field:  
-
       **`/usr/local/bin/striptracks.sh`**  
 
    
    2. Add the codes for the audio and subtitle languages you want to keep as **Arguments** (details in the [Syntax](./README.md#syntax) section below):
-
       <ins>Suggested Example</ins>  
       **`:eng:und :eng`**
 
