@@ -1,6 +1,6 @@
-A Radarr/Sonarr Docker container with a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages, using mkvmerge. Chapters, if they exist, are preserved. The Title attribute in the MKV is sset to the video title plus year (ex: `The Sting (1973)`).
+A Radarr/Sonarr Docker container with a script that uses mkvmerge to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages. Chapters, if they exist, are preserved. The Title attribute in the MKV is sset to the video title plus year (ex: `The Sting (1973)`).
 
-**One unified script works in either Radarr or Sonarr.  Both containers are auto-built when the script is updated on Github, or when the source container is updated.**
+**One unified script works in both Radarr and Sonarr.  Both containers are auto-built when the script is updated on Github, or when the source container is updated.**
 
 Radarr container info:
 [![](https://images.microbadger.com/badges/image/thecaptain989/radarr.svg)](https://microbadger.com/images/thecaptain989/radarr "Get your own image badge on microbadger.com")
@@ -12,7 +12,7 @@ Sonarr container info:
 ![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/sonarr "Sonarr Container Pulls")
 
 # Installation
->**NOTE:** See the [Preview Branch](./README.md#preview-branch) section below for important differerences to these instructions for v3 builds.   
+>**NOTE:** See the [Preview Branch](./README.md#preview-branch) section below for important differences to these instructions for v3 builds.   
 
 1. Pull your selected container ([thecaptain989/radarr](https://hub.docker.com/r/thecaptain989/radarr "TheCaptain989's Radarr container") or [thecaptain989/sonarr](https://hub.docker.com/r/thecaptain989/sonarr "TheCaptain989's Sonarr container")) from Docker Hub:  
   `docker pull thecaptain989/radarr:latest`   OR  
@@ -36,14 +36,14 @@ Sonarr container info:
       **`:eng:und :eng`**
 
 ## Usage
+>**NOTE:** See the [Preview Branch](./README.md#preview-branch) section below for important differences to these instructions for v3 builds.   
+
 The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name.
 
 If you've configured the Radarr/Sonarr Recycle Bin path correctly, the original video will be moved there.  
 >![warning24] **NOTE:** If you have *not* configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
 
 ### Syntax
->**NOTE:** See the [Preview Branch](./README.md#preview-branch) section below for important differerences to these instructions for v3 builds.   
-
 The script accepts two arguments and one option in the **Arguments** field:
 
 `[-d] <audio_languages> <subtitle_languages>`
@@ -82,12 +82,12 @@ A log file is created for the script activity called:
 
 `/config/logs/striptracks.txt`
 
-This log can be inspected or downloaded from the Radarr/Sonarr GUI under System->Log Files
+This log can be inspected or downloaded from the Radarr/Sonarr GUI under System->Logs->Files
 
 Script errors will show up in both the script log and the native Radarr/Sonarr log.
 
 Log rotation is performed with 5 log files of 512KB each being kept.  
-If debug logging is enabled, the log file can grow very large very quickly.  *Do not leave debug logging enabled permanently.*
+>![warning24] **NOTE:** If debug logging is enabled, the log file can grow very large very quickly.  *Do not leave debug logging enabled permanently.*
 
 ___
 
@@ -138,10 +138,13 @@ striptracks-ger.sh         # Keep German audio and subtitles
 striptracks-dut.sh         # Keep Dutch audio and subtitles
 ```
 
-## Preview Triggers
+### Preview Triggers
 The only events/notification triggers that have been tested are **On Import** and **On Upgrade**
 
 ![striptracks](https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/preview/images/striptracks-v3.png "Radarr/Sonarr custom script settings")
+
+### Preview Logs
+The log can be inspected or downloaded from the Radarr/Sonarr GUI under System->Log Files
 
 ___
 
