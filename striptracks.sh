@@ -17,6 +17,7 @@
 #  numfmt
 #  stat
 #  nice
+#  printf
 
 # Exit codes:
 #  0 - success; or test
@@ -41,12 +42,14 @@ if [[ "${striptracks_type,,}" = "radarr" ]]; then
   export striptracks_api_endpoint="movie"
   export striptracks_json_quality_root=".movieFile"
   export striptracks_video_type="movie"
+  export striptracks_title="$radarr_movie_title ($radarr_movie_year)"
 else
   if [[ "${striptracks_type,,}" = "sonarr" ]]; then
     export striptracks_video="$sonarr_episodefile_path"
     export striptracks_api_endpoint="episodefile"
     export striptracks_json_quality_root=""
     export striptracks_video_type="series"
+    export striptracks_title="$sonarr_series_title $(printf "%02d" $sonarr_episodefile_seasonnumber)x$(printf "%02d" $sonarr_episodefile_episodenumbers) - $sonarr_episodefile_episodetitles"
   fi
 fi
 export striptracks_api="Rescan${striptracks_video_type^}"
@@ -58,7 +61,6 @@ export striptracks_video_id="${!striptracks_video_idname}"
 export striptracks_eventtype="${striptracks_type,,}_eventtype"
 export striptracks_tempvideo="${striptracks_video}.tmp"
 export striptracks_newvideo="${striptracks_video%.*}.mkv"
-export striptracks_title=$(basename "${striptracks_video%.*}")
 export striptracks_db="/config/${striptracks_type,,}.db"
 if [ ! -f "$striptracks_db" ]; then
   striptracks_db=/config/nzbdrone.db
@@ -242,11 +244,6 @@ BEGIN {
   MKVMerge="/usr/bin/mkvmerge"
   FS="[\t\n: ]"
   IGNORECASE=1
-  if (match(Title,/[a-zA-Z0-9]- /)) {
-    Arr[1]=substr(Title,1,RSTART)
-    Arr[2]=substr(Title,RSTART+RLENGTH-1)
-    Title=Arr[1]":"Arr[2]
-  }  # mawk does not have gensub function
 
   if (Debug) print "Debug|Renaming: \""OrgVideo"\" to \""TempVideo"\""
   Result=system("mv \""OrgVideo"\" \""TempVideo"\"")
