@@ -12,7 +12,7 @@ Sonarr container info:
 ![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/sonarr "Sonarr Container Pulls")
 
 # Installation
->:warning: **Warning: Beta Releases** :warning:  
+>![warning] **Warning: Beta Releases** ![warning]   
 >This branch is for the v3 beta releases. I cannot guarantee these releases are stable and might perform breaking changes at any time.
 
 1. Pull your selected container ([thecaptain989/radarr](https://hub.docker.com/r/thecaptain989/radarr "TheCaptain989's Radarr container") or [thecaptain989/sonarr](https://hub.docker.com/r/thecaptain989/sonarr "TheCaptain989's Sonarr container")) from Docker Hub:  
@@ -118,3 +118,5 @@ This would not be possible without the following:
 [LinuxServer.io Sonarr](https://hub.docker.com/r/linuxserver/sonarr "Docker container") container  
 [MKVToolNix](https://mkvtoolnix.download/ "MKVToolNix homepage") by Moritz Bunkus  
 The AWK script parsing mkvmerge output is adapted from Endoro's post on [VideoHelp](https://forum.videohelp.com/threads/343271-BULK-remove-non-English-tracks-from-MKV-container#post2292889).
+
+[warning]: http://files.softicons.com/download/application-icons/32x32-free-design-icons-by-aha-soft/png/32/Warning.png "Warning"
