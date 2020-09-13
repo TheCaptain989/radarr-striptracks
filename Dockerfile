@@ -13,6 +13,7 @@ ARG BUILD_DATE
 ARG VCS_REF
 ARG VERSION
 ARG BRANCH
+ARG DOCKER_TAG
 
 # Build-time metadata as defined at http://label-schema.org
 LABEL org.label-schema.name="thecaptain989/${BRANCH:-radarr}:${DOCKER_TAG:-latest}" \
@@ -38,7 +39,7 @@ LABEL org.opencontainers.image.title="thecaptain989/${BRANCH:-radarr}:${DOCKER_T
 # Add custom branding to container init script
 COPY 98-motd /etc/cont-init.d/98-motd
 
-# Copy shell script that can be called by Radarr
+# Copy shell script that can be called by Radarr/Sonarr
 COPY --chown=root:users striptracks*.sh /usr/local/bin/
 
 # Install mkvtoolnix which includes mkvmerge
