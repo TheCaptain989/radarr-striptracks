@@ -1,6 +1,7 @@
 A Radarr/Sonarr Docker container with a script that uses mkvmerge to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages. Chapters, if they exist, are preserved. The Title attribute in the MKV is set to the video title plus year (ex: `The Sting (1973)`).
 
 **One unified script works in both Radarr and Sonarr.  Both containers are auto-built when the script is updated on Github, or when the source container is updated.**
+>**NOTE:** These containers support Linux OSes only.
 
 Radarr container info:
 ![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/thecaptain989/radarr)
@@ -17,8 +18,6 @@ Sonarr container info:
 1. Pull your selected container ([thecaptain989/radarr](https://hub.docker.com/r/thecaptain989/radarr "TheCaptain989's Radarr container") or [thecaptain989/sonarr](https://hub.docker.com/r/thecaptain989/sonarr "TheCaptain989's Sonarr container")) from Docker Hub:  
   `docker pull thecaptain989/radarr:latest`   OR  
   `docker pull thecaptain989/sonarr:latest`   
-
->**NOTE:** These containers support Linux OSes only.
 
 2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
    **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "Docker container")**  
