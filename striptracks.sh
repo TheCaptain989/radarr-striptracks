@@ -19,7 +19,7 @@
 #  nice
 
 # Exit codes:
-#  0 - success
+#  0 - success; or test
 #  1 - no video file specified on command line
 #  2 - no audio language specified on command line
 #  3 - no subtitle language specified on command line
@@ -35,16 +35,15 @@ export striptracks_log=/config/logs/striptracks.txt
 export striptracks_maxlogsize=512000
 export striptracks_maxlog=4
 export striptracks_debug=0
-export striptracks_video="$radarr_moviefile_path"
-if [ "$striptracks_video" ]; then
-  export striptracks_type="Radarr"
+export striptracks_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
+if [[ "${striptracks_type,,}" = "radarr" ]]; then
+  export striptracks_video="$radarr_moviefile_path"
   export striptracks_api_endpoint="movie"
   export striptracks_json_quality_root=".movieFile"
   export striptracks_video_type="movie"
 else
-  export striptracks_video="$sonarr_episodefile_path"
-  if [ "$striptracks_video" ]; then
-    export striptracks_type="Sonarr"
+  if [[ "${striptracks_type,,}" = "sonarr" ]]; then
+    export striptracks_video="$sonarr_episodefile_path"
     export striptracks_api_endpoint="episodefile"
     export striptracks_json_quality_root=""
     export striptracks_video_type="series"
@@ -60,7 +59,11 @@ export striptracks_eventtype="${striptracks_type,,}_eventtype"
 export striptracks_tempvideo="${striptracks_video}.tmp"
 export striptracks_newvideo="${striptracks_video%.*}.mkv"
 export striptracks_title=$(basename "${striptracks_video%.*}")
-export striptracks_recyclebin=$(sqlite3 /config/nzbdrone.db 'SELECT Value FROM Config WHERE Key="recyclebin"')
+export striptracks_db="/config/${striptracks_type,,}.db"
+if [ ! -f "$striptracks_db" ]; then
+  striptracks_db=/config/nzbdrone.db
+fi
+export striptracks_recyclebin=$(sqlite3 $striptracks_db 'SELECT Value FROM Config WHERE Key="recyclebin"')
 
 ### Functions
 function usage {
@@ -116,7 +119,7 @@ function read_xml {
 }
 # Get video information
 function get_video_info {
-  [ $striptracks_debug -eq 1 ] && echo "Debug|Getting video information for $striptracks_api_endpoint '$striptracks_api_endpoint_id'. Calling $striptracks_type API using GET and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_api_endpoint_id?apikey=(removed)'" | log
+  [ $striptracks_debug -eq 1 ] && echo "Debug|Getting video information for $striptracks_api_endpoint '$striptracks_api_endpoint_id'. Calling ${striptracks_type^} API using GET and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_api_endpoint_id?apikey=(removed)'" | log
   RESULT=$(curl -s -H "Content-Type: application/json" \
     -X GET http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_api_endpoint_id?apikey=$striptracks_apikey)
   [ $striptracks_debug -eq 1 ] && echo "Debug|API returned: $RESULT" | log
@@ -129,9 +132,9 @@ function get_video_info {
 }
 # Initiate API Rescan request
 function rescan {
-  MSG="Info|Calling $striptracks_type API to rescan ${striptracks_video_type}, try #$i"
+  MSG="Info|Calling ${striptracks_type^} API to rescan ${striptracks_video_type}, try #$i"
   echo "$MSG" | log
-  [ $striptracks_debug -eq 1 ] && echo "Debug|Forcing rescan of $striptracks_json_key '$striptracks_video_id', try #$i. Calling $striptracks_type API '$striptracks_api' using POST and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/command?apikey=(removed)'" | log
+  [ $striptracks_debug -eq 1 ] && echo "Debug|Forcing rescan of $striptracks_json_key '$striptracks_video_id', try #$i. Calling ${striptracks_type^} API '$striptracks_api' using POST and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/command?apikey=(removed)'" | log
   RESULT=$(curl -s -d "{name: '$striptracks_api', $striptracks_json_key: $striptracks_video_id}" -H "Content-Type: application/json" \
     -X POST http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/command?apikey=$striptracks_apikey)
   [ $striptracks_debug -eq 1 ] && echo "Debug|API returned: $RESULT" | log
@@ -147,7 +150,7 @@ function rescan {
 function check_rescan {
   local i=0
   for ((i=1; i <= 15; i++)); do
-    [ $striptracks_debug -eq 1 ] && echo "Debug|Checking job $JOBID completion, try #$i. Calling $striptracks_type API using GET and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/command/$JOBID?apikey=(removed)'" | log
+    [ $striptracks_debug -eq 1 ] && echo "Debug|Checking job $JOBID completion, try #$i. Calling ${striptracks_type^} API using GET and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/command/$JOBID?apikey=(removed)'" | log
     RESULT=$(curl -s -H "Content-Type: application/json" \
       -X GET http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/command/$JOBID?apikey=$striptracks_apikey)
     [ $striptracks_debug -eq 1 ] && echo "Debug|API returned: $RESULT" | log
@@ -181,14 +184,6 @@ while getopts ":d" opt; do
 done
 shift $((OPTIND -1))
 
-if [ -z "$striptracks_video" ]; then
-  MSG="Error|No video file specified! Not called from Radarr/Sonarr?"
-  echo "$MSG" | log
-  >&2 echo "$MSG"
-  usage 
-  exit 1
-fi
-
 if [ -z "$1" ]; then
   MSG="Error|No audio languages specified!"
   echo "$MSG" | log
@@ -212,6 +207,20 @@ if [ ! -f "/usr/bin/mkvmerge" ]; then
   exit 4
 fi
 
+if [[ "${!striptracks_eventtype}" = "Test" ]]; then
+  echo "Info|${striptracks_type^} event: ${!striptracks_eventtype}" | log
+  echo "Info|Script was test executed successfully." | log
+  exit 0
+fi
+
+if [ -z "$striptracks_video" ]; then
+  MSG="Error|No video file specified! Not called from Radarr/Sonarr?"
+  echo "$MSG" | log
+  >&2 echo "$MSG"
+  usage 
+  exit 1
+fi
+
 if [ ! -f "$striptracks_video" ]; then
   MSG="Error|Input file not found: \"$striptracks_video\""
   echo "$MSG" | log
@@ -220,7 +229,7 @@ if [ ! -f "$striptracks_video" ]; then
 fi
 
 FILESIZE=$(numfmt --to iec --format "%.3f" $(stat -c %s "$striptracks_video"))
-MSG="Info|${striptracks_type} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $FILESIZE, AudioKeep: $1, SubsKeep: $2"
+MSG="Info|${striptracks_type^} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $FILESIZE, AudioKeep: $1, SubsKeep: $2"
 echo "$MSG" | log
 echo "" | awk -v Debug=$striptracks_debug \
 -v OrgVideo="$striptracks_video" \
@@ -369,7 +378,7 @@ if [ -f "$striptracks_arr_config" ]; then
   # Check for video ID
   if [ "$striptracks_video_id" ]; then
     # Call API
-    if [ "$striptracks_type" = "Radarr" ] && get_video_info; then
+    if [ "${striptracks_type,,}" = "radarr" ] && get_video_info; then
       # Save original quality
       ORGQUALITY=$(echo $RESULT | jq -crM ${striptracks_json_quality_root}.quality)
     fi
@@ -381,7 +390,7 @@ if [ -f "$striptracks_arr_config" ]; then
         if check_rescan; then
           # This whole section doesn't work under Sonarr because the episodefile_id changes after the RescanSeries if the filename changes
           # Should look into just using a PUT to change everything at once instead of a Rescan.
-          if [ "$striptracks_type" = "Radarr" ]; then
+          if [ "${striptracks_type,,}" = "radarr" ]; then
             if get_video_info; then
               # Check that the file didn't get lost in the Rescan.
               #  Radarr sometimes needs to Rescan twice when the file extension changes
@@ -391,12 +400,12 @@ if [ -f "$striptracks_arr_config" ]; then
                 #  NOTE: This "works" with Radarr in that the change shows up in the GUI, but only until the page changes.
                 #  It doesn't seem to write the info permanently. Maybe an API bug?
                 if [ "$(echo $RESULT | jq -crM ${striptracks_json_quality_root}.quality.quality.name)" = "Unknown" ]; then
-                  [ $striptracks_debug -eq 1 ] && echo "Debug|Updating quality to '$(echo $ORGQUALITY | jq -crM .quality.name)'. Calling $striptracks_type API using PUT and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_video_id?apikey=(removed)'" | log
+                  [ $striptracks_debug -eq 1 ] && echo "Debug|Updating quality to '$(echo $ORGQUALITY | jq -crM .quality.name)'. Calling ${striptracks_type^} API using PUT and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_video_id?apikey=(removed)'" | log
                   RESULT=$(curl -s -d "$(echo $RESULT | jq -crM "${striptracks_json_quality_root}.quality=$ORGQUALITY")" -H "Content-Type: application/json" \
                     -X PUT http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_video_id?apikey=$striptracks_apikey)
                   [ $striptracks_debug -eq 1 ] && echo "Debug|API returned: $RESULT" | log
                   if [ "$(echo $RESULT | jq -crM ${striptracks_json_quality_root}.quality.quality.name)" = "Unknown" ]; then
-                    MSG="Warn|Unable to update $striptracks_type $striptracks_api_endpoint '$striptracks_title' to quality '$(echo $ORGQUALITY | jq -crM .quality.name)'"
+                    MSG="Warn|Unable to update ${striptracks_type^} $striptracks_api_endpoint '$striptracks_title' to quality '$(echo $ORGQUALITY | jq -crM .quality.name)'"
                     echo "$MSG" | log
                     >&2 echo "$MSG"
                   fi
@@ -419,7 +428,7 @@ if [ -f "$striptracks_arr_config" ]; then
           fi
         else
           # Timeout or failure
-          MSG="Warn|$striptracks_type job ID $JOBID timed out or failed."
+          MSG="Warn|${striptracks_type^} job ID $JOBID timed out or failed."
           echo "$MSG" | log
           >&2 echo "$MSG"
         fi
@@ -438,7 +447,7 @@ if [ -f "$striptracks_arr_config" ]; then
   fi
 else
   # No config file means we can't call the API
-  MSG="Warn|Unable to locate $striptracks_type config file: '$striptracks_arr_config'"
+  MSG="Warn|Unable to locate ${striptracks_type^} config file: '$striptracks_arr_config'"
   echo "$MSG" | log
   >&2 echo "$MSG"
 fi
