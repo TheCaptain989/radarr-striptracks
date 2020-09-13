@@ -1,4 +1,4 @@
-name: striptracks
+name: Build preview
 
 on:
   push:
