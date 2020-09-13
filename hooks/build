@@ -13,8 +13,9 @@ echo "VERSION=$VERSION"
 echo "VCS_REF=$VCS_REF"
 echo "BUILD_DATE=$BUILD_DATE"
 echo "DOCKERFILE_PATH=$DOCKERFILE_PATH"
-echo "IMAGE_NAME=$IMAGE_NAME"
 echo "BRANCH=$BRANCH"
+echo "DOCKER_TAG=$DOCKER_TAG"
+echo "IMAGE_NAME=$IMAGE_NAME"
 
 docker build --build-arg VERSION=$VERSION \
              --build-arg VCS_REF=$VCS_REF \
