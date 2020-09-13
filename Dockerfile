@@ -38,9 +38,9 @@ LABEL org.opencontainers.image.title="thecaptain989/${BRANCH:-radarr}:preview" \
 COPY 98-motd /etc/cont-init.d/98-motd
 
 # Copy shell script that can be called by Radarr
-COPY --chown=root:users striptracks.sh /usr/local/bin/striptracks.sh
+COPY --chown=root:users striptracks*.sh /usr/local/bin/
 
-# Install mkvtoolnix which included mkvmerge
+# Install mkvtoolnix which includes mkvmerge
 RUN chmod +x /usr/local/bin/striptracks*.sh &&\
     echo "$VERSION" > /etc/version.tc989 &&\
     apt-get update &&\
