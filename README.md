@@ -111,7 +111,7 @@ Substitute the following steps for those noted in the [Installation](./README.md
       <ins>This is a wrapper script uses the following options, which keep English audio and subtitles only!</ins>  
       `:eng:und :eng`
 
-      *For any other combinations of audio and subtitles you must either use one of the [included wrapper scripts](./README.md#included-wrapper-scripts) or
+      *For any other combinations of audio and subtitles you **must** either use one of the [included wrapper scripts](./README.md#included-wrapper-scripts) or
       create a custom script with the codes for the languages you want to keep.  See the [Syntax](./README.md#syntax) section above.
       Do not put `striptracks.sh` in the **Path** field!*
 
