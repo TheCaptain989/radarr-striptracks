@@ -3,12 +3,12 @@ A Radarr/Sonarr Docker container with a script that uses mkvmerge to automatical
 **One unified script works in both Radarr and Sonarr.  Both containers are auto-built when the script is updated on Github, or when the source container is updated.**
 
 Radarr container info:
-[![](https://images.microbadger.com/badges/image/thecaptain989/radarr.svg)](https://microbadger.com/images/thecaptain989/radarr "Get your own image badge on microbadger.com")
-[![](https://images.microbadger.com/badges/version/thecaptain989/radarr.svg)](https://microbadger.com/images/thecaptain989/radarr "Get your own version badge on microbadger.com")
+![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/thecaptain989/radarr)
+![MicroBadger Layers](https://img.shields.io/microbadger/layers/thecaptain989/radarr)
 ![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/radarr "Radarr Container Pulls")   
 Sonarr container info:
-[![](https://images.microbadger.com/badges/image/thecaptain989/sonarr.svg)](https://microbadger.com/images/thecaptain989/sonarr "Get your own image badge on microbadger.com")
-[![](https://images.microbadger.com/badges/version/thecaptain989/sonarr.svg)](https://microbadger.com/images/thecaptain989/sonarr "Get your own version badge on microbadger.com")
+![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/thecaptain989/sonarr)
+![MicroBadger Layers](https://img.shields.io/microbadger/layers/thecaptain989/sonarr)
 ![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/sonarr "Sonarr Container Pulls")
 
 # Installation
