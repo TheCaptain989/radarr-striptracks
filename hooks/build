@@ -20,5 +20,6 @@ docker build --build-arg VERSION=$VERSION \
              --build-arg VCS_REF=$VCS_REF \
              --build-arg BUILD_DATE=$BUILD_DATE \
              --build-arg BRANCH=$BRANCH \
+             --build-arg DOCKER_TAG=$DOCKER_TAG \
              --file $DOCKERFILE_PATH \
              --tag $IMAGE_NAME .
