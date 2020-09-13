@@ -1,11 +1,15 @@
-[![](https://images.microbadger.com/badges/image/thecaptain989/radarr:preview.svg)](https://microbadger.com/images/thecaptain989/radarr:preview "Get your own image badge on microbadger.com")
-[![](https://images.microbadger.com/badges/version/thecaptain989/radarr:preview.svg)](https://microbadger.com/images/thecaptain989/radarr:preview "Get your own version badge on microbadger.com")
-![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/radarr)
-![Docker Image Size (tag)](https://img.shields.io/docker/image-size/thecaptain989/radarr/preview)
-
 A Radarr/Sonarr Docker container with a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages, using mkvmerge. Chapters, if they exist, are preserved. The Title attribute in the MKV is sset to the video title plus year (ex: `The Sting (1973)`).
 
 **One unified script works in either Radarr or Sonarr.  Both containers are auto-built when the script is updated on Github, or when the source container is updated.**
+
+Radarr container info:
+[![](https://images.microbadger.com/badges/image/thecaptain989/radarr.svg)](https://microbadger.com/images/thecaptain989/radarr "Get your own image badge on microbadger.com")
+[![](https://images.microbadger.com/badges/version/thecaptain989/radarr.svg)](https://microbadger.com/images/thecaptain989/radarr "Get your own version badge on microbadger.com")
+![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/radarr "Radarr Container Pulls")   
+Sonarr container info:
+[![](https://images.microbadger.com/badges/image/thecaptain989/sonarr.svg)](https://microbadger.com/images/thecaptain989/sonarr "Get your own image badge on microbadger.com")
+[![](https://images.microbadger.com/badges/version/thecaptain989/sonarr.svg)](https://microbadger.com/images/thecaptain989/sonarr "Get your own version badge on microbadger.com")
+![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/sonarr "Sonarr Container Pulls")
 
 # Installation
 >:warning: **Warning: Beta Releases** :warning:  
