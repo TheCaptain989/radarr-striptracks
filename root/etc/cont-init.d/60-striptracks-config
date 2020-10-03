@@ -17,5 +17,4 @@ if [ ! -f /usr/bin/mkvmerge ] && \
   rm -rf /var/lib/apt/lists/*
 fi
 
-echo "$VERSION" > /etc/version.tc989
 chmod +x /usr/local/bin/striptracks*.sh

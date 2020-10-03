@@ -1,0 +1,3 @@
+env:
+  global:
+    - DOCKERHUB="thecaptain989/radarr-test"
