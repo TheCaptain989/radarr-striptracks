@@ -22,7 +22,7 @@ Container info:
       `-e DOCKER_MODS=thecaptain989/striptracks-mod:latest`  
 
       *Example Synology Configuration*  
-      ![striptracks](https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/master/images/striptracks%20mod.png "Synology container settings")
+      ![striptracks](https://user-images.githubusercontent.com/11523885/95027314-1e006680-065d-11eb-9ff9-cc51648d57bd.png "Synology container settings")
 
    2. Start the container.
 
