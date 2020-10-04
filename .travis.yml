@@ -3,7 +3,7 @@ os: linux
 
 arch:
   - amd64
-#  - arm64
+  - arm64
 
 services:
   - docker
@@ -14,7 +14,9 @@ env:
 
 jobs:
   include:
-    - stage: BuildImage
+    - os: linux
+      arch: amd64
+      stage: BuildImage
       if: (NOT (type IN (pull_request)))
       script:
         # Build variables
@@ -32,10 +34,40 @@ jobs:
           --build-arg VCS_REF=${VCS_REF}
           --build-arg BUILD_DATE=${BUILD_DATE}
           --build-arg DOCKERHUB=${DOCKERHUB}
+          --file Dockerfile
           --tag ${DOCKERHUB}:${TRAVIS_COMMIT} .
         - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} ${DOCKERHUB}:latest
         # Login to DockerHub
         - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
         # Push all of the tags
         - docker push ${DOCKERHUB}:${TRAVIS_COMMIT}
+        - docker push ${DOCKERHUB}:amd64
         - docker push ${DOCKERHUB}:latest
+    - os: linux
+      arch: arm64
+      stage: BuildImage
+      if: (NOT (type IN (pull_request)))
+      script:
+        # Build variables
+        - VERSION=$(git describe --tags --always)
+        - VCS_REF=$(git rev-parse --short HEAD)
+        - BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        - echo "Build variables:"
+        - echo "DOCKERHUB=$DOCKERHUB"
+        - echo "VERSION=$VERSION"
+        - echo "VCS_REF=$VCS_REF"
+        - echo "BUILD_DATE=$BUILD_DATE"
+        # Build image
+        - docker build --no-cache
+          --build-arg VERSION=${VERSION}
+          --build-arg VCS_REF=${VCS_REF}
+          --build-arg BUILD_DATE=${BUILD_DATE}
+          --build-arg DOCKERHUB=${DOCKERHUB}
+          --file Dockerfile.arm64
+          --tag ${DOCKERHUB}:${TRAVIS_COMMIT} .
+        - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} ${DOCKERHUB}:latest
+        # Login to DockerHub
+        - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
+        # Push all of the tags
+        - docker push ${DOCKERHUB}:${TRAVIS_COMMIT}
+        - docker push ${DOCKERHUB}:arm64
