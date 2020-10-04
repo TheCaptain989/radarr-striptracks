@@ -1,40 +1,41 @@
-A Radarr/Sonarr Docker container with a script that uses mkvmerge to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages.
+A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.io Radarr/Sonarr Docker container that adds a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages.
 Chapters, if they exist, are preserved. The Title attribute in the MKV is set to the movie title plus year (ex: `The Sting (1973)`) or the series title plus episode information (ex: `Happy! 01x01 - What Smiles Are For`).
 
-**One unified script works in both Radarr and Sonarr.  Both containers are auto-built when the script is updated on Github, or when the source container is updated.**
->**NOTE:** These containers support Linux OSes only.
+**One unified script works in both Radarr and Sonarr.  Use this mod is either container!**
+>**NOTE:** This mod support Linux OSes only.
 
-Radarr container info:
-![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/thecaptain989/radarr)
-![MicroBadger Layers](https://img.shields.io/microbadger/layers/thecaptain989/radarr)
-![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/radarr "Radarr Container Pulls")   
-Sonarr container info:
-![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/thecaptain989/sonarr)
-![MicroBadger Layers](https://img.shields.io/microbadger/layers/thecaptain989/sonarr)
-![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/sonarr "Sonarr Container Pulls")
+Container info:
+![Docker Image Size (latest by date)](https://img.shields.io/docker/image-size/thecaptain989/striptracks-mod)
+![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/striptracks-mod "Container Pulls")   
 
 # Installation
->**NOTE:** See the [Preview Branch](./README.md#preview-branch) section below for important differences to these instructions for v3 builds.   
+>**NOTE:** See the [Sonarr/Radarr v3 Builds](./README.md#sonarrradarr-v3-builds) section below for important differences to these instructions for v3 builds.   
 
-1. Pull your selected container ([thecaptain989/radarr](https://hub.docker.com/r/thecaptain989/radarr "TheCaptain989's Radarr container") or [thecaptain989/sonarr](https://hub.docker.com/r/thecaptain989/sonarr "TheCaptain989's Sonarr container")) from Docker Hub:  
-  `docker pull thecaptain989/radarr:latest`   OR  
-  `docker pull thecaptain989/sonarr:latest`   
+1. Pull your selected container ([linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "LinuxServer.io's Radarr container") or [linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "LinuxServer.io's Sonarr container")) from Docker Hub:  
+  `docker pull linuxserver/radarr:latest`   OR  
+  `docker pull linuxserver/sonarr:latest`   
 
 2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
-   **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "Docker container")**  
-   **[linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "Docker container")**
+   **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "Radarr Docker container")**  
+   **[linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "Sonarr Docker container")**
+   1. Add the **DOCKER_MODS** environment variable to the `docker create` command, as follows:  
+      `-e DOCKER_MODS=thecaptain989/striptracks-mod:latest`  
+
+      *Example Synology Configuration*  
+      ![striptracks](https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/master/images/striptracks%20mod.png "Synology container settings")
+
+   2. Start the container.
 
 3. After all of the above configuration is complete, to use mkvmerge:  
-   1. Configure a custom script from the Settings->Connect screen and type the following in the **Path** field:  
-      **`/usr/local/bin/striptracks.sh`**  
+   1. Configure a custom script from the Radarr/Sonnar Settings->Connect screen and type the following in the **Path** field:  
+      `/usr/local/bin/striptracks.sh`  
 
-   
    2. Add the codes for the audio and subtitle languages you want to keep as **Arguments** (details in the [Syntax](./README.md#syntax) section below):
       <ins>Suggested Example</ins>  
       **`:eng:und :eng`**
 
 ## Usage
->**NOTE:** See the [Preview Branch](./README.md#preview-branch) section below for important differences to these instructions for v3 builds.
+>**NOTE:** See the [Sonarr/Radarr v3 Builds](./README.md#sonarrradarr-v3-builds) section below for important differences to these instructions for v3 builds.
 
 The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name.
 
@@ -90,26 +91,33 @@ Log rotation is performed with 5 log files of 512KB each being kept.
 
 ___
 
-## Preview Branch
+## Sonarr/Radarr v3 Builds
 >![warning] **Warning: Unstable Releases** ![warning]  
->The Preview branch is for the v3 unstable releases (Aphrodite and Phantom) of Radarr and Sonarr. I cannot guarantee these releases are stable.
+>The Sonarr/Radarr v3 Builds are the unstable releases (Aphrodite and Phantom) of Radarr and Sonarr. Though the mod works with all versions of the container, I cannot guarantee these releases are stable.
 
-<ins>Important differences for Preview branch</ins>
-### Preview Installation
+<ins>Important differences for Sonarr/Radarr v3 Builds</ins>
+### Mod installation
 Substitute the following steps for those noted in the [Installation](./README.md#installation) section above.
-1. Pull your selected container ([thecaptain989/radarr](https://hub.docker.com/r/thecaptain989/radarr "TheCaptain989's Radarr container") or [thecaptain989/sonarr](https://hub.docker.com/r/thecaptain989/sonarr "TheCaptain989's Sonarr container")) from Docker Hub:  
-  `docker pull thecaptain989/radarr:preview`  OR  
-  `docker pull thecaptain989/sonarr:preview`
+1. Pull your selected container ([linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "LinuxServer.io's Radarr container") or [linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "LinuxServer.io's Sonarr container")) from Docker Hub:  
+  `docker pull linuxserver/radarr:preview`  OR  
+  `docker pull linuxserver/sonarr:preview`
 
 2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
-   **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "Docker container")**  
-   **[linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "Docker container")**
+   **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "Radarr Docker container")**  
+   **[linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "Sonarr Docker container")**
+   1. Add the **DOCKER_MODS** environment variable to the `docker create` command, as follows:  
+      `-e DOCKER_MODS=thecaptain989/striptracks-mod:latest`  
+
+      *Example Synology Configuration*  
+      ![striptracks](https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/master/images/striptracks%20mod.png "Synology container settings")
+
+   2. Start the container.
 
 3. After the above configuration is complete, to use mkvmerge, configure a custom script from the Settings->Connect screen and type the following in the **Path** field:  
 
-      **`/usr/local/bin/striptracks-eng.sh`**  
+      `/usr/local/bin/striptracks-eng.sh`  
 
-      <ins>This is a wrapper script uses the following options, which keep English audio and subtitles only!</ins>  
+      <ins>This is a wrapper script that calls striptracks.sh with the following arguments, which keep English audio and subtitles only!</ins>  
       `:eng:und :eng`
 
       *For any other combinations of audio and subtitles you **must** either use one of the [included wrapper scripts](./README.md#included-wrapper-scripts) or
@@ -120,26 +128,28 @@ Substitute the following steps for those noted in the [Installation](./README.md
 >**NOTE:** The **Arguments** field for Custom Scripts was removed in Radarr and Sonarr v3 due to security concerns. To support options with this version and later,
 a wrapper script can be manually created that will call *striptracks.sh* with the required arguments.
 
-For your convenience, several wrapper scripts are included in the Docker container in the `/usr/local/bin/` directory.  
-You may use any of these scripts in place of the `striptracks-eng.sh` mentioned in the [Preview Installation](./README.md#preview-installation) section above.
+For your convenience, several wrapper scripts are included in the `/usr/local/bin/` directory.  
+You may use any of these scripts in place of the `striptracks-eng.sh` mentioned in the [Mod installation](./README.md#mod-installation) section above.
 
 ```
+striptracks-dut.sh         # Keep Dutch audio and subtitles
+striptracks-eng.sh         # Keep English and Undetermined audio and English subtitles
 striptracks-eng-debug.sh   # Keep English and Undetermined audio and English subtitles, and enable debug logging
 striptracks-eng-jpn.sh     # Keep English, Japanese, and Undetermined audio and English subtitles
-striptracks-spa.sh         # Keep Spanish audio and subtitles
 striptracks-fre.sh         # Keep French audio and subtitles
+striptracks-fre-debug.sh   # Keep French audio and subtitles, and enable debug logging
 striptracks-ger.sh         # Keep German audio and subtitles
-striptracks-dut.sh         # Keep Dutch audio and subtitles
+striptracks-spa.sh         # Keep Spanish audio and subtitles
 ```
 
 ### Example Wrapper Script
-To configure the last entry from the [Examples](./README.md#examples) section above, create and save a file called `wrapper.sh` containing the following text:
+To configure the last entry from the [Examples](./README.md#examples) section above, create and save a file called `wrapper.sh` to `/usr/local/bin` containing the following text:
 ```
 #!/bin/bash
 
 . /usr/local/bin/striptracks.sh :eng:kor:jpn :eng:spa
 ```
-Then put `/usr/local/bin/wrapper.sh` in the **Path** field in place of `/usr/local/bin/striptracks-eng.sh` mentioned in the [Preview Installation](./README.md#preview-installation) section above.
+Then put `/usr/local/bin/wrapper.sh` in the **Path** field in place of `/usr/local/bin/striptracks-eng.sh` mentioned in the [Mod installation](./README.md#mod-installation) section above.
 
 ### Preview Triggers
 The only events/notification triggers that have been tested are **On Import** and **On Upgrade**
@@ -157,8 +167,8 @@ This would not be possible without the following:
 
 [Radarr](http://radarr.video/ "Radarr homepage")  
 [Sonarr](http://sonarr.tv/ "Sonarr homepage")  
-[LinuxServer.io Radarr](https://hub.docker.com/r/linuxserver/radarr "Docker container") container  
-[LinuxServer.io Sonarr](https://hub.docker.com/r/linuxserver/sonarr "Docker container") container  
+[LinuxServer.io Radarr](https://hub.docker.com/r/linuxserver/radarr "Radarr Docker container") container  
+[LinuxServer.io Sonarr](https://hub.docker.com/r/linuxserver/sonarr "Sonarr Docker container") container  
 [MKVToolNix](https://mkvtoolnix.download/ "MKVToolNix homepage") by Moritz Bunkus  
 The AWK script parsing mkvmerge output is adapted from Endoro's post on [VideoHelp](https://forum.videohelp.com/threads/343271-BULK-remove-non-English-tracks-from-MKV-container#post2292889).
 
