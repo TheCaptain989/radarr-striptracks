@@ -3,7 +3,7 @@ os: linux
 
 arch:
   - amd64
-  - arm64
+#  - arm64
 
 services:
   - docker
@@ -22,6 +22,7 @@ jobs:
         - VCS_REF=$(git rev-parse --short HEAD)
         - BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         - echo "Build variables:"
+        - echo "DOCKERHUB=$DOCKERHUB"
         - echo "VERSION=$VERSION"
         - echo "VCS_REF=$VCS_REF"
         - echo "BUILD_DATE=$BUILD_DATE"
