@@ -31,6 +31,7 @@ jobs:
           --build-arg VERSION=${VERSION}
           --build-arg VCS_REF=${VCS_REF}
           --build-arg BUILD_DATE=${BUILD_DATE}
+          --build-arg DOCKERHUB=${DOCKERHUB}
           --tag ${DOCKERHUB}:${TRAVIS_COMMIT} .
         - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} ${DOCKERHUB}:latest
         # Login to DockerHub

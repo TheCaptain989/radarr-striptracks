@@ -30,7 +30,8 @@ LABEL org.opencontainers.image.title="${DOCKERHUB}:latest" \
       org.opencontainers.image.source="https://github.com/TheCaptain989/radarr-striptracks" \
       org.opencontainers.image.revision=$VCS_REF
 
-RUN echo "$VERSION" > /root-layer/etc/version.tc989
+RUN mkdir -p /root-layer/etc && \
+  echo "$VERSION" > /root-layer/etc/version.tc989
 
 # Stage local files
 COPY root/ /root-layer/
