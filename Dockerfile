@@ -30,6 +30,7 @@ LABEL org.opencontainers.image.title="${DOCKERHUB}:latest" \
       org.opencontainers.image.source="https://github.com/TheCaptain989/radarr-striptracks" \
       org.opencontainers.image.revision=$VCS_REF
 
+# Add version number for use in container init script
 RUN mkdir -p /root-layer/etc && \
   echo "$VERSION" > /root-layer/etc/version.tc989
 

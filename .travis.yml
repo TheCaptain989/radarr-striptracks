@@ -3,7 +3,7 @@ os: linux
 
 arch:
   - amd64
-#  - arm64
+  - arm64
 
 services:
   - docker
