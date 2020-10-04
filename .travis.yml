@@ -26,9 +26,12 @@ jobs:
         - echo "VERSION=$VERSION"
         - echo "VCS_REF=$VCS_REF"
         - echo "BUILD_DATE=$BUILD_DATE"
+        # Enable multi architecture builds
+        - docker buildx create --name mybuilder
+        - docker buildx use mybuilder
         # Build image
-        - docker buildx build --no-cache
-          --platform linux/amd64,linux/arm64
+        - docker buildx build --platform linux/amd64,linux/arm64
+          --no-cache
           --build-arg VERSION=${VERSION}
           --build-arg VCS_REF=${VCS_REF}
           --build-arg BUILD_DATE=${BUILD_DATE}
