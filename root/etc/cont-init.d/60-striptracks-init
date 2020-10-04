@@ -31,15 +31,17 @@ if [ ! -f /usr/bin/mkvmerge ]; then
     apt-get -y install mkvtoolnix && \
     rm -rf /var/lib/apt/lists/*
   fi
+fi
 
-  # Change ownership
+# Change ownership
+if [ $(stat -c '%G' /usr/local/bin/striptracks.sh) == "users" ]; then
   echo "Changing ownership on scripts."
   chown root:users /usr/local/bin/striptracks*.sh
+fi
 
-  # Make executable
+# Make executable
+if [ ! -x /usr/local/bin/striptracks.sh ]; then
   echo "Making scripts executable."
-  if [ ! -x /usr/local/bin/striptracks.sh ]; then
-    chmod +x /usr/local/bin/striptracks*.sh
-  fi
+  chmod +x /usr/local/bin/striptracks*.sh
 fi
 
