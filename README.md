@@ -75,7 +75,7 @@ The `-d` option enables debug logging.
 ## Triggers
 The only events/notification triggers that have been tested are **On Download** and **On Upgrade**
 
-![striptracks](https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/master/images/striptracks.png "Radarr/Sonarr custom script settings")
+![striptracks](https://user-images.githubusercontent.com/11523885/95027402-d0d0c480-065d-11eb-97a8-b02a011572ab.png "Radarr/Sonarr custom script settings")
 
 ## Logs
 A log file is created for the script activity called:
@@ -109,7 +109,7 @@ Substitute the following steps for those noted in the [Installation](./README.md
       `-e DOCKER_MODS=thecaptain989/striptracks-mod:latest`  
 
       *Example Synology Configuration*  
-      ![striptracks](https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/master/images/striptracks%20mod.png "Synology container settings")
+      ![striptracks](https://user-images.githubusercontent.com/11523885/95027314-1e006680-065d-11eb-9ff9-cc51648d57bd.png "Synology container settings")
 
    2. Start the container.
 
@@ -154,7 +154,7 @@ Then put `/usr/local/bin/wrapper.sh` in the **Path** field in place of `/usr/loc
 ### Preview Triggers
 The only events/notification triggers that have been tested are **On Import** and **On Upgrade**
 
-![striptracks](https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/preview/images/striptracks-v3.png "Radarr/Sonarr custom script settings")
+![striptracks](https://user-images.githubusercontent.com/11523885/95027374-9830eb00-065d-11eb-8ef7-8d69c9795cbe.png "Radarr/Sonarr custom script settings")
 
 ### Preview Logs
 The log can be inspected or downloaded from the Radarr/Sonarr GUI under System->Log Files
