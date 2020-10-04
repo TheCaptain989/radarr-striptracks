@@ -1,21 +1,36 @@
-sudo: true
-
 language: bash
+os: linux
+
+arch:
+  - amd64
+  - arm64
 
 services:
   - docker
 
 env:
   global:
-    - DOCKERHUB="thecaptain989/radarr-test"
+    - DOCKERHUB="thecaptain989/striptracks-mod"
 
 jobs:
   include:
     - stage: BuildImage
       if: (NOT (type IN (pull_request)))
       script:
-        # Build Dev image
-        - docker build --no-cache -t ${DOCKERHUB}:${TRAVIS_COMMIT} .
+        # Build variables
+        - VERSION=$(git describe --tags --always)
+        - VCS_REF=$(git rev-parse --short HEAD)
+        - BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        - echo "Build variables:"
+        - echo "VERSION=$VERSION"
+        - echo "VCS_REF=$VCS_REF"
+        - echo "BUILD_DATE=$BUILD_DATE"
+        # Build image
+        - docker build --no-cache \
+          --build-arg VERSION=${VERSION} \
+          --build-arg VCS_REF=${VCS_REF} \
+          --build-arg BUILD_DATE=${BUILD_DATE} \
+          --tag ${DOCKERHUB}:${TRAVIS_COMMIT} .
         - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} ${DOCKERHUB}:latest
         # Login to DockerHub
         - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
