@@ -71,5 +71,4 @@ jobs:
         # Login to DockerHub
         - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
         # Push all of the tags
-        - docker push ${DOCKERHUB}:${TRAVIS_COMMIT}
         - docker push ${DOCKERHUB}:arm64
