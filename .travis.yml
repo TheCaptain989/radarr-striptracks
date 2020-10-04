@@ -36,7 +36,7 @@ jobs:
           --build-arg DOCKERHUB=${DOCKERHUB}
           --file Dockerfile
           --tag ${DOCKERHUB}:${TRAVIS_COMMIT} .
-        - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} ${DOCKERHUB}:latest
+        - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} push ${DOCKERHUB}:amd64 ${DOCKERHUB}:latest
         # Login to DockerHub
         - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
         # Push all of the tags
@@ -65,7 +65,7 @@ jobs:
           --build-arg DOCKERHUB=${DOCKERHUB}
           --file Dockerfile.arm64
           --tag ${DOCKERHUB}:${TRAVIS_COMMIT} .
-        - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} ${DOCKERHUB}:latest
+        - docker tag ${DOCKERHUB}:${TRAVIS_COMMIT} push ${DOCKERHUB}:arm64 ${DOCKERHUB}:latest
         # Login to DockerHub
         - echo $DOCKERPASS | docker login -u $DOCKERUSER --password-stdin
         # Push all of the tags
