@@ -19,13 +19,15 @@
 #  nice
 
 # Exit codes:
-#  0 - success
+#  0 - success; or test
 #  1 - no video file specified on command line
 #  2 - no audio language specified on command line
 #  3 - no subtitle language specified on command line
 #  4 - mkvmerge not found
 #  5 - specified video file not found
+#  6 - unable to rename video to temp video
 # 10 - remuxing completed, but no output file found
+# 20 - general error
 
 ### Variables
 export striptracks_script=$(basename "$0")
@@ -35,19 +37,20 @@ export striptracks_log=/config/logs/striptracks.txt
 export striptracks_maxlogsize=512000
 export striptracks_maxlog=4
 export striptracks_debug=0
-export striptracks_video="$radarr_moviefile_path"
-if [ "$striptracks_video" ]; then
-  export striptracks_type="Radarr"
+export striptracks_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
+if [[ "${striptracks_type,,}" = "radarr" ]]; then
+  export striptracks_video="$radarr_moviefile_path"
   export striptracks_api_endpoint="movie"
   export striptracks_json_quality_root=".movieFile"
   export striptracks_video_type="movie"
+  export striptracks_title="$radarr_movie_title ($radarr_movie_year)"
 else
-  export striptracks_video="$sonarr_episodefile_path"
-  if [ "$striptracks_video" ]; then
-    export striptracks_type="Sonarr"
+  if [[ "${striptracks_type,,}" = "sonarr" ]]; then
+    export striptracks_video="$sonarr_episodefile_path"
     export striptracks_api_endpoint="episodefile"
     export striptracks_json_quality_root=""
     export striptracks_video_type="series"
+    export striptracks_title="$sonarr_series_title $(numfmt --format "%02f" $sonarr_episodefile_seasonnumber)x$(numfmt --format "%02f" $sonarr_episodefile_episodenumbers) - $sonarr_episodefile_episodetitles"
   fi
 fi
 export striptracks_api="Rescan${striptracks_video_type^}"
@@ -59,8 +62,12 @@ export striptracks_video_id="${!striptracks_video_idname}"
 export striptracks_eventtype="${striptracks_type,,}_eventtype"
 export striptracks_tempvideo="${striptracks_video}.tmp"
 export striptracks_newvideo="${striptracks_video%.*}.mkv"
-export striptracks_title=$(basename "${striptracks_video%.*}")
-export striptracks_recyclebin=$(sqlite3 /config/nzbdrone.db 'SELECT Value FROM Config WHERE Key="recyclebin"')
+export striptracks_db="/config/${striptracks_type,,}.db"
+if [ ! -f "$striptracks_db" ]; then
+  striptracks_db=/config/nzbdrone.db
+fi
+export striptracks_recyclebin=$(sqlite3 $striptracks_db 'SELECT Value FROM Config WHERE Key="recyclebin"')
+RET=$?; [ "$RET" != 0 ] && >&2 echo "WARNING[$RET]: Unable to read recyclebin information from database \"$striptracks_db\""
 
 ### Functions
 function usage {
@@ -116,10 +123,10 @@ function read_xml {
 }
 # Get video information
 function get_video_info {
-  [ $striptracks_debug -eq 1 ] && echo "Debug|Getting video information for $striptracks_api_endpoint '$striptracks_api_endpoint_id'. Calling $striptracks_type API using GET and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_api_endpoint_id?apikey=(removed)'" | log
+  [ $striptracks_debug -eq 1 ] && echo "Debug|Getting video information for $striptracks_api_endpoint '$striptracks_api_endpoint_id'. Calling ${striptracks_type^} API using GET and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_api_endpoint_id?apikey=(removed)'" | log
   RESULT=$(curl -s -H "Content-Type: application/json" \
     -X GET http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_api_endpoint_id?apikey=$striptracks_apikey)
-  [ $striptracks_debug -eq 1 ] && echo "Debug|API returned: $RESULT" | log
+  [ $striptracks_debug -eq 1 ] && echo "API returned: $RESULT" | awk '{print "Debug|"$0}' | log
   if [ "$(echo $RESULT | jq -crM .path)" != "null" ]; then
     local RET=0
   else
@@ -129,12 +136,12 @@ function get_video_info {
 }
 # Initiate API Rescan request
 function rescan {
-  MSG="Info|Calling $striptracks_type API to rescan ${striptracks_video_type}, try #$i"
+  MSG="Info|Calling ${striptracks_type^} API to rescan ${striptracks_video_type}, try #$i"
   echo "$MSG" | log
-  [ $striptracks_debug -eq 1 ] && echo "Debug|Forcing rescan of $striptracks_json_key '$striptracks_video_id', try #$i. Calling $striptracks_type API '$striptracks_api' using POST and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/command?apikey=(removed)'" | log
+  [ $striptracks_debug -eq 1 ] && echo "Debug|Forcing rescan of $striptracks_json_key '$striptracks_video_id', try #$i. Calling ${striptracks_type^} API '$striptracks_api' using POST and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/command?apikey=(removed)'" | log
   RESULT=$(curl -s -d "{name: '$striptracks_api', $striptracks_json_key: $striptracks_video_id}" -H "Content-Type: application/json" \
     -X POST http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/command?apikey=$striptracks_apikey)
-  [ $striptracks_debug -eq 1 ] && echo "Debug|API returned: $RESULT" | log
+  [ $striptracks_debug -eq 1 ] && echo "API returned: $RESULT" | awk '{print "Debug|"$0}' | log
   JOBID="$(echo $RESULT | jq -crM .id)"
   if [ "$JOBID" != "null" ]; then
     local RET=0
@@ -147,10 +154,10 @@ function rescan {
 function check_rescan {
   local i=0
   for ((i=1; i <= 15; i++)); do
-    [ $striptracks_debug -eq 1 ] && echo "Debug|Checking job $JOBID completion, try #$i. Calling $striptracks_type API using GET and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/command/$JOBID?apikey=(removed)'" | log
+    [ $striptracks_debug -eq 1 ] && echo "Debug|Checking job $JOBID completion, try #$i. Calling ${striptracks_type^} API using GET and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/command/$JOBID?apikey=(removed)'" | log
     RESULT=$(curl -s -H "Content-Type: application/json" \
       -X GET http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/command/$JOBID?apikey=$striptracks_apikey)
-    [ $striptracks_debug -eq 1 ] && echo "Debug|API returned: $RESULT" | log
+    [ $striptracks_debug -eq 1 ] && echo "API returned: $RESULT" | awk '{print "Debug|"$0}' | log
     if [ "$(echo $RESULT | jq -crM .status)" = "completed" ]; then
       local RET=0
       break
@@ -181,14 +188,6 @@ while getopts ":d" opt; do
 done
 shift $((OPTIND -1))
 
-if [ -z "$striptracks_video" ]; then
-  MSG="Error|No video file specified! Not called from Radarr/Sonarr?"
-  echo "$MSG" | log
-  >&2 echo "$MSG"
-  usage 
-  exit 1
-fi
-
 if [ -z "$1" ]; then
   MSG="Error|No audio languages specified!"
   echo "$MSG" | log
@@ -212,6 +211,20 @@ if [ ! -f "/usr/bin/mkvmerge" ]; then
   exit 4
 fi
 
+if [[ "${!striptracks_eventtype}" = "Test" ]]; then
+  echo "Info|${striptracks_type^} event: ${!striptracks_eventtype}" | log
+  echo "Info|Script was test executed successfully." | log
+  exit 0
+fi
+
+if [ -z "$striptracks_video" ]; then
+  MSG="Error|No video file specified! Not called from Radarr/Sonarr?"
+  echo "$MSG" | log
+  >&2 echo "$MSG"
+  usage 
+  exit 1
+fi
+
 if [ ! -f "$striptracks_video" ]; then
   MSG="Error|Input file not found: \"$striptracks_video\""
   echo "$MSG" | log
@@ -219,10 +232,49 @@ if [ ! -f "$striptracks_video" ]; then
   exit 5
 fi
 
+#### BEGIN MAIN
 FILESIZE=$(numfmt --to iec --format "%.3f" $(stat -c %s "$striptracks_video"))
-MSG="Info|${striptracks_type} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $FILESIZE, AudioKeep: $1, SubsKeep: $2"
+MSG="Info|${striptracks_type^} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $FILESIZE, AudioKeep: $1, SubsKeep: $2"
 echo "$MSG" | log
-echo "" | awk -v Debug=$striptracks_debug \
+
+# Rename the original video file to a temporary name
+[ $striptracks_debug -eq 1 ] && echo "Debug|Renaming: \"$striptracks_video\" to \"$striptracks_tempvideo\"" | log
+mv -f "$striptracks_video" "$striptracks_tempvideo" | log
+RET=$?; [ "$RET" != 0 ] && {
+  MSG="ERROR[$RET]: Unable to rename video: \"$striptracks_video\" to temp video: \"$striptracks_tempvideo\". Halting."
+  echo "$MSG" | log
+  >&2 echo "$MSG"
+  exit 6
+}
+
+# Read in the output of mkvmerge info extraction
+[ $striptracks_debug -eq 1 ] && echo "Debug|Executing: /usr/bin/mkvmerge -J \"$striptracks_tempvideo\"" | log
+JSON=$(/usr/bin/mkvmerge -J "$striptracks_tempvideo")
+RET=$?; [ "$RET" != 0 ] && {
+  MSG="ERROR[$RET]: Error executing mkvmerge."
+  echo "$MSG" | log
+  >&2 echo "$MSG"
+}
+
+# This and the modified AWK script are a hack, and I know it.  JQ is crazy hard to learn, BTW.
+# Mimic the mkvmerge --identify-verbose option that has been deprecated
+JSON_PROCESSED=$(echo $JSON | jq -jcrM '
+( if (.chapters | .[] | .num_entries) then
+    "Chapters: \(.chapters | .[] | .num_entries) entries\n"
+  else
+    ""
+  end
+),
+( .tracks |
+  .[] |
+  ( "Track ID \(.id): \(.type) (\(.codec)) [",
+    ( [.properties | to_entries |.[] | "\(.key):\(.value | tostring | gsub(" "; "\\s"))"] | join(" ")),
+    "]\n" )
+)
+')
+[ $striptracks_debug -eq 1 ] && echo "$JSON_PROCESSED" | awk '{print "Debug|"$0}' | log
+
+echo "$JSON_PROCESSED" | awk -v Debug=$striptracks_debug \
 -v OrgVideo="$striptracks_video" \
 -v TempVideo="$striptracks_tempvideo" \
 -v MKVVideo="$striptracks_newvideo" \
@@ -233,42 +285,29 @@ BEGIN {
   MKVMerge="/usr/bin/mkvmerge"
   FS="[\t\n: ]"
   IGNORECASE=1
-  if (match(Title,/[a-zA-Z0-9]- /)) {
-    Arr[1]=substr(Title,1,RSTART)
-    Arr[2]=substr(Title,RSTART+RLENGTH-1)
-    Title=Arr[1]":"Arr[2]
-  }  # mawk does not have gensub function
-
-  if (Debug) print "Debug|Renaming: \""OrgVideo"\" to \""TempVideo"\""
-  Result=system("mv \""OrgVideo"\" \""TempVideo"\"")
-  if (Result) {
-    print "Error|"Result" renaming \""OrgVideo"\"" > "/dev/stderr"
-    exit
-  }
-
-  # Read in the output of mkvmerge
-  exe=MKVMerge" --identify-verbose \""TempVideo"\""
-  while ((exe | getline Line) > 0) {
-    if (Debug) print "Debug|"Line
-    FieldCount=split(Line, Fields)
-    if (Fields[1]=="Track") {
-      NoTr++
-      Track[NoTr, "id"]=Fields[3]
-      Track[NoTr, "typ"]=Fields[5]
-      if (Fields[6]~/^\(/) {
-        Track[NoTr, "code"]=substr(Line,1,match(Line,/\)/))
-        sub(/^[^\(]+/,"",Track[NoTr, "code"])
-      }
-      if (Track[NoTr, "typ"]=="video") VidCnt++
-      if (Track[NoTr, "typ"]=="audio") AudCnt++
-      if (Track[NoTr, "typ"]=="subtitles") SubsCnt++
-      for (i=6; i<=FieldCount; i++) {
-        if (Fields[i]=="language") Track[NoTr, "lang"]=Fields[++i]
-      }
-    } else if (Fields[1]=="Chapters") {
-      Chapters=Fields[3]
+}
+/^Track ID/ {
+  FieldCount=split($0, Fields)
+  if (Fields[1]=="Track") {
+    NoTr++
+    Track[NoTr, "id"]=Fields[3]
+    Track[NoTr, "typ"]=Fields[5]
+    if (Fields[6]~/^\(/) {
+      Track[NoTr, "code"]=substr(Line,1,match(Line,/\)/))
+      sub(/^[^\(]+/,"",Track[NoTr, "code"])
+    }
+    if (Track[NoTr, "typ"]=="video") VidCnt++
+    if (Track[NoTr, "typ"]=="audio") AudCnt++
+    if (Track[NoTr, "typ"]=="subtitles") SubsCnt++
+    for (i=6; i<=FieldCount; i++) {
+      if (Fields[i]=="language") Track[NoTr, "lang"]=Fields[++i]
     }
   }
+}
+/^Chapters/ {
+  Chapters=$3
+}
+END {
   if (!NoTr) { print "Error|No tracks found in \""TempVideo"\"" > "/dev/stderr"; exit }
   if (!AudCnt) AudCnt=0; if (!SubsCnt) SubsCnt=0
   print "Info|Original tracks: "NoTr" (audio: "AudCnt", subtitles: "SubsCnt")"
@@ -331,6 +370,8 @@ BEGIN {
   if (Result>1) print "Error|"Result" remuxing \""TempVideo"\"" > "/dev/stderr"
 }' | log
 
+#### END MAIN
+
 # Check for script completion and non-empty file
 if [ -s "$striptracks_newvideo" ]; then
   # Use Recycle Bin if configured
@@ -369,7 +410,7 @@ if [ -f "$striptracks_arr_config" ]; then
   # Check for video ID
   if [ "$striptracks_video_id" ]; then
     # Call API
-    if [ "$striptracks_type" = "Radarr" ] && get_video_info; then
+    if [ "${striptracks_type,,}" = "radarr" ] && get_video_info; then
       # Save original quality
       ORGQUALITY=$(echo $RESULT | jq -crM ${striptracks_json_quality_root}.quality)
     fi
@@ -381,7 +422,7 @@ if [ -f "$striptracks_arr_config" ]; then
         if check_rescan; then
           # This whole section doesn't work under Sonarr because the episodefile_id changes after the RescanSeries if the filename changes
           # Should look into just using a PUT to change everything at once instead of a Rescan.
-          if [ "$striptracks_type" = "Radarr" ]; then
+          if [ "${striptracks_type,,}" = "radarr" ]; then
             if get_video_info; then
               # Check that the file didn't get lost in the Rescan.
               #  Radarr sometimes needs to Rescan twice when the file extension changes
@@ -391,12 +432,12 @@ if [ -f "$striptracks_arr_config" ]; then
                 #  NOTE: This "works" with Radarr in that the change shows up in the GUI, but only until the page changes.
                 #  It doesn't seem to write the info permanently. Maybe an API bug?
                 if [ "$(echo $RESULT | jq -crM ${striptracks_json_quality_root}.quality.quality.name)" = "Unknown" ]; then
-                  [ $striptracks_debug -eq 1 ] && echo "Debug|Updating quality to '$(echo $ORGQUALITY | jq -crM .quality.name)'. Calling $striptracks_type API using PUT and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_video_id?apikey=(removed)'" | log
+                  [ $striptracks_debug -eq 1 ] && echo "Debug|Updating quality to '$(echo $ORGQUALITY | jq -crM .quality.name)'. Calling ${striptracks_type^} API using PUT and URL 'http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_video_id?apikey=(removed)'" | log
                   RESULT=$(curl -s -d "$(echo $RESULT | jq -crM "${striptracks_json_quality_root}.quality=$ORGQUALITY")" -H "Content-Type: application/json" \
                     -X PUT http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/$striptracks_api_endpoint/$striptracks_video_id?apikey=$striptracks_apikey)
-                  [ $striptracks_debug -eq 1 ] && echo "Debug|API returned: $RESULT" | log
+                  [ $striptracks_debug -eq 1 ] && echo "API returned: $RESULT" | awk '{print "Debug|"$0}' | log
                   if [ "$(echo $RESULT | jq -crM ${striptracks_json_quality_root}.quality.quality.name)" = "Unknown" ]; then
-                    MSG="Warn|Unable to update $striptracks_type $striptracks_api_endpoint '$striptracks_title' to quality '$(echo $ORGQUALITY | jq -crM .quality.name)'"
+                    MSG="Warn|Unable to update ${striptracks_type^} $striptracks_api_endpoint '$striptracks_title' to quality '$(echo $ORGQUALITY | jq -crM .quality.name)'"
                     echo "$MSG" | log
                     >&2 echo "$MSG"
                   fi
@@ -419,7 +460,7 @@ if [ -f "$striptracks_arr_config" ]; then
           fi
         else
           # Timeout or failure
-          MSG="Warn|$striptracks_type job ID $JOBID timed out or failed."
+          MSG="Warn|${striptracks_type^} job ID $JOBID timed out or failed."
           echo "$MSG" | log
           >&2 echo "$MSG"
         fi
@@ -438,7 +479,7 @@ if [ -f "$striptracks_arr_config" ]; then
   fi
 else
   # No config file means we can't call the API
-  MSG="Warn|Unable to locate $striptracks_type config file: '$striptracks_arr_config'"
+  MSG="Warn|Unable to locate ${striptracks_type^} config file: '$striptracks_arr_config'"
   echo "$MSG" | log
   >&2 echo "$MSG"
 fi
