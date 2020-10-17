@@ -1,5 +1,5 @@
 # This container has been deprecated and will not be developed further.  
-## Please use the [Docker Mods](https://github.com/linuxserver/docker-mods/tree/radarr-striptracks) version of this script.
+### Please use the [Docker Mods](https://github.com/linuxserver/docker-mods/tree/radarr-striptracks) version of this script.
 
 ---
 
