@@ -79,7 +79,7 @@ The `-d` option enables debug logging.
 ## Triggers
 The only events/notification triggers that have been tested are **On Download** and **On Upgrade**
 
-![striptracks](https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/master/images/striptracks.png "Radarr/Sonarr custom script settings")
+![striptracks](images/striptracks.png "Radarr/Sonarr custom script settings")
 
 ## Logs
 A log file is created for the script activity called:
@@ -149,7 +149,7 @@ Then put `/usr/local/bin/wrapper.sh` in the **Path** field in place of `/usr/loc
 ### Preview Triggers
 The only events/notification triggers that have been tested are **On Import** and **On Upgrade**
 
-![striptracks](https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/preview/images/striptracks-v3.png "Radarr/Sonarr custom script settings")
+![striptracks](images/striptracks-v3.png "Radarr/Sonarr custom script settings")
 
 ### Preview Logs
 The log can be inspected or downloaded from the Radarr/Sonarr GUI under System->Log Files
