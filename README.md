@@ -1,3 +1,8 @@
+# This container has been deprecated and will not be developed further.  
+## Please use the [Docker Mods](https://github.com/linuxserver/docker-mods/tree/radarr-striptracks) version of this script.
+
+---
+
 A Radarr/Sonarr Docker container with a script that uses mkvmerge to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages.
 Chapters, if they exist, are preserved. The Title attribute in the MKV is set to the movie title plus year (ex: `The Sting (1973)`) or the series title plus episode information (ex: `Happy! 01x01 - What Smiles Are For`).
 
