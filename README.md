@@ -129,7 +129,7 @@ Make it executable:
 chmod +x /config/striptracks-custom.sh
 ```
 
-Then put `/config/striptracks-custom.sh` in the **Path** field in place of `/usr/local/bin/striptracks-eng.sh` mentioned in the [Iinstallation](./README.md#installation) section above.
+Then put `/config/striptracks-custom.sh` in the **Path** field in place of `/usr/local/bin/striptracks-eng.sh` mentioned in the [Installation](./README.md#installation) section above.
 
 >**Note:** If you followed the Linuxserver.io recommendations when configuring your container, the `/config` directory will be mapped to an external storage location.  It is therefore recommended to place custom scripts in the `/config` directory so they will survive container updates, but they may be placed anywhere that is accessible by Radarr or Sonarr.
 
