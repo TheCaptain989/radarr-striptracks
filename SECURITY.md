@@ -6,7 +6,7 @@ Only the latest major and minor version are supported.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.2.x   | :heavy_check_mark: |
+| 2.x     | :heavy_check_mark: |
 
 ## Reporting a Vulnerability
 
