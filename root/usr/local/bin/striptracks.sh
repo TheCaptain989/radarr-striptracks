@@ -75,12 +75,6 @@ export striptracks_json_key="${striptracks_video_type}Id"
 export striptracks_eventtype="${striptracks_type,,}_eventtype"
 export striptracks_tempvideo="${striptracks_video}.tmp"
 export striptracks_newvideo="${striptracks_video%.*}.mkv"
-export striptracks_db="/config/${striptracks_type,,}.db"
-if [ ! -f "$striptracks_db" ]; then
-  striptracks_db=/config/nzbdrone.db
-fi
-export striptracks_recyclebin=$(sqlite3 $striptracks_db 'SELECT Value FROM Config WHERE Key="recyclebin"')
-striptracks_return=$?; [ "$striptracks_return" != 0 ] && >&2 echo "WARNING[$striptracks_return]: Unable to read recyclebin information from database \"$striptracks_db\""
 striptracks_isocodemap='{"languages":[{"language":{"id":-1,"name":"Any","iso639-2":["ara","bul","zho","chi","ces","cze","dan","nld","dut","eng","fin","fra","fre","deu","ger","ell","gre","heb","hin","hun","isl","ice","ita","jpn","kor","lit","nor","pol","por","ron","rom","rus","spa","swe","tha","tur","vie","und"]}},{"language":{"id":-2,"name":"Original","iso639-2":["ara","bul","zho","chi","ces","cze","dan","nld","dut","eng","fin","fra","fre","deu","ger","ell","gre","heb","hin","hun","isl","ice","ita","jpn","kor","lit","nor","pol","por","ron","rom","rus","spa","swe","tha","tur","vie","und"]}},{"language":{"id":27,"name":"Hindi","iso639-2":["hin"]}},{"language":{"id":26,"name":"Arabic","iso639-2":["ara"]}},{"language":{"id":0,"name":"Unknown","iso639-2":["und"]}},{"language":{"id":13,"name":"Vietnamese","iso639-2":["vie"]}},{"language":{"id":17,"name":"Turkish","iso639-2":["tur"]}},{"language":{"id":14,"name":"Swedish","iso639-2":["swe"]}},{"language":{"id":3,"name":"Spanish","iso639-2":["spa"]}},{"language":{"id":11,"name":"Russian","iso639-2":["rus"]}},{"language":{"id":18,"name":"Portuguese","iso639-2":["por"]}},{"language":{"id":12,"name":"Polish","iso639-2":["pol"]}},{"language":{"id":15,"name":"Norwegian","iso639-2":["nor"]}},{"language":{"id":24,"name":"Lithuanian","iso639-2":["lit"]}},{"language":{"id":21,"name":"Korean","iso639-2":["kor"]}},{"language":{"id":8,"name":"Japanese","iso639-2":["jpn"]}},{"language":{"id":5,"name":"Italian","iso639-2":["ita"]}},{"language":{"id":9,"name":"Icelandic","iso639-2":["isl","ice"]}},{"language":{"id":22,"name":"Hungarian","iso639-2":["hun"]}},{"language":{"id":23,"name":"Hebrew","iso639-2":["heb"]}},{"language":{"id":20,"name":"Greek","iso639-2":["ell","gre"]}},{"language":{"id":4,"name":"German","iso639-2":["deu","ger"]}},{"language":{"id":2,"name":"French","iso639-2":["fra","fre"]}},{"language":{"id":19,"name":"Flemish","iso639-2":["nld","dut"]}},{"language":{"id":16,"name":"Finnish","iso639-2":["fin"]}},{"language":{"id":1,"name":"English","iso639-2":["eng"]}},{"language":{"id":7,"name":"Dutch","iso639-2":["nld","dut"]}},{"language":{"id":6,"name":"Danish","iso639-2":["dan"]}},{"language":{"id":25,"name":"Czech","iso639-2":["ces","cze"]}},{"language":{"id":10,"name":"Chinese","iso639-2":["zho","chi"]}}]}'
 
 ### Functions
@@ -182,7 +176,7 @@ function check_rescan {
   for ((i=1; i <= 15; i++)); do
     [ $striptracks_debug -eq 1 ] && echo "Debug|Checking job $striptracks_jobid completion, try #$i. Calling ${striptracks_type^} API using GET and URL '$striptracks_api_url/v3/command/$striptracks_jobid'" | log
     striptracks_result=$(curl -s -H "X-Api-Key: $striptracks_apikey" \
-    -X GET "$striptracks_api_url/v3/command/$striptracks_jobid")
+      -X GET "$striptracks_api_url/v3/command/$striptracks_jobid")
     [ $striptracks_debug -eq 1 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
     if [ "$(echo $striptracks_result | jq -crM .status)" = "completed" ]; then
       local striptracks_return=0
@@ -257,7 +251,7 @@ if [ -f "$striptracks_arr_config" ]; then
   # Check Radarr/Sonarr version
   [ $striptracks_debug -eq 1 ] && echo "Debug|Getting ${striptracks_type^} version. Calling ${striptracks_type^} API using GET and URL '$striptracks_api_url/system/status'" | log
   striptracks_arr_version=$(curl -s -H "X-Api-Key: $striptracks_apikey" \
-        -X GET "$striptracks_api_url/system/status" | jq -crM .version)
+    -X GET "$striptracks_api_url/system/status" | jq -crM .version)
   [ $striptracks_debug -eq 1 ] && echo "Debug|Detected ${striptracks_type^} version $striptracks_arr_version" | log
 
   # Requires API v3
@@ -268,6 +262,12 @@ if [ -f "$striptracks_arr_config" ]; then
     >&2 echo "$striptracks_message"
     exit 8
   fi
+
+  # Get RecycleBin
+  [ $striptracks_debug -eq 1 ] && echo "Debug|Getting ${striptracks_type^} RecycleBin. Calling ${striptracks_type^} API using GET and URL '$striptracks_api_url/v3/config/mediamanagement'" | log
+  striptracks_recyclebin=$(curl -s -H "X-Api-Key: $striptracks_apikey" \
+    -X GET "$striptracks_api_url/v3/config/mediamanagement" | jq -crM .recycleBin)
+  [ $striptracks_debug -eq 1 ] && echo "Debug|Detected ${striptracks_type^} RecycleBin '$striptracks_recyclebin'" | log
 else
   # No config file means we can't call the API.  Best effort at this point.
   striptracks_message="Warn|Unable to locate ${striptracks_type^} config file: '$striptracks_arr_config'"
@@ -538,96 +538,87 @@ echo "$striptracks_message" | log
 #### Call Radarr/Sonarr API to RescanMovie/RescanSeries
 # Check for URL
 if [ -n "$striptracks_api_url" ]; then
-  #  NOTE: This has been updated to work with v3 API only.  Far too many complications trying to keep multiple version compatible.
-  #  See issue #27 for reasons why: https://github.com/TheCaptain989/radarr-striptracks/issues/27
-  if [ "${striptracks_arr_version/.*/}" != "2" ]; then
-    # Check for video IDs
-    if [ "$striptracks_video_id" -a "$striptracks_videofile_id" ]; then
-      # Get video file info
-      if get_videofile_info; then
-        # Save original quality
-        striptracks_original_quality=$(echo $striptracks_result | jq -crM .quality)
-        [ $striptracks_debug -eq 1 ] && echo "Debug|Detected quality '$(echo $striptracks_original_quality | jq -crM .quality.name)'." | log
-        # Loop a maximum of twice
-        #  Radarr needs to Rescan twice when the file extension changes
-        #  (.avi -> .mkv for example)
-        for ((i=1; $i <= 2; i++)); do
-          # Scan the disk for the new movie file
-          if rescan; then
-            # Give it a beat
-            sleep 1
-            # Check that the Rescan completed
-            if check_rescan; then
-              # Get new video file id
-              if get_video_info; then
-                # Get new video file ID
-                striptracks_videofile_id=$(echo $striptracks_result | jq -crM ${striptracks_json_quality_root}.id)
-                [ $striptracks_debug -eq 1 ] && echo "Debug|Set new video file id '$striptracks_videofile_id'." | log
-                # Get new video file info
-                if get_videofile_info; then
-                  # Check that the file didn't get lost in the Rescan.
-                  # If we lost the quality information, put it back
-                  if [ "$(echo $striptracks_result | jq -crM .quality.quality.name)" != "$(echo $striptracks_original_quality | jq -crM .quality.name)" ]; then
-                    [ $striptracks_debug -eq 1 ] && echo "Debug|Updating from quality '$(echo $striptracks_result | jq -crM .quality.quality.name)' to '$(echo $striptracks_original_quality | jq -crM .quality.name)'. Calling ${striptracks_type^} API using PUT and URL '$striptracks_api_url/v3/$striptracks_videofile_api/editor'" | log
-                    striptracks_result=$(curl -s -H "X-Api-Key: $striptracks_apikey" -H "Content-Type: application/json" \
-                              -d "{\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"quality\":$striptracks_original_quality}" \
-                              -X PUT "$striptracks_api_url/v3/$striptracks_videofile_api/editor")
-                    [ $striptracks_debug -eq 1 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
-                    # Check that the returned result shows the update
-                    if [ "$(echo $striptracks_result | jq -crM .[].quality.quality.name)" = "$(echo $striptracks_original_quality | jq -crM .quality.name)" ]; then
-                      # Updated successfully
-                      [ $striptracks_debug -eq 1 ] && echo "Debug|Successfully updated quality to '$(echo $striptracks_result | jq -crM .[].quality.quality.name)'." | log
-                      break
-                    else
-                      striptracks_message="Warn|Unable to update ${striptracks_type^} $striptracks_video_api '$striptracks_title' to quality '$(echo $striptracks_original_quality | jq -crM .quality.name)'"
-                      echo "$striptracks_message" | log
-                      >&2 echo "$striptracks_message"
-                    fi
-                  else
-                    # The quality is already correct
-                    [ $striptracks_debug -eq 1 ] && echo "Debug|Quality of '$(echo $striptracks_original_quality | jq -crM .quality.name)' remained unchanged." | log
+  # Check for video IDs
+  if [ "$striptracks_video_id" -a "$striptracks_videofile_id" ]; then
+    # Get video file info
+    if get_videofile_info; then
+      # Save original quality
+      striptracks_original_quality=$(echo $striptracks_result | jq -crM .quality)
+      [ $striptracks_debug -eq 1 ] && echo "Debug|Detected quality '$(echo $striptracks_original_quality | jq -crM .quality.name)'." | log
+      # Loop a maximum of twice
+      #  Radarr needs to Rescan twice when the file extension changes
+      #  (.avi -> .mkv for example)
+      for ((i=1; $i <= 2; i++)); do
+        # Scan the disk for the new movie file
+        if rescan; then
+          # Give it a beat
+          sleep 1
+          # Check that the Rescan completed
+          if check_rescan; then
+            # Get new video file id
+            if get_video_info; then
+              # Get new video file ID
+              striptracks_videofile_id=$(echo $striptracks_result | jq -crM ${striptracks_json_quality_root}.id)
+              [ $striptracks_debug -eq 1 ] && echo "Debug|Set new video file id '$striptracks_videofile_id'." | log
+              # Get new video file info
+              if get_videofile_info; then
+                # Check that the file didn't get lost in the Rescan.
+                # If we lost the quality information, put it back
+                if [ "$(echo $striptracks_result | jq -crM .quality.quality.name)" != "$(echo $striptracks_original_quality | jq -crM .quality.name)" ]; then
+                  [ $striptracks_debug -eq 1 ] && echo "Debug|Updating from quality '$(echo $striptracks_result | jq -crM .quality.quality.name)' to '$(echo $striptracks_original_quality | jq -crM .quality.name)'. Calling ${striptracks_type^} API using PUT and URL '$striptracks_api_url/v3/$striptracks_videofile_api/editor'" | log
+                  striptracks_result=$(curl -s -H "X-Api-Key: $striptracks_apikey" -H "Content-Type: application/json" \
+                    -d "{\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"quality\":$striptracks_original_quality}" \
+                    -X PUT "$striptracks_api_url/v3/$striptracks_videofile_api/editor")
+                  [ $striptracks_debug -eq 1 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
+                  # Check that the returned result shows the update
+                  if [ "$(echo $striptracks_result | jq -crM .[].quality.quality.name)" = "$(echo $striptracks_original_quality | jq -crM .quality.name)" ]; then
+                    # Updated successfully
+                    [ $striptracks_debug -eq 1 ] && echo "Debug|Successfully updated quality to '$(echo $striptracks_result | jq -crM .[].quality.quality.name)'." | log
                     break
+                  else
+                    striptracks_message="Warn|Unable to update ${striptracks_type^} $striptracks_video_api '$striptracks_title' to quality '$(echo $striptracks_original_quality | jq -crM .quality.name)'"
+                    echo "$striptracks_message" | log
+                    >&2 echo "$striptracks_message"
                   fi
                 else
-                  # No '.path' in returned JSON
-                  striptracks_message="Warn|The '$striptracks_videofile_api' API with ${striptracks_video_api}File id $striptracks_videofile_id returned no path."
-                  echo "$striptracks_message" | log
-                  >&2 echo "$striptracks_message"
+                  # The quality is already correct
+                  [ $striptracks_debug -eq 1 ] && echo "Debug|Quality of '$(echo $striptracks_original_quality | jq -crM .quality.name)' remained unchanged." | log
+                  break
                 fi
               else
-                # 'hasFile' is False in returned JSON.
-                striptracks_message="Warn|The '$striptracks_video_api' API with id $striptracks_video_id returned a false hasFile (Normal with Radarr on try #1)."
+                # No '.path' in returned JSON
+                striptracks_message="Warn|The '$striptracks_videofile_api' API with ${striptracks_video_api}File id $striptracks_videofile_id returned no path."
                 echo "$striptracks_message" | log
                 >&2 echo "$striptracks_message"
               fi
             else
-              # Timeout or failure
-              striptracks_message="Warn|${striptracks_type^} job ID $striptracks_jobid timed out or failed."
+              # 'hasFile' is False in returned JSON.
+              striptracks_message="Warn|The '$striptracks_video_api' API with id $striptracks_video_id returned a false hasFile (Normal with Radarr on try #1)."
               echo "$striptracks_message" | log
               >&2 echo "$striptracks_message"
             fi
           else
-            # Error from API
-            striptracks_message="Error|The '$striptracks_rescan_api' API with $striptracks_json_key $striptracks_video_id failed."
+            # Timeout or failure
+            striptracks_message="Warn|${striptracks_type^} job ID $striptracks_jobid timed out or failed."
             echo "$striptracks_message" | log
             >&2 echo "$striptracks_message"
           fi
-        done
-      else
-        # No '.path' in returned JSON
-        striptracks_message="Warn|The '$striptracks_videofile_api' API with ${striptracks_video_api}File id $striptracks_videofile_id returned no path."
-        echo "$striptracks_message" | log
-        >&2 echo "$striptracks_message"
-      fi
+        else
+          # Error from API
+          striptracks_message="Error|The '$striptracks_rescan_api' API with $striptracks_json_key $striptracks_video_id failed."
+          echo "$striptracks_message" | log
+          >&2 echo "$striptracks_message"
+        fi
+      done
     else
-      # No video ID means we can't call the API
-      striptracks_message="Warn|Missing or empty environment variable: striptracks_video_id='$striptracks_video_id' or striptracks_videofile_id='$striptracks_videofile_id'"
+      # No '.path' in returned JSON
+      striptracks_message="Warn|The '$striptracks_videofile_api' API with ${striptracks_video_api}File id $striptracks_videofile_id returned no path."
       echo "$striptracks_message" | log
       >&2 echo "$striptracks_message"
     fi
   else
-    # Radarr/Sonarr version 2
-    striptracks_message="Warn|This script does not support calling the ${striptracks_type^} API version ${striptracks_arr_version}'"
+    # No video ID means we can't call the API
+    striptracks_message="Warn|Missing or empty environment variable: striptracks_video_id='$striptracks_video_id' or striptracks_videofile_id='$striptracks_videofile_id'"
     echo "$striptracks_message" | log
     >&2 echo "$striptracks_message"
   fi
