@@ -20,6 +20,7 @@
 #  numfmt
 #  stat
 #  nice
+#  basename
 
 # Exit codes:
 #  0 - success; or test
@@ -29,7 +30,7 @@
 #  4 - mkvmerge not found
 #  5 - specified video file not found
 #  6 - unable to rename video to temp video
-#  7 - unknown environment
+#  7 - unknown eventtype environment variable
 #  8 - unsupported Radarr/Sonarr version (v2)
 # 10 - remuxing completed, but no output file found
 # 20 - general error
@@ -43,8 +44,21 @@ export striptracks_maxlogsize=512000
 export striptracks_maxlog=4
 export striptracks_debug=0
 export striptracks_langcodes=
+
+# Process options
+while getopts ":d" opt; do
+  case ${opt} in
+    d ) # For debug purposes only
+      striptracks_debug=1
+    ;;
+  esac
+done
+shift $((OPTIND -1))
+
+## Mode specific variables
 export striptracks_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
 if [[ "${striptracks_type,,}" = "radarr" ]]; then
+  # Radarr mode
   export striptracks_video="$radarr_moviefile_path"
   export striptracks_video_api="movie"
   export striptracks_video_id="${radarr_movie_id}"
@@ -56,6 +70,7 @@ if [[ "${striptracks_type,,}" = "radarr" ]]; then
   export striptracks_profile_type="quality"
   export striptracks_title="$radarr_movie_title ($radarr_movie_year)"
 elif [[ "${striptracks_type,,}" = "sonarr" ]]; then
+  # Sonarr mode
   export striptracks_video="$sonarr_episodefile_path"
   export striptracks_video_api="episode"
   export striptracks_video_id="${sonarr_episodefile_episodeids}"
@@ -66,8 +81,15 @@ elif [[ "${striptracks_type,,}" = "sonarr" ]]; then
   export striptracks_video_type="series"
   export striptracks_profile_type="language"
   export striptracks_title="$sonarr_series_title $(numfmt --format "%02f" ${sonarr_episodefile_seasonnumber:-0})x$(numfmt --format "%02f" ${sonarr_episodefile_episodenumbers:-0}) - $sonarr_episodefile_episodetitles"
+elif [ -z "${striptracks_type}" ]; then
+  # Batch mode
+  export striptracks_type="batch"
+  export batch_eventtype="Convert"
+  export striptracks_video="$3"
+  export striptracks_title="$(basename "$striptracks_video" ".${striptracks_video##*.}")"
 else
-  echo "Unknown environment: ${striptracks_type}"
+  # Called in an unknown way
+  echo -e "Error|Unknown eventtype environment variable: ${striptracks_type}\nNot called within Radarr/Sonarr?"
   exit 7
 fi
 export striptracks_rescan_api="Rescan${striptracks_video_type^}"
@@ -86,7 +108,7 @@ Video remuxing script designed for use with Radarr and Sonarr
 Source: https://github.com/TheCaptain989/radarr-striptracks
 
 Usage:
-  $0 [-d] <audio_languages> <subtitle_languages>
+  $0 [-d] [<audio_languages> [<subtitle_languages> [<video_file>]]]
 
 Options and Arguments:
   -d                     enable debug logging
@@ -94,6 +116,16 @@ Options and Arguments:
                          Multiple codes may be concatenated.
   <subtitle_languages>   ISO639-2 code(s) prefixed with a colon \`:\`
                          Multiple codes may be concatenated.
+  <video_file>           If included, the script enters batch mode
+                         and converts the specified file.
+                         WARNING: Do not use this argument when calling
+                         from Radarr or Sonarr!
+
+Batch Mode:
+  In batch mode the script acts as if it were not called from within Radarr
+  or Sonarr.  It converts the file specified on the command line and ignores
+  any environment variables that are normally expected.  The MKV embedded title
+  attribute is set to the basename of the file minus the extension.
 
 Examples:
   $striptracks_script :eng:und :eng              # keep English and Undetermined audio and
@@ -102,6 +134,11 @@ Examples:
   $striptracks_script -d :eng:kor:jpn :eng:spa   # Enable debugging, keeping English, Korean,
                                             # and Japanese audio, and English and
                                             # Spanish subtitles
+  $striptracks_script :eng:und :eng \"/path/to/movies/Finding Nemo (2003).mkv\"
+                                            # Batch mode
+                                            # keep English and Undetermined audio and
+                                            # English subtitles, converting video in
+
 "
   echo "$usage" >&2
 }
@@ -210,19 +247,13 @@ function get_profiles {
   return $striptracks_return
 }
 
-# Process options
-while getopts ":d" opt; do
-  case ${opt} in
-    d ) # For debug purposes only
-      striptracks_message="Debug|Enabling debug logging."
-      echo "$striptracks_message" | log
-      echo "$striptracks_message" >&2
-      striptracks_debug=1
-      printenv | sort | sed 's/^/Debug|/' | log
-    ;;
-  esac
-done
-shift $((OPTIND -1))
+# Log Debug state
+if [ $striptracks_debug -eq 1 ]; then
+  striptracks_message="Debug|Enabling debug logging."
+  echo "$striptracks_message" | log
+  echo "$striptracks_message" >&2
+  printenv | sort | sed 's/^/Debug|/' | log
+fi
 
 # Check for required binaries
 if [ ! -f "/usr/bin/mkvmerge" ]; then
@@ -232,8 +263,15 @@ if [ ! -f "/usr/bin/mkvmerge" ]; then
   exit 4
 fi
 
+# Check for Batch mode
+if [ "$striptracks_type" = "batch" ]; then
+  [ $striptracks_debug -eq 1 ] && echo "Debug|Switching to batch mode. Input filename: ${striptracks_video}" | log
+fi
+
 # Check for config file
-if [ -f "$striptracks_arr_config" ]; then
+if [ "$striptracks_type" = "batch" ]; then
+  [ $striptracks_debug -eq 1 ] && echo "Debug|Not using config file in batch mode." | log
+elif [ -f "$striptracks_arr_config" ]; then
   # Read *arr config.xml
   [ $striptracks_debug -eq 1 ] && echo "Debug|Reading from ${striptracks_type^} config file '$striptracks_arr_config'" | log
   while read_xml; do
@@ -278,7 +316,9 @@ fi
 # Handle Test event
 if [[ "${!striptracks_eventtype}" = "Test" ]]; then
   echo "Info|${striptracks_type^} event: ${!striptracks_eventtype}" | log
-  echo "Info|Script was test executed successfully." | log
+  striptracks_message="Info|Script was test executed successfully."
+  echo "$striptracks_message" | log
+  echo "$striptracks_message" >&2
   exit 0
 fi
 
@@ -301,7 +341,9 @@ fi
 
 #### Detect languages configured in Radarr/Sonarr
 # Check for URL
-if [ -n "$striptracks_api_url" ]; then
+if [ "$striptracks_type" = "batch" ]; then
+  [ $striptracks_debug -eq 1 ] && echo "Debug|Cannot detect languages in batch mode." | log
+elif [ -n "$striptracks_api_url" ]; then
   # Get quality/language profile info
   if get_profiles; then
     striptracks_profiles="$striptracks_result"
@@ -542,7 +584,9 @@ echo "$striptracks_message" | log
 
 #### Call Radarr/Sonarr API to RescanMovie/RescanSeries
 # Check for URL
-if [ -n "$striptracks_api_url" ]; then
+if [ "$striptracks_type" = "batch" ]; then
+  [ $striptracks_debug -eq 1 ] && echo "Debug|Cannot use API in batch mode." | log
+elif [ -n "$striptracks_api_url" ]; then
   # Check for video IDs
   if [ "$striptracks_video_id" -a "$striptracks_videofile_id" ]; then
     # Get video file info

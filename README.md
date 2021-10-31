@@ -81,9 +81,9 @@ Both audio and subtitles that match the selected language(s) are kept.
 #### Manual Override
 The script still supports command line arguments that will override what is detected.  More granular control can therefore be exerted or extended using tagging and defining multiple Connect scripts (this is native Radarr/Sonarr functionality outside the scope of this documentation).
 
-The script accepts two command line arguments and one option:
+The script accepts three command line arguments and one option:
 
-`[-d] [<audio_languages> [<subtitle_languages>]]`
+`[-d] [<audio_languages> [<subtitle_languages> [<video_file>]]]`
 
 The `<audio_languages>` and `<subtitle_languages>` are optional arguments that are colon (:) prepended language codes in [ISO639-2](https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes "List of ISO 639-2 codes") format.  
 For example:
@@ -94,12 +94,19 @@ For example:
 
 ...etc.
 
-Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.  
+Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.
+
+The `<video_file>` optional argument is used to enable [batch mode](./README.md#batch-mode).
 
 >**NOTE:** The script is smart enough to not remove the last audio track. This way you don't have to specify every possible language if you are importing a
 foreign film, for example.
 
 The `-d` option enables debug logging.
+
+#### Batch Mode
+In batch mode the script acts as if it were not called from within Radarr or Sonarr.  It converts the file specified on the command line and ignores any environment variables that are normally expected.  The MKV embedded title attribute is set to the basename of the file minus the extension.
+
+Using this function, you can easily process all of your video files at once.  See the [batch example](./README.md#batch-example) below.
 
 ### Examples
 ```
@@ -107,6 +114,9 @@ The `-d` option enables debug logging.
 -d :eng ""               # Enable debugging, keeping English audio and no subtitles
 :eng:kor:jpn :eng:spa    # Keep English, Korean, and Japanese audio, and English and
                          # Spanish subtitles
+:eng:und :eng "/path/to/movies/Finding Nemo (2003).avi"   # Batch mode
+                                                          # keep English and Undetermined audio and
+                                                          # English subtitles, converting video in
 ```
 
 ### Wrapper Scripts
@@ -144,6 +154,12 @@ chmod +x /config/striptracks-custom.sh
 Then put `/config/striptracks-custom.sh` in the **Path** field in place of `/usr/local/bin/striptracks.sh` mentioned in the [Installation](./README.md#installation) section above.
 
 >**Note:** If you followed the Linuxserver.io recommendations when configuring your container, the `/config` directory will be mapped to an external storage location.  It is therefore recommended to place custom scripts in the `/config` directory so they will survive container updates, but they may be placed anywhere that is accessible by Radarr or Sonarr.
+
+#### Batch Example
+To keep English and Undetermined audio and English subtitles on all video files ending in .MKV, .AVI, or .MP4 in the `/movies` directory with the script, enter the following:
+```
+find /movies/ -type f \( -name "*.mkv" -o -name "*.avi" -o -name "*.mp4" \) | while read file; do /usr/local/bin/striptracks.sh :eng:und :eng "$file"; done
+```
 
 ### Triggers
 The only events/notification triggers that have been tested are **On Import** and **On Upgrade**
