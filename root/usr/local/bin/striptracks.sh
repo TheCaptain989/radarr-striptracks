@@ -62,7 +62,7 @@ Source: https://github.com/TheCaptain989/radarr-striptracks
 
 Usage:
   $0 [OPTIONS] [<audio_languages> [<subtitle_languages>]]
-  $0 [OPTIONS] {-f|--file} <video file> {-a|--audio} <audio_languages> {-s|--subs} <subtitle_languages>
+  $0 [OPTIONS] {-f|--file} <video_file> {-a|--audio} <audio_languages> {-s|--subs} <subtitle_languages>
 
 Options and Arguments:
   -d, --debug                      enable debug logging
@@ -77,9 +77,9 @@ Options and Arguments:
       --help                       display this help and exit
 
 When audio_languages and subtitle_languages are omitted the script detects the audio
-or subtitle languages configured in Radarr or Sonarr.  When present, they override
-the detected codes.  They are also accepted as positional parameters for backwards
-compatibility.
+or subtitle languages configured in Radarr or Sonarr profile.  When present, they
+override the detected codes.  They are also accepted as positional parameters for
+backwards compatibility.
 
 Batch Mode:
   In batch mode the script acts as if it were not called from within Radarr
@@ -88,9 +88,9 @@ Batch Mode:
   attribute is set to the basename of the file minus the extension.
 
 Examples:
-  $striptracks_script :eng:und :eng              # keep English and Undetermined audio and
+  $striptracks_script -a :eng:und -s :eng        # keep English and Undetermined audio and
                                             # English subtitles
-  $striptracks_script :eng \"\"                    # keep English audio and no subtitles
+  $striptracks_script :eng \"\"                  # keep English audio and no subtitles
   $striptracks_script -d :eng:kor:jpn :eng:spa   # Enable debugging, keeping English, Korean,
                                             # and Japanese audio, and English and
                                             # Spanish subtitles
@@ -126,7 +126,7 @@ while (( "$#" )); do
         exit 1
       fi
       ;;
-    -a|--audio ) # Batch Mode
+    -a|--audio ) # Audio languages to keep
       if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
         export striptracks_audiokeep="$2"
         shift 2
@@ -136,7 +136,7 @@ while (( "$#" )); do
         exit 2
       fi
       ;;
-    -s|--subs ) # Batch Mode
+    -s|--subs ) # Subtitles languages to keep
       if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
         export striptracks_subskeep="$2"
         shift 2
