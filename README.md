@@ -59,7 +59,8 @@ Production Container info: ![Docker Image Size](https://img.shields.io/docker/im
 ## Usage
 The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name.  
 Chapters, if they exist, are preserved. The Title attribute in the MKV is set to the movie title plus year  
-(ex: `The Sting (1973)`) or the series title plus episode information (ex: `Happy! 01x01 - What Smiles Are For`).
+(ex: `The Sting (1973)`) or the series title plus episode information (ex: `Happy! 01x01 - What Smiles Are For`).  
+The language of the video file will be updated in the Radarr or Sonarr database to reflect the actual languages preserved in the remuxed video.
 
 If you've configured the Radarr/Sonarr **Recycle Bin** path correctly, the original video will be moved there.  
 ![danger] **NOTE:** If you have *not* configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
@@ -89,9 +90,9 @@ Where:
 
 Option|Argument|Description
 ---|---|---
--d, --debug| |Enables debug logging
--a, --audio|<audio_languages>|ISO639-2 code(s) prefixed with a colon (`:`)
--s, --subs|<subtitle_languages>|ISO639-2 code(s) prefixed with a colon (`:`)
+-d, --debug|\[\<level\>\]|Enables debug logging. Level is optional.<br/>Default of 1 (low)<br/>2 includes JSON output<br/>3 contains even more JSON output
+-a, --audio|<audio_languages>|Audio languages to keep<br/>ISO639-2 code(s) prefixed with a colon (`:`)
+-s, --subs|<subtitle_languages>|Subtitle languages to keep<br/>IISO639-2 code(s) prefixed with a colon (`:`)
 -f, --file|<video_file>|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified video file.<br/>![danger] **WARNING:** Do not use this argument when called from Radarr or Sonarr!
 --help| |Display help and exit
 
@@ -111,13 +112,15 @@ foreign film, for example.
 
 ### Examples
 ```
--a :eng:und -s :eng         # Keep English and Undetermined audio and English subtitles
+-d 2                        # Enable debugging level 2, audio and subtitles
+                            # languages detected from Radarr/Sonarr
+-a :eng:und -s :eng         # Keep English and Unknown audio and English subtitles
 :eng ""                     # Keep English audio and no subtitles
--d :eng:kor:jpn :eng:spa    # Enable debugging, keeping English, Korean, and Japanese audio, and English and
+-d :eng:kor:jpn :eng:spa    # Enable debugging level 1, keeping English, Korean, and Japanese audio, and English and
                             # Spanish subtitles
 -f \"/path/to/movies/Finding Nemo (2003).mkv\" -a :eng:und -s :eng
                             # Batch Mode
-                            # Keep English and Undetermined audio and
+                            # Keep English and Unknown audio and
                             # English subtitles, converting video specified
 ```
 
@@ -130,11 +133,13 @@ You may use any of these scripts in place of `striptracks.sh` mentioned in the [
 
 ```
 striptracks-debug.sh       # Use detected languages, but enable debug logging
+striptracks-debug-2.sh     # Use detected languages, enable debug logging level 2
+striptracks-debug-max.sh   # Use detected languages, enable highest debug logging
 striptracks-dut.sh         # Keep Dutch audio and subtitles
-striptracks-eng.sh         # Keep English and Undetermined audio and English subtitles
-striptracks-eng-debug.sh   # Keep English and Undetermined audio and English subtitles, and enable debug logging
-striptracks-eng-fre.sh     # Keep English, French, and Undetermined audio and English subtitles
-striptracks-eng-jpn.sh     # Keep English, Japanese, and Undetermined audio and English subtitles
+striptracks-eng.sh         # Keep English and Unknown audio and English subtitles
+striptracks-eng-debug.sh   # Keep English and Unknown audio and English subtitles, and enable debug logging
+striptracks-eng-fre.sh     # Keep English, French, and Unknown audio and English subtitles
+striptracks-eng-jpn.sh     # Keep English, Japanese, and Unknown audio and English subtitles
 striptracks-fre.sh         # Keep French audio and subtitles
 striptracks-fre-debug.sh   # Keep French audio and subtitles, and enable debug logging
 striptracks-ger.sh         # Keep German audio and subtitles
@@ -174,7 +179,7 @@ Because the script is not called from within Radarr or Sonarr, expect the follow
 * *Original video files are deleted.*<br/>The Recycle Bin function is not available.
 
 #### Batch Example
-To keep English and Undetermined audio and English subtitles on all video files ending in .MKV, .AVI, or .MP4 in the `/movies` directory, enter the following at the Linux command line:
+To keep English and Unknown audio and English subtitles on all video files ending in .MKV, .AVI, or .MP4 in the `/movies` directory, enter the following at the Linux command line:
 ```shell
 find /movies/ -type f \( -name "*.mkv" -o -name "*.avi" -o -name "*.mp4" \) | while read file; do /usr/local/bin/striptracks.sh -f "$file" -a :eng:und -s :eng; done
 ```
@@ -189,7 +194,7 @@ This log can be inspected or downloaded from Radarr/Sonarr under *System* > *Log
 Script errors will show up in both the script log and the native Radarr/Sonarr log.
 
 Log rotation is performed with 5 log files of 512KB each being kept.  
->![danger] **NOTE:** If debug logging is enabled, the log file can grow very large very quickly.  *Do not leave debug logging enabled permanently.*
+>![danger] **NOTE:** If debug logging is enabled with a level above 1, the log file can grow very large very quickly.  *Do not leave high-level debug logging enabled permanently.*
 
 ___
 
