@@ -302,7 +302,7 @@ function rescan {
 function check_rescan {
   local i=0
   for ((i=1; i <= 15; i++)); do
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Checking job $striptracks_jobid completion, try #$loop. Calling ${striptracks_type^} API using GET and URL '$striptracks_api_url/v3/command/$striptracks_jobid'" | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Checking job $striptracks_jobid completion, try #$i. Calling ${striptracks_type^} API using GET and URL '$striptracks_api_url/v3/command/$striptracks_jobid'" | log
     striptracks_result=$(curl -s -H "X-Api-Key: $striptracks_apikey" \
       -X GET "$striptracks_api_url/v3/command/$striptracks_jobid")
     local striptracks_return2=$?; [ "$striptracks_return2" != 0 ] && {
