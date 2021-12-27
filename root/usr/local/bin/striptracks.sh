@@ -214,7 +214,7 @@ export striptracks_eventtype="${striptracks_type,,}_eventtype"
 export striptracks_tempvideo="${striptracks_video}.tmp"
 export striptracks_newvideo="${striptracks_video%.*}.mkv"
 # If this were defined directly in Radarr or Sonarr this would not be needed here
-striptracks_isocodemap='{"languages":[{"language":{"name":"Any","iso639-2":["ara","bul","zho","chi","ces","cze","dan","nld","dut","eng","fin","fra","fre","deu","ger","ell","gre","heb","hin","hun","isl","ice","ita","jpn","kor","lit","nor","pol","por","ron","rom","rus","spa","swe","tha","tur","vie","und"]}},{"language":{"name":"Original","iso639-2":["ara","bul","zho","chi","ces","cze","dan","nld","dut","eng","fin","fra","fre","deu","ger","ell","gre","heb","hin","hun","isl","ice","ita","jpn","kor","lit","nor","pol","por","ron","rom","rus","spa","swe","tha","tur","vie","und"]}},{"language":{"name":"Hindi","iso639-2":["hin"]}},{"language":{"name":"Arabic","iso639-2":["ara"]}},{"language":{"name":"Unknown","iso639-2":["und"]}},{"language":{"name":"Vietnamese","iso639-2":["vie"]}},{"language":{"name":"Turkish","iso639-2":["tur"]}},{"language":{"name":"Swedish","iso639-2":["swe"]}},{"language":{"name":"Spanish","iso639-2":["spa"]}},{"language":{"name":"Russian","iso639-2":["rus"]}},{"language":{"name":"Portuguese","iso639-2":["por"]}},{"language":{"name":"Polish","iso639-2":["pol"]}},{"language":{"name":"Norwegian","iso639-2":["nor"]}},{"language":{"name":"Lithuanian","iso639-2":["lit"]}},{"language":{"name":"Korean","iso639-2":["kor"]}},{"language":{"name":"Japanese","iso639-2":["jpn"]}},{"language":{"name":"Italian","iso639-2":["ita"]}},{"language":{"name":"Icelandic","iso639-2":["isl","ice"]}},{"language":{"name":"Hungarian","iso639-2":["hun"]}},{"language":{"name":"Hebrew","iso639-2":["heb"]}},{"language":{"name":"Greek","iso639-2":["ell","gre"]}},{"language":{"name":"German","iso639-2":["deu","ger"]}},{"language":{"name":"French","iso639-2":["fra","fre"]}},{"language":{"name":"Flemish","iso639-2":["nld","dut"]}},{"language":{"name":"Finnish","iso639-2":["fin"]}},{"language":{"name":"English","iso639-2":["eng"]}},{"language":{"name":"Dutch","iso639-2":["nld","dut"]}},{"language":{"name":"Danish","iso639-2":["dan"]}},{"language":{"name":"Czech","iso639-2":["ces","cze"]}},{"language":{"name":"Chinese","iso639-2":["zho","chi"]}}]}'
+striptracks_isocodemap='{"languages":[{"language":{"name":"Any","iso639-2":["ara","bul","zho","chi","ces","cze","dan","nld","dut","eng","fin","fra","fre","deu","ger","ell","gre","heb","hin","hun","isl","ice","ita","jpn","kor","lit","nor","pol","por","ron","rom","rus","spa","swe","tha","tur","vie","und"]}},{"language":{"name":"Original","iso639-2":["ara","bul","zho","chi","ces","cze","dan","nld","dut","eng","fin","fra","fre","deu","ger","ell","gre","heb","hin","hun","isl","ice","ice","ita","jpn","kor","lit","nor","pol","por","ron","rom","rus","spa","swe","tha","tur","vie","und"]}},{"language":{"name":"Arabic","iso639-2":["ara"]}},{"language":{"name":"Bulgarian","iso639-2":["bul"]}},{"language":{"name":"Chinese","iso639-2":["zho","chi"]}},{"language":{"name":"Czech","iso639-2":["ces","cze"]}},{"language":{"name":"Danish","iso639-2":["dan"]}},{"language":{"name":"Dutch","iso639-2":["nld","dut"]}},{"language":{"name":"English","iso639-2":["eng"]}},{"language":{"name":"Finnish","iso639-2":["fin"]}},{"language":{"name":"Flemish","iso639-2":["nld","dut"]}},{"language":{"name":"French","iso639-2":["fra","fre"]}},{"language":{"name":"German","iso639-2":["deu","ger"]}},{"language":{"name":"Greek","iso639-2":["ell","gre"]}},{"language":{"name":"Hebrew","iso639-2":["heb"]}},{"language":{"name":"Hindi","iso639-2":["hin"]}},{"language":{"name":"Hungarian","iso639-2":["hun"]}},{"language":{"name":"Icelandic","iso639-2":["isl","ice"]}},{"language":{"name":"Italian","iso639-2":["ita"]}},{"language":{"name":"Japanese","iso639-2":["jpn"]}},{"language":{"name":"Korean","iso639-2":["kor"]}},{"language":{"name":"Lithuanian","iso639-2":["lit"]}},{"language":{"name":"Norwegian","iso639-2":["nor"]}},{"language":{"name":"Polish","iso639-2":["pol"]}},{"language":{"name":"Portuguese","iso639-2":["por"]}},{"language":{"name":"Romanian","iso639-2":["rum","ron"]}},{"language":{"name":"Russian","iso639-2":["rus"]}},{"language":{"name":"Spanish","iso639-2":["spa"]}},{"language":{"name":"Swedish","iso639-2":["swe"]}},{"language":{"name":"Thai","iso639-2":["tha"]}},{"language":{"name":"Turkish","iso639-2":["tur"]}},{"language":{"name":"Vietnamese","iso639-2":["vie"]}},{"language":{"name":"Unknown","iso639-2":["und"]}}]}'
 
 ### Functions
 
@@ -357,7 +357,7 @@ function get_language_codes {
     echo "$striptracks_message" | log
     echo "$striptracks_message" >&2
   }
-  [ $striptracks_debug -ge 2 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
+  [ $striptracks_debug -ge 3 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
   if [ "$(echo $striptracks_result | jq -crM '.[] | .name')" != "null" ]; then
     local striptracks_return=0
   else
@@ -776,7 +776,7 @@ elif [ -n "$striptracks_api_url" ]; then
     # Get video file info
     if get_videofile_info; then
       # Save original quality
-      striptracks_original_quality=$(echo $striptracks_result | jq -crM .quality)
+      striptracks_original_quality="$(echo $striptracks_result | jq -crM .quality)"
       [ $striptracks_debug -ge 1 ] && echo "Debug|Detected quality '$(echo $striptracks_original_quality | jq -crM .quality.name)'." | log
       # Loop a maximum of twice
       #  Radarr needs to Rescan twice when the file extension changes
@@ -791,7 +791,7 @@ elif [ -n "$striptracks_api_url" ]; then
             # Get new video file id
             if get_video_info; then
               # Get new video file ID
-              striptracks_videofile_id=$(echo $striptracks_result | jq -crM ${striptracks_json_quality_root}.id)
+              striptracks_videofile_id="$(echo $striptracks_result | jq -crM ${striptracks_json_quality_root}.id)"
               [ $striptracks_debug -ge 1 ] && echo "Debug|Set new video file id '$striptracks_videofile_id'." | log
               # Get new video file info
               if get_videofile_info; then
@@ -830,53 +830,60 @@ elif [ -n "$striptracks_api_url" ]; then
                 unset striptracks_json
                 if get_mediainfo "$striptracks_newvideo"; then
                   # Build array of full name languages
-                  striptracks_final_langcodes=$(echo $striptracks_json | jq -crM ".tracks[] | select(.type == \"audio\") | .properties.language")
+                  striptracks_final_langcodes="$(echo $striptracks_json | jq -crM ".tracks[] | select(.type == \"audio\") | .properties.language")"
                   unset striptracks_newvideo_languages
                   for i in $striptracks_final_langcodes; do
-                    striptracks_newvideo_languages+=$(echo $striptracks_isocodemap | jq -crM ".languages[] | .language | select((.\"iso639-2\"[]) == \"$i\") | select(.name != \"Any\" and .name != \"Original\").name")
+                    striptracks_newvideo_languages+="$(echo $striptracks_isocodemap | jq -crM ".languages[] | .language | select((.\"iso639-2\"[]) == \"$i\") | select(.name != \"Any\" and .name != \"Original\").name")"
                   done
-                  # Covert to standard JSON
-                  striptracks_json_languages=$(echo $striptracks_lang_codes | jq -crM "map(select(.name | inside(\"$striptracks_newvideo_languages\")) | {id, name})")
-                  # Check languages for Radarr
-                  if [ "$(echo $striptracks_videofile_info | jq -crM .languages)" != "null" ]; then
-                    if [ "$(echo $striptracks_videofile_info | jq -crM ".languages")" != "$striptracks_json_languages" ]; then
-                      [ $striptracks_debug -ge 1 ] && echo "Debug|Updating from language(s) '$(echo $striptracks_videofile_info | jq -crM "[.languages[].name] | join(\",\")")' to '$(echo $striptracks_json_languages | jq -crM "[.[].name] | join(\",\")")'. Calling ${striptracks_type^} API using PUT and URL '$striptracks_api_url/v3/$striptracks_videofile_api/editor' with data {\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"languages\":${striptracks_json_languages}}" | log
-                      striptracks_result=$(curl -s -H "X-Api-Key: $striptracks_apikey" -H "Content-Type: application/json" \
-                        -d "{\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"languages\":${striptracks_json_languages}}" \
-                        -X PUT "$striptracks_api_url/v3/$striptracks_videofile_api/editor")
-                      striptracks_return=$?; [ "$striptracks_return" != 0 ] && {
-                        striptracks_message="Error|[$striptracks_return] curl error when calling: \"$striptracks_api_url/v3/$striptracks_videofile_api/editor\" with data {\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"languages\":${striptracks_json_languages}}"
-                        echo "$striptracks_message" | log
-                        echo "$striptracks_message" >&2
-                      }
-                      [ $striptracks_debug -ge 2 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
+                  if [ -n "$striptracks_newvideo_languages" ]; then
+                    # Covert to standard JSON
+                    striptracks_json_languages="$(echo $striptracks_lang_codes | jq -crM "map(select(.name | inside(\"$striptracks_newvideo_languages\")) | {id, name})")"
+                    # Check languages for Radarr
+                    if [ "$(echo $striptracks_videofile_info | jq -crM .languages)" != "null" ]; then
+                      if [ "$(echo $striptracks_videofile_info | jq -crM ".languages")" != "$striptracks_json_languages" ]; then
+                        [ $striptracks_debug -ge 1 ] && echo "Debug|Updating from language(s) '$(echo $striptracks_videofile_info | jq -crM "[.languages[].name] | join(\",\")")' to '$(echo $striptracks_json_languages | jq -crM "[.[].name] | join(\",\")")'. Calling ${striptracks_type^} API using PUT and URL '$striptracks_api_url/v3/$striptracks_videofile_api/editor' with data {\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"languages\":${striptracks_json_languages}}" | log
+                        striptracks_result=$(curl -s -H "X-Api-Key: $striptracks_apikey" -H "Content-Type: application/json" \
+                          -d "{\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"languages\":${striptracks_json_languages}}" \
+                          -X PUT "$striptracks_api_url/v3/$striptracks_videofile_api/editor")
+                        striptracks_return=$?; [ "$striptracks_return" != 0 ] && {
+                          striptracks_message="Error|[$striptracks_return] curl error when calling: \"$striptracks_api_url/v3/$striptracks_videofile_api/editor\" with data {\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"languages\":${striptracks_json_languages}}"
+                          echo "$striptracks_message" | log
+                          echo "$striptracks_message" >&2
+                        }
+                        [ $striptracks_debug -ge 2 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
+                      else
+                        # The languages are already correct
+                        [ $striptracks_debug -ge 1 ] && echo "Debug|Language(s) '$(echo $striptracks_json_languages | jq -crM "[.[].name] | join(\",\")")' remained unchanged." | log
+                      fi
+                    # Check languages for Sonarr
+                    elif [ "$(echo $striptracks_videofile_info | jq -crM .language)" != "null" ]; then
+                      if [ "$(echo $striptracks_videofile_info | jq -crM ".language")" != "$(echo $striptracks_json_languages | jq -crM ".[0]")" ]; then
+                        [ $striptracks_debug -ge 1 ] && echo "Debug|Updating from language '$(echo $striptracks_videofile_info | jq -crM ".language.name")' to '$(echo $striptracks_json_languages | jq -crM ".[0].name")'. Calling ${striptracks_type^} API using PUT and URL '$striptracks_api_url/v3/$striptracks_videofile_api/editor' with data {\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"language\":$(echo $striptracks_json_languages | jq -crM ".[0]")}" | log
+                        striptracks_result=$(curl -s -H "X-Api-Key: $striptracks_apikey" -H "Content-Type: application/json" \
+                          -d "{\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"language\":$(echo $striptracks_json_languages | jq -crM ".[0]")}" \
+                          -X PUT "$striptracks_api_url/v3/$striptracks_videofile_api/editor")
+                        striptracks_return=$?; [ "$striptracks_return" != 0 ] && {
+                          striptracks_message="Error|[$striptracks_return] curl error when calling: \"$striptracks_api_url/v3/$striptracks_videofile_api/editor\" with data {\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"languages\":$(echo $striptracks_json_languages | jq -crM ".[0]")}"
+                          echo "$striptracks_message" | log
+                          echo "$striptracks_message" >&2
+                        }
+                        [ $striptracks_debug -ge 2 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
+                      else
+                        # The languages are already correct
+                        [ $striptracks_debug -ge 1 ] && echo "Debug|Language '$(echo $striptracks_json_languages | jq -crM ".[0]")' remained unchanged." | log
+                      fi
                     else
-                      # The languages are already correct
-                      [ $striptracks_debug -ge 1 ] && echo "Debug|Language(s) '$(echo $striptracks_json_languages | jq -crM "[.[].name] | join(\",\")")' remained unchanged." | log
+                      # Some unknown JSON formatting
+                      striptracks_message="Warn|$striptracks_videofile_api returned unknown JSON language location."
+                      echo "$striptracks_message" | log
+                      echo "$striptracks_message" >&2
                     fi
-                  # Check languages for Sonarr
-                  elif [ "$(echo $striptracks_videofile_info | jq -crM .language)" != "null" ]; then
-                    if [ "$(echo $striptracks_videofile_info | jq -crM ".language")" != "$(echo $striptracks_json_languages | jq -crM ".[0]")" ]; then
-                      [ $striptracks_debug -ge 1 ] && echo "Debug|Updating from language '$(echo $striptracks_videofile_info | jq -crM ".language.name")' to '$(echo $striptracks_json_languages | jq -crM ".[0].name")'. Calling ${striptracks_type^} API using PUT and URL '$striptracks_api_url/v3/$striptracks_videofile_api/editor' with data {\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"language\":$(echo $striptracks_json_languages | jq -crM ".[0]")}" | log
-                      striptracks_result=$(curl -s -H "X-Api-Key: $striptracks_apikey" -H "Content-Type: application/json" \
-                        -d "{\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"language\":$(echo $striptracks_json_languages | jq -crM ".[0]")}" \
-                        -X PUT "$striptracks_api_url/v3/$striptracks_videofile_api/editor")
-                      striptracks_return=$?; [ "$striptracks_return" != 0 ] && {
-                        striptracks_message="Error|[$striptracks_return] curl error when calling: \"$striptracks_api_url/v3/$striptracks_videofile_api/editor\" with data {\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"languages\":$(echo $striptracks_json_languages | jq -crM ".[0]")}"
-                        echo "$striptracks_message" | log
-                        echo "$striptracks_message" >&2
-                      }
-                      [ $striptracks_debug -ge 2 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
-                    else
-                      # The languages are already correct
-                      [ $striptracks_debug -ge 1 ] && echo "Debug|Language '$(echo $striptracks_json_languages | jq -crM ".[0]")' remained unchanged." | log
-                    fi
-                  else
-                    # Some unknown JSON formatting
-                    striptracks_message="Warn|$striptracks_videofile_api returned unknown JSON language location."
-                    echo "$striptracks_message" | log
-                    echo "$striptracks_message" >&2
-                  fi
+                else
+                  # Video language not in striptracks_isocodemap
+                  striptracks_message="Warn|Video language code(s) '${striptracks_newvideo_languages//$'\n'/,}' not found in the ISO Codemap. Cannot evaluate."
+                  echo "$striptracks_message" | log
+                  echo "$striptracks_message" >&2
+                fi
                 else
                   # Get media info failed
                   striptracks_message="Error|Could not get media info from new video file. Can't check resulting languages."
