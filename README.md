@@ -147,7 +147,7 @@ striptracks-spa.sh         # Keep Spanish audio and subtitles
 ```
 
 #### Example Wrapper Script
-To configure the third entry from the [Examples](./README.md#examples) section above, create and save a file called `striptracks-custom.sh` to `/config` containing the following text:
+To configure the an entry from the [Examples](./README.md#examples) section above, create and save a file called `striptracks-custom.sh` to `/config` containing the following text:
 ```shell
 #!/bin/bash
 
