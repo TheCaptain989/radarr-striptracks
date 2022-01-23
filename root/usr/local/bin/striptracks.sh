@@ -188,7 +188,7 @@ elif [[ "${striptracks_type,,}" = "radarr" ]]; then
   export striptracks_json_quality_root=".movieFile"
   export striptracks_video_type="movie"
   export striptracks_profile_type="quality"
-  export striptracks_title="$radarr_movie_title ($radarr_movie_year)"
+  export striptracks_title="${radarr_movie_title:-UNKNOWN} (${radarr_movie_year:-UNKNOWN})"
   export striptracks_language_api="language"
 elif [[ "${striptracks_type,,}" = "sonarr" ]]; then
   # Sonarr mode
@@ -201,7 +201,7 @@ elif [[ "${striptracks_type,,}" = "sonarr" ]]; then
   export striptracks_json_quality_root=".episodeFile"
   export striptracks_video_type="series"
   export striptracks_profile_type="language"
-  export striptracks_title="$sonarr_series_title $(numfmt --format "%02f" ${sonarr_episodefile_seasonnumber:-0})x$(numfmt --format "%02f" ${sonarr_episodefile_episodenumbers:-0}) - $sonarr_episodefile_episodetitles"
+  export striptracks_title="${sonarr_series_title:-UNKNOWN} $(numfmt --format "%02f" ${sonarr_episodefile_seasonnumber:-0})x$(numfmt --format "%02f" ${sonarr_episodefile_episodenumbers:-0}) - ${sonarr_episodefile_episodetitles:-UNKNOWN}"
   export striptracks_language_api="languageprofile"
 else
   # Called in an unexpected way
@@ -393,7 +393,7 @@ fi
 
 # Log Debug state
 if [ $striptracks_debug -ge 1 ]; then
-  striptracks_message="Debug|Enabling debug logging. Starting ${striptracks_type^} run for: $striptracks_title"
+  striptracks_message="Debug|Enabling debug logging level ${striptracks_debug}. Starting ${striptracks_type^} run for: $striptracks_title"
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
 fi
