@@ -42,6 +42,7 @@
 
 ### Variables
 export striptracks_script=$(basename "$0")
+export striptracks_ver="{{VERSION}}"
 export striptracks_pid=$$
 export striptracks_arr_config=/config/config.xml
 export striptracks_log=/config/logs/striptracks.txt
@@ -56,7 +57,7 @@ export striptracks_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
 # Usage function
 function usage {
   usage="
-$striptracks_script
+$striptracks_script   Version: $striptracks_ver
 Video remuxing script that only keeps tracks with the specified languages.
 Designed for use with Radarr and Sonarr, but may be used standalone in batch mode.
 
@@ -80,7 +81,8 @@ Options and Arguments:
                                    WARNING: Do not use this argument when called
                                    from Radarr or Sonarr!
       --help                       display this help and exit
-
+      --version                    display script version and exit
+      
 When audio_languages and subtitle_languages are omitted the script detects the audio
 or subtitle languages configured in Radarr or Sonarr profile.  When used on the command
 line, they override the detected codes.  They are also accepted as positional parameters
@@ -124,6 +126,10 @@ while (( "$#" )); do
       ;;
     --help ) # Display usage
       usage
+      exit 0
+      ;;
+    --version ) # Display version
+      echo "$striptracks_script $striptracks_ver"
       exit 0
       ;;
     -f|--file ) # Batch Mode
