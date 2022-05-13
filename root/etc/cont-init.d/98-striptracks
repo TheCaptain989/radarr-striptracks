@@ -7,7 +7,7 @@ Repos:
   Dev/test: https://github.com/TheCaptain989/radarr-striptracks
   Prod: https://github.com/linuxserver/docker-mods/tree/radarr-striptracks
 
-Version: $(cat /etc/version.tc989)
+Version: {{VERSION}}
 ----------------
 EOF
 
