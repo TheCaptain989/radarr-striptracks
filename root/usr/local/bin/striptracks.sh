@@ -211,7 +211,7 @@ elif [[ "${striptracks_type,,}" = "sonarr" ]]; then
   export striptracks_language_api="languageprofile"
 else
   # Called in an unexpected way
-  echo -e "Error|Unknown or missing '*_eventtype' environment variable: ${striptracks_type}\nNot called within Radarr/Sonarr?\nTry using Batch Mode option: -f <file>"
+  echo -e "Error|Unknown or missing '*_eventtype' environment variable: ${striptracks_type}\nNot called from Radarr/Sonarr.\nTry using Batch Mode option: -f <file>"
   exit 7
 fi
 export striptracks_rescan_api="Rescan${striptracks_video_type^}"
@@ -220,7 +220,7 @@ export striptracks_eventtype="${striptracks_type,,}_eventtype"
 export striptracks_tempvideo="${striptracks_video}.tmp"
 export striptracks_newvideo="${striptracks_video%.*}.mkv"
 # If this were defined directly in Radarr or Sonarr this would not be needed here
-striptracks_isocodemap='{"languages":[{"language":{"name":"Any","iso639-2":["ara","bul","zho","chi","ces","cze","dan","nld","dut","eng","fin","fra","fre","deu","ger","ell","gre","heb","hin","hun","isl","ice","ita","jpn","kor","lit","nor","pol","por","ron","rom","rus","spa","swe","tha","tur","vie","und"]}},{"language":{"name":"Original","iso639-2":["ara","bul","zho","chi","ces","cze","dan","nld","dut","eng","fin","fra","fre","deu","ger","ell","gre","heb","hin","hun","isl","ice","ita","jpn","kor","lit","nor","pol","por","ron","rom","rus","spa","swe","tha","tur","vie","und"]}},{"language":{"name":"Arabic","iso639-2":["ara"]}},{"language":{"name":"Bulgarian","iso639-2":["bul"]}},{"language":{"name":"Chinese","iso639-2":["zho","chi"]}},{"language":{"name":"Czech","iso639-2":["ces","cze"]}},{"language":{"name":"Danish","iso639-2":["dan"]}},{"language":{"name":"Dutch","iso639-2":["nld","dut"]}},{"language":{"name":"English","iso639-2":["eng"]}},{"language":{"name":"Finnish","iso639-2":["fin"]}},{"language":{"name":"Flemish","iso639-2":["nld","dut"]}},{"language":{"name":"French","iso639-2":["fra","fre"]}},{"language":{"name":"German","iso639-2":["deu","ger"]}},{"language":{"name":"Greek","iso639-2":["ell","gre"]}},{"language":{"name":"Hebrew","iso639-2":["heb"]}},{"language":{"name":"Hindi","iso639-2":["hin"]}},{"language":{"name":"Hungarian","iso639-2":["hun"]}},{"language":{"name":"Icelandic","iso639-2":["isl","ice"]}},{"language":{"name":"Italian","iso639-2":["ita"]}},{"language":{"name":"Japanese","iso639-2":["jpn"]}},{"language":{"name":"Korean","iso639-2":["kor"]}},{"language":{"name":"Lithuanian","iso639-2":["lit"]}},{"language":{"name":"Norwegian","iso639-2":["nor"]}},{"language":{"name":"Polish","iso639-2":["pol"]}},{"language":{"name":"Portuguese","iso639-2":["por"]}},{"language":{"name":"Romanian","iso639-2":["rum","ron"]}},{"language":{"name":"Russian","iso639-2":["rus"]}},{"language":{"name":"Spanish","iso639-2":["spa"]}},{"language":{"name":"Swedish","iso639-2":["swe"]}},{"language":{"name":"Thai","iso639-2":["tha"]}},{"language":{"name":"Turkish","iso639-2":["tur"]}},{"language":{"name":"Vietnamese","iso639-2":["vie"]}},{"language":{"name":"Unknown","iso639-2":["und"]}}]}'
+striptracks_isocodemap='{"languages":[{"language":{"name":"Any","iso639-2":["ara","bul","zho","chi","ces","cze","dan","nld","dut","eng","fin","fra","fre","deu","ger","ell","gre","heb","hin","hun","isl","ice","ita","jpn","kor","lit","nor","pol","por","ron","rom","rus","spa","swe","tha","tur","vie","und"]}},{"language":{"name":"Arabic","iso639-2":["ara"]}},{"language":{"name":"Bulgarian","iso639-2":["bul"]}},{"language":{"name":"Chinese","iso639-2":["zho","chi"]}},{"language":{"name":"Czech","iso639-2":["ces","cze"]}},{"language":{"name":"Danish","iso639-2":["dan"]}},{"language":{"name":"Dutch","iso639-2":["nld","dut"]}},{"language":{"name":"English","iso639-2":["eng"]}},{"language":{"name":"Finnish","iso639-2":["fin"]}},{"language":{"name":"Flemish","iso639-2":["nld","dut"]}},{"language":{"name":"French","iso639-2":["fra","fre"]}},{"language":{"name":"German","iso639-2":["deu","ger"]}},{"language":{"name":"Greek","iso639-2":["ell","gre"]}},{"language":{"name":"Hebrew","iso639-2":["heb"]}},{"language":{"name":"Hindi","iso639-2":["hin"]}},{"language":{"name":"Hungarian","iso639-2":["hun"]}},{"language":{"name":"Icelandic","iso639-2":["isl","ice"]}},{"language":{"name":"Italian","iso639-2":["ita"]}},{"language":{"name":"Japanese","iso639-2":["jpn"]}},{"language":{"name":"Korean","iso639-2":["kor"]}},{"language":{"name":"Lithuanian","iso639-2":["lit"]}},{"language":{"name":"Norwegian","iso639-2":["nor"]}},{"language":{"name":"Polish","iso639-2":["pol"]}},{"language":{"name":"Portuguese","iso639-2":["por"]}},{"language":{"name":"Romanian","iso639-2":["rum","ron"]}},{"language":{"name":"Russian","iso639-2":["rus"]}},{"language":{"name":"Spanish","iso639-2":["spa"]}},{"language":{"name":"Swedish","iso639-2":["swe"]}},{"language":{"name":"Thai","iso639-2":["tha"]}},{"language":{"name":"Turkish","iso639-2":["tur"]}},{"language":{"name":"Vietnamese","iso639-2":["vie"]}},{"language":{"name":"Unknown","iso639-2":["und"]}}]}'
 
 ### Functions
 
@@ -286,7 +286,7 @@ function get_videofile_info {
 function rescan {
   striptracks_message="Info|Calling ${striptracks_type^} API to rescan ${striptracks_video_type}, try #$loop"
   echo "$striptracks_message" | log
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Forcing rescan of $striptracks_json_key '$striptracks_rescan_id', try #$loop. Calling ${striptracks_type^} API '$striptracks_rescan_api' using POST and URL '$striptracks_api_url/v3/command' with data {\"name\": \"$striptracks_rescan_api\", \"$striptracks_json_key\": $striptracks_rescan_id}" | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Forcing rescan of $striptracks_video_api '$striptracks_rescan_id', try #$loop. Calling ${striptracks_type^} API '$striptracks_rescan_api' using POST and URL '$striptracks_api_url/v3/command' with data {\"name\": \"$striptracks_rescan_api\", \"$striptracks_json_key\": $striptracks_rescan_id}" | log
   striptracks_result=$(curl -s -H "X-Api-Key: $striptracks_apikey" -H "Content-Type: application/json" \
     -d "{\"name\": \"$striptracks_rescan_api\", \"$striptracks_json_key\": $striptracks_rescan_id}" \
     -X POST "$striptracks_api_url/v3/command")
@@ -529,13 +529,19 @@ elif [ -n "$striptracks_api_url" ]; then
         striptracks_profileName="$(echo $striptracks_profiles | jq -crM ".[] | select(.id == $striptracks_profileId).name")"
         striptracks_languageNames="$(echo $striptracks_languages | jq -crM "[.[].name]")"
         [ $striptracks_debug -ge 1 ] && echo "Debug|Detected $striptracks_profile_type profile '(${striptracks_profileId}) ${striptracks_profileName}'" | log
-        [ $striptracks_debug -ge 1 ] && echo "Debug|Detected profile language(s) '$(echo $striptracks_languageNames | jq -crM "join(\",\")")' id(s) of '$(echo $striptracks_languages | jq -crM "[.[].id | tostring] | join(\",\")")'" | log
-        # Map 'Language' Id(s) to ISO code(s) used by mkvmerge
+        [ $striptracks_debug -ge 1 ] && echo "Debug|Detected $striptracks_profile_type profile language(s) '$(echo $striptracks_languages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')'" | log
+        # Map language names to ISO code(s) used by mkvmerge
         unset striptracks_langcodes
-        for i in $(echo $striptracks_languageNames | jq -crM ".[]"); do
-          striptracks_langcodes+="$(echo $striptracks_isocodemap | jq -jcrM ".languages[] | select(.language.name == \"$i\") | .language | \":\(.\"iso639-2\"[])\"")"
+        for striptracks_templang in $(echo $striptracks_languageNames | jq -crM ".[]"); do
+          if [[ "$striptracks_templang" = "Original" ]]; then
+            # Check for Original language (Radarr only)
+            striptracks_originallanguage="$(echo $striptracks_result | jq -crM .originalLanguage.name)"
+            [ $striptracks_debug -ge 1 ] && echo "Debug|Using original video language of '${striptracks_originallanguage}' from $striptracks_video_type '$striptracks_video_id'" | log
+            striptracks_templang="$striptracks_originallanguage"
+          fi
+          striptracks_langcodes+="$(echo $striptracks_isocodemap | jq -jcrM ".languages[] | select(.language.name == \"$striptracks_templang\") | .language | \":\(.\"iso639-2\"[])\"")"
         done
-        [ $striptracks_debug -ge 1 ] && echo "Debug|Mapped language(s) '$(echo $striptracks_languageNames | jq -crM "join(\",\")")' to ISO639-2 code string '$striptracks_langcodes'" | log
+        [ $striptracks_debug -ge 1 ] && echo "Debug|Mapped profile language(s) '$(echo $striptracks_languageNames | jq -crM "join(\",\")")' to ISO639-2 code string '$striptracks_langcodes'" | log
       else
         # 'hasFile' is False in returned JSON.
         striptracks_message="Warn|The '$striptracks_video_api' API with id $striptracks_video_id returned a false hasFile."

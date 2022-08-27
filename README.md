@@ -71,13 +71,17 @@ Beginning with version 2.0 of this mod, the script may be called with no argumen
 #### Automatic Language Detection
 Both audio and subtitles that match the selected language(s) are kept.
 
+>**Note:** The Radarr language selection 'Any' will preserve all languages in the video file.
+
+>**Note:** The Radarr language selection 'Original' will use the language Radarr pulled from [The Movie Database](https://www.themoviedb.org/ "TMDB") during its last refresh.
+
+>**Note:** The Sonarr language selection 'Unknown' will match tracks with no configured language in the video file.
+
 *Radarr Quality Profile Example*  
 ![radarr profile](.assets/radarr-quality-profile.png "Radarr Quality Profile settings")
 
 *Sonarr Language Profile Example*  
 ![sonarr profile](.assets/sonarr-language-profile.png "Sonarr Language Profile settings")
-
->**Note:** The intent of the Radarr language selection 'Original' is not well documented.  For the purposes of this script, it has the same function as 'Any' and will preserve all languages in the video file.
 
 #### Command Line Options and Arguments
 The script also supports command line arguments that will override the automatic language detection.  More granular control can therefore be exerted or extended using tagging and defining multiple Connect scripts (this is native Radarr/Sonarr functionality outside the scope of this documentation).
@@ -174,7 +178,7 @@ Using this function, you can easily process all of your video files in any subdi
 #### Script Execution Differences in Batch Mode
 Because the script is not called from within Radarr or Sonarr, expect the following behavior while in Batch Mode:
 * *The file name must be specified on the command line.*<br/>(The `-f` option places the script in Batch Mode)
-* *No audio or subtitles language auto-detection occurs.*<br/>Both the audio and subtitles languages must be specified on the command line.
+* *No audio or subtitles language detection occurs.*<br/>Both the audio and subtitles languages must be specified on the command line.
 * *The resultant MKV embedded title attribute is set to the basename of the file minus the extension.*<br/>The canonical name of the movie/TV show cannot otherwise be determined.
 * *Radarr or Sonarr APIs are not called and their database is not updated.*<br/>This may require a manual rescan of converted videos.
 * *Original video files are deleted.*<br/>The Recycle Bin function is not available.
