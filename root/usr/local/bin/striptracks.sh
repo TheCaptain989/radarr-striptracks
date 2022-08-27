@@ -700,20 +700,20 @@ END {
         print "Info|Keeping last audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
         AudioCommand=Track[i, "id"]
       } else {
-        if (Debug >= 1) print "Debug|\tRemove:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"], Track[i, "codec"]
+        print "Info|Remove:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"], Track[i, "codec"]
       }
     } else {
       if (Track[i, "typ"]=="subtitles") {
         if (SubsKeep~Track[i, "lang"]) {
           SubsKpCnt++
-          print "Info|Keeping subtitle track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
+          print "Info|Keeping subtitles track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
           if (SubsCommand=="") {
             SubsCommand=Track[i, "id"]
           } else {
             SubsCommand=SubsCommand","Track[i, "id"]
           }
         } else {
-          if (Debug >= 1) print "Debug|\tRemove:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"], Track[i, "codec"]
+          print "Info|Remove:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"], Track[i, "codec"]
         }
       }
     }
