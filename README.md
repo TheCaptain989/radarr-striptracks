@@ -73,9 +73,9 @@ Both audio and subtitles that match the selected language(s) are kept.
 
 >**Note:** The Radarr language selection 'Any' will preserve all languages in the video file.
 
->**Note:** The Radarr language selection 'Original' will use the language Radarr pulled from [The Movie Database](https://www.themoviedb.org/ "TMDB") during its last refresh.
+>**Note:** The Radarr language selection 'Original' will use the language Radarr pulled from [The Movie Database](https://www.themoviedb.org/ "TMDB") during its last refresh. Selecting this profile language is functionally equivalent to calling the script with `--audio :org --subs :org` command line options.  See [Original language code](./README.md#original-language-code) below for more details.
 
->**Note:** The Sonarr language selection 'Unknown' will match tracks with no configured language in the video file.
+>**Note:** The Sonarr language selection 'Unknown' will match tracks with no configured language in the video file. Selecting this profile language is functionally equivalent to calling the script with `--audio :und --subs :und` command line options. See [Unknown language code](./README.md#unknown-language-code) below for more details.
 
 *Radarr Quality Profile Example*  
 ![radarr profile](.assets/radarr-quality-profile.png "Radarr Quality Profile settings")
@@ -110,16 +110,28 @@ For example:
 
 ...etc.
 
-Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.
+Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.  Order is unimportant.
 
->**NOTE:** The script is smart enough to not remove the last audio track. This way you don't have to specify every possible language if you are importing a
+>**NOTE:** The script is smart enough to not remove the last audio track. (There is in fact no way to force the script to remove all audio.) This way you don't have to specify every possible language if you are importing a
 foreign film, for example.
+
+#### Original language code
+The `:org` language code is a special code. When used, instead of retaining a specific language, the script substitutes the original movie language as specified in its [The Movie Database](https://www.themoviedb.org/ "TMDB") entry.  
+As an example, when importing "_Amores Perros (2000)_" with options `--audio :org:eng`, the Spanish and English audio tracks are preserved.  
+Several [Included Wrapper Scripts](./README.md#included-wrapper-scripts) use this special code.
+
+>**NOTE:** This feature relies on the 'originalLanguage' field in the Radarr database. It is not known to exist in Sonarr, and the `:org` code will therefore be ignored.
+
+#### Unknown language code
+The `:und` language code is a special code. When used, the script will match on any track that has a blank language entry. If not included, tracks with a blank language value will be removed.  
+>![danger] **NOTE:** It is common for M2TS and AVI containers to have tracks with unknown languages! It is strongly recommended to include `:und` in most instances unless you know exactly what you're doing.
 
 ### Examples
 ```
 -d 2                        # Enable debugging level 2, audio and subtitles
                             # languages detected from Radarr/Sonarr
--a :eng:und -s :eng         # Keep English and Unknown audio and English subtitles
+-a :eng:und -s :eng         # Keep English and Unknown audio, and English subtitles
+-a :org:eng -s :eng         # Keep English and Original audio, and English subtitles
 :eng ""                     # Keep English audio and no subtitles
 -d :eng:kor:jpn :eng:spa    # Enable debugging level 1, keeping English, Korean, and Japanese audio, and
                             # English and Spanish subtitles
@@ -141,14 +153,17 @@ striptracks-debug.sh       # Use detected languages, but enable debug logging
 striptracks-debug-2.sh     # Use detected languages, enable debug logging level 2
 striptracks-debug-max.sh   # Use detected languages, enable highest debug logging
 striptracks-dut.sh         # Keep Dutch audio and subtitles
-striptracks-eng.sh         # Keep English and Unknown audio and English subtitles
-striptracks-eng-debug.sh   # Keep English and Unknown audio and English subtitles, and enable debug logging
+striptracks-eng.sh         # Keep English and Unknown audio, and English subtitles
+striptracks-eng-debug.sh   # Keep English and Unknown audio, and English subtitles, and enable debug logging
 striptracks-eng-fre.sh     # Keep English, French, and Unknown audio and English subtitles
 striptracks-eng-jpn.sh     # Keep English, Japanese, and Unknown audio and English subtitles
 striptracks-fre.sh         # Keep French audio and subtitles
 striptracks-fre-debug.sh   # Keep French audio and subtitles, and enable debug logging
 striptracks-ger.sh         # Keep German audio and subtitles
 striptracks-spa.sh         # Keep Spanish audio and subtitles
+striptracks-org-eng.sh     # Keep Original, English, and Unknown audio, and English and Unknown subtitles
+striptracks-org-ger.sh     # Keep Original and German audio, and Original and German subtitles
+striptracks-org-spa.sh     # Keep Original and Spanish audio, and Original and Spanish subtitles
 ```
 
 #### Example Wrapper Script
@@ -179,6 +194,7 @@ Using this function, you can easily process all of your video files in any subdi
 Because the script is not called from within Radarr or Sonarr, expect the following behavior while in Batch Mode:
 * *The file name must be specified on the command line.*<br/>(The `-f` option places the script in Batch Mode)
 * *No audio or subtitles language detection occurs.*<br/>Both the audio and subtitles languages must be specified on the command line.
+* *The `:org` language code in meaningless.*<br/>The original video langauge cannot be determined without the Radarr database.
 * *The resultant MKV embedded title attribute is set to the basename of the file minus the extension.*<br/>The canonical name of the movie/TV show cannot otherwise be determined.
 * *Radarr or Sonarr APIs are not called and their database is not updated.*<br/>This may require a manual rescan of converted videos.
 * *Original video files are deleted.*<br/>The Recycle Bin function is not available.

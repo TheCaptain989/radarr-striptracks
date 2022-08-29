@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Video remuxing script designed for use with Radarr and Sonarr
-# Automatically strips out unwanted audio and subtitle streams, keeping only the desired languages.
+# Automatically strips out unwanted audio and subtitles streams, keeping only the desired languages.
 #  Prod: https://github.com/linuxserver/docker-mods/tree/radarr-striptracks
 #  Dev/test: https://github.com/TheCaptain989/radarr-striptracks
 
@@ -30,7 +30,7 @@
 #  0 - success; or test
 #  1 - no video file specified on command line
 #  2 - no audio language specified on command line
-#  3 - no subtitle language specified on command line
+#  3 - no subtitles language specified on command line
 #  4 - mkvmerge not found
 #  5 - specified video file not found
 #  6 - unable to rename video to temp video
@@ -49,8 +49,7 @@ export striptracks_log=/config/logs/striptracks.txt
 export striptracks_maxlogsize=512000
 export striptracks_maxlog=4
 export striptracks_debug=0
-export striptracks_langcodes=
-export striptracks_pos_params=
+unset striptracks_pos_params
 # Presence of '*_eventtype' variable sets script mode
 export striptracks_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
 
@@ -84,7 +83,7 @@ Options and Arguments:
       --version                    display script version and exit
       
 When audio_languages and subtitle_languages are omitted the script detects the audio
-or subtitle languages configured in Radarr or Sonarr profile.  When used on the command
+or subtitle languages configured in the Radarr or Sonarr profile.  When used on the command
 line, they override the detected codes.  They are also accepted as positional parameters
 for backwards compatibility.
 
@@ -98,6 +97,8 @@ Examples:
   $striptracks_script -d 2                       # Enable debugging level 2, audio and subtitles
                                             # languages detected from Radarr/Sonarr
   $striptracks_script -a :eng:und -s :eng        # keep English and Unknown audio and
+                                            # English subtitles
+  $striptracks_script -a :eng:org -s :eng        # keep English and Original audio and
                                             # English subtitles
   $striptracks_script :eng \"\"                    # keep English audio and no subtitles
   $striptracks_script -d :eng:kor:jpn :eng:spa   # Enable debugging level 1, keeping English, Korean,
@@ -177,6 +178,14 @@ while (( "$#" )); do
 done
 # Set positional arguments in their proper place
 eval set -- "$striptracks_pos_params"
+
+# Check for and assign positional arguments
+if [ -n "$1" ]; then
+  striptracks_audiokeep="$1"
+fi
+if [ -n "$2" ]; then
+  striptracks_subskeep="$2"
+fi
 
 ## Mode specific variables
 if [[ "${striptracks_type,,}" = "batch" ]]; then
@@ -388,6 +397,7 @@ function get_mediainfo {
   fi
   return $striptracks_return
 }
+### End Functions
 
 # Check for required binaries
 if [ ! -f "/usr/bin/mkvmerge" ]; then
@@ -498,9 +508,10 @@ if [ ! -f "$striptracks_video" ]; then
 fi
 
 #### Detect languages configured in Radarr/Sonarr
-# Check for URL
+# Bypass language detection if using batch mode
 if [ "$striptracks_type" = "batch" ]; then
   [ $striptracks_debug -ge 1 ] && echo "Debug|Cannot detect languages in batch mode." | log
+# Check for URL
 elif [ -n "$striptracks_api_url" ]; then
   # Get language codes
   if get_language_codes; then
@@ -527,21 +538,25 @@ elif [ -n "$striptracks_api_url" ]; then
           exit 7
         fi
         striptracks_profileName="$(echo $striptracks_profiles | jq -crM ".[] | select(.id == $striptracks_profileId).name")"
-        striptracks_languageNames="$(echo $striptracks_languages | jq -crM "[.[].name]")"
         [ $striptracks_debug -ge 1 ] && echo "Debug|Detected $striptracks_profile_type profile '(${striptracks_profileId}) ${striptracks_profileName}'" | log
+        striptracks_proflangNames="$(echo $striptracks_languages | jq -crM "[.[].name]")"
         [ $striptracks_debug -ge 1 ] && echo "Debug|Detected $striptracks_profile_type profile language(s) '$(echo $striptracks_languages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')'" | log
+        # Get originalLanguage of video from Radarr
+        striptracks_orglangName="$(echo $striptracks_result | jq -crM .originalLanguage.name)"
+        if [ -n "$striptracks_orglangName" ]; then
+          striptracks_orglangCode="$(echo $striptracks_isocodemap | jq -jcrM ".languages[] | select(.language.name == \"$striptracks_orglangName\") | .language | \":\(.\"iso639-2\"[])\"")"
+          [ $striptracks_debug -ge 1 ] && echo "Debug|Detected original video language of '$striptracks_orglangName ($striptracks_orglangCode)' from $striptracks_video_type '$striptracks_video_id'" | log
+        fi
         # Map language names to ISO code(s) used by mkvmerge
-        unset striptracks_langcodes
-        for striptracks_templang in $(echo $striptracks_languageNames | jq -crM ".[]"); do
+        unset striptracks_proflangCodes
+        for striptracks_templang in $(echo $striptracks_proflangNames | jq -crM ".[]"); do
+          # Convert 'Original' profile selection to specific video language (Radarr only)
           if [[ "$striptracks_templang" = "Original" ]]; then
-            # Check for Original language (Radarr only)
-            striptracks_originallanguage="$(echo $striptracks_result | jq -crM .originalLanguage.name)"
-            [ $striptracks_debug -ge 1 ] && echo "Debug|Using original video language of '${striptracks_originallanguage}' from $striptracks_video_type '$striptracks_video_id'" | log
-            striptracks_templang="$striptracks_originallanguage"
+            striptracks_templang="$striptracks_orglangName"
           fi
-          striptracks_langcodes+="$(echo $striptracks_isocodemap | jq -jcrM ".languages[] | select(.language.name == \"$striptracks_templang\") | .language | \":\(.\"iso639-2\"[])\"")"
+          striptracks_proflangCodes+="$(echo $striptracks_isocodemap | jq -jcrM ".languages[] | select(.language.name == \"$striptracks_templang\") | .language | \":\(.\"iso639-2\"[])\"")"
         done
-        [ $striptracks_debug -ge 1 ] && echo "Debug|Mapped profile language(s) '$(echo $striptracks_languageNames | jq -crM "join(\",\")")' to ISO639-2 code string '$striptracks_langcodes'" | log
+        [ $striptracks_debug -ge 1 ] && echo "Debug|Mapped profile language(s) '$(echo $striptracks_proflangNames | jq -crM "join(\",\")")' to ISO639-2 code string '$striptracks_proflangCodes'" | log
       else
         # 'hasFile' is False in returned JSON.
         striptracks_message="Warn|The '$striptracks_video_api' API with id $striptracks_video_id returned a false hasFile."
@@ -567,14 +582,14 @@ else
   echo "$striptracks_message" >&2
 fi
 
-# Check for command line language options; will override the detected languages
-if [ -n "$1" ]; then
-  striptracks_audiokeep="$1"
-elif [ -n "$striptracks_audiokeep" ]; then
-  # Needed to allow ordered argument on command line to override detected languages
-  striptracks_audiokeep="$striptracks_audiokeep"
-elif [ -n "$striptracks_langcodes" ]; then
-  striptracks_audiokeep="$striptracks_langcodes"
+# Final assignment of audio and subtitles options
+if [ -n "$striptracks_audiokeep" ]; then
+  # Allows ordered argument on command line to override detected languages
+  # plus special handling of ':org' code
+  [ $striptracks_debug -ge 1 ] && [[ "$striptracks_audiokeep" ~= :org ]] && echo "Debug|:org specified for audio. Using new code string of ${striptracks_audiokeep//:org/${striptracks_orglangCode}}" | log
+  striptracks_audiokeep="${striptracks_audiokeep//:org/${striptracks_orglangCode}}"
+elif [ -n "$striptracks_proflangCodes" ]; then
+  striptracks_audiokeep="$striptracks_proflangCodes"
 else
   striptracks_message="Error|No audio languages specified or detected!"
   echo "$striptracks_message" | log
@@ -582,13 +597,14 @@ else
   usage
   exit 2
 fi
-if [ -n "$2" ]; then
-  striptracks_subskeep="$2"
-elif [ -n "$striptracks_subskeep" ]; then
-  # Needed to allow ordered argument on command line to override detected languages
-  striptracks_subskeep="$striptracks_subskeep"
-elif [ -n "$striptracks_langcodes" ]; then
-  striptracks_subskeep="$striptracks_langcodes"
+
+if [ -n "$striptracks_subskeep" ]; then
+  # Allows ordered argument on command line to override detected languages
+  # plus special handling of ':org' code
+  [ $striptracks_debug -ge 1 ] && [[ "$striptracks_subskeep" ~= :org ]] && echo "Debug|:org specified for subtitles. Using new code string of ${striptracks_subskeep//:org/${striptracks_orglangCode}}" | log
+  striptracks_subskeep="${striptracks_subskeep//:org/${striptracks_orglangCode}}"
+elif [ -n "$striptracks_proflangCodes" ]; then
+  striptracks_subskeep="$striptracks_proflangCodes"
 else
   striptracks_message="Error|No subtitles languages specified or detected!"
   echo "$striptracks_message" | log
@@ -639,6 +655,7 @@ striptracks_return=$?; [ "$striptracks_return" != 0 ] && {
   exit 6
 }
 
+# Process video file
 echo "$striptracks_json_processed" | awk -v Debug=$striptracks_debug \
 -v OrgVideo="$striptracks_video" \
 -v TempVideo="$striptracks_tempvideo" \
@@ -646,102 +663,101 @@ echo "$striptracks_json_processed" | awk -v Debug=$striptracks_debug \
 -v Title="$striptracks_title" \
 -v AudioKeep="$striptracks_audiokeep" \
 -v SubsKeep="$striptracks_subskeep" '
+# Array join function, based on GNU docs
+function join(array, sep,    i, ret) {
+  for (i in array)
+    if (!ret)
+      ret = array[i]
+    else
+      ret = ret sep array[i]
+  return ret
+}
 BEGIN {
-  MKVMerge="/usr/bin/mkvmerge"
-  FS="[\t\n: ]"
-  IGNORECASE=1
+  MKVMerge = "/usr/bin/mkvmerge"
+  FS = "[\t\n: ]"
+  IGNORECASE = 1
 }
 /^Track ID/ {
-  FieldCount=split($0, Fields)
-  if (Fields[1]=="Track") {
+  FieldCount = split($0, Fields)
+  if (Fields[1] == "Track") {
     NoTr++
-    Track[NoTr, "id"]=Fields[3]
-    Track[NoTr, "typ"]=Fields[5]
+    Track[NoTr, "id"] = Fields[3]
+    Track[NoTr, "typ"] = Fields[5]
     # This is inelegant and I know it
-    if (Fields[6]~/^\(/) {
-      for (i=6; i<=FieldCount; i++) {
-        Track[NoTr, "codec"]=Track[NoTr, "codec"]" "Fields[i]
-        if (match(Fields[i],/\)$/)) {
+    # Finds the codec in parenthesis
+    if (Fields[6] ~ /^\(/) {
+      for (i = 6; i <= FieldCount; i++) {
+        Track[NoTr, "codec"] = Track[NoTr, "codec"]" "Fields[i]
+        if (match(Fields[i], /\)$/))
           break
-        }
       }
-      sub(/^ /,"",Track[NoTr, "codec"])
+      sub(/^ /, "", Track[NoTr, "codec"])
     }
-    if (Track[NoTr, "typ"]=="video") VidCnt++
-    if (Track[NoTr, "typ"]=="audio") AudCnt++
-    if (Track[NoTr, "typ"]=="subtitles") SubsCnt++
-    for (i=6; i<=FieldCount; i++) {
-      if (Fields[i]=="language") Track[NoTr, "lang"]=Fields[++i]
+    if (Track[NoTr, "typ"] == "video") VidCnt++
+    if (Track[NoTr, "typ"] == "audio") AudCnt++
+    if (Track[NoTr, "typ"] == "subtitles") SubsCnt++
+    for (i = 6; i <= FieldCount; i++) {
+      if (Fields[i] == "language")
+        Track[NoTr, "lang"] = Fields[++i]
     }
-    if (Track[NoTr, "lang"]=="") Track[NoTr, "lang"]="und"
+    if (Track[NoTr, "lang"] == "")
+      Track[NoTr, "lang"] = "und"
   }
 }
 /^Chapters/ {
-  Chapters=$3
+  Chapters = $3
 }
 END {
-  if (!NoTr) { print "Error|No tracks found in \""TempVideo"\"" > "/dev/stderr"; exit }
+  if (!NoTr) {
+    print "Error|No tracks found in \""TempVideo"\"" > "/dev/stderr"
+    exit
+  }
   if (!AudCnt) AudCnt=0; if (!SubsCnt) SubsCnt=0
   print "Info|Original tracks: "NoTr" (audio: "AudCnt", subtitles: "SubsCnt")"
   if (Chapters) print "Info|Chapters: "Chapters
-  for (i=1; i<=NoTr; i++) {
+  for (i = 1; i <= NoTr; i++) {
     if (Debug >= 2) print "Debug|i:"i,"Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"],"Codec:"Track[i, "codec"]
-    if (Track[i, "typ"]=="audio") {
-      if (AudioKeep~Track[i, "lang"]) {
-        AudKpCnt++
+    if (Track[i, "typ"] == "audio") {
+      if (AudioKeep ~ Track[i, "lang"]) {
         print "Info|Keeping audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
-        if (AudioCommand=="") {
-          AudioCommand=Track[i, "id"]
-        } else {
-          AudioCommand=AudioCommand","Track[i, "id"]
-        }
+        AudioCommand[i] = Track[i, "id"]
       # Special case if there is only one audio track, even if it was not specified
-      } else if (AudCnt==1) {
-        AudKpCnt++
+      } else if (AudCnt == 1) {
         print "Info|Keeping only audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
-        AudioCommand=Track[i, "id"]
+        AudioCommand[i] = Track[i, "id"]
       # Special case if there were multiple tracks, none were selected, and this is the last one.
-      } else if (AudioCommand=="" && Track[i, "id"]==AudCnt) {
-        AudKpCnt++
+      } else if (length(AudioCommand) == 0 && Track[i, "id"] == AudCnt) {
         print "Info|Keeping last audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
-        AudioCommand=Track[i, "id"]
-      } else {
-        print "Info|Remove:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"], Track[i, "codec"]
-      }
+        AudioCommand[i] = Track[i, "id"]
+      } else
+        AudRmvLog[i] = Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
     } else {
-      if (Track[i, "typ"]=="subtitles") {
-        if (SubsKeep~Track[i, "lang"]) {
-          SubsKpCnt++
+      if (Track[i, "typ"] == "subtitles") {
+        if (SubsKeep ~ Track[i, "lang"]) {
           print "Info|Keeping subtitles track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
-          if (SubsCommand=="") {
-            SubsCommand=Track[i, "id"]
-          } else {
-            SubsCommand=SubsCommand","Track[i, "id"]
-          }
-        } else {
-          print "Info|Remove:", Track[i, "typ"], "track", Track[i, "id"], Track[i, "lang"], Track[i, "codec"]
-        }
+          SubsCommand[i] = Track[i, "id"]
+        } else
+          SubsRmvLog[i] = Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
       }
     }
   }
-  if (!AudKpCnt) AudKpCnt=0; if (!SubsKpCnt) SubsKpCnt=0
-  print "Info|Kept tracks: "AudKpCnt+SubsKpCnt+VidCnt" (audio: "AudKpCnt", subtitles: "SubsKpCnt")"
-  if (AudioCommand=="") {
+  if (length(AudRmvLog) != 0) print "Info|Removed audio tracks: " join(AudRmvLog, ",")
+  if (length(SubsRmvLog) != 0) print "Info|Removed subtitles tracks: " join(SubsRmvLog, ",")
+  print "Info|Kept tracks: "length(AudioCommand)+length(SubsCommand)+VidCnt" (audio: "length(AudioCommand)", subtitles: "length(SubsCommand)")"
+  if (length(AudioCommand) == 0) {
     # This should never happen, but belt and suspenders
-    CommandLine="-A"
-  } else {
-    CommandLine="-a "AudioCommand
-  }
-  if (SubsCommand=="") {
-    CommandLine=CommandLine" -S"
-  } else {
-    CommandLine=CommandLine" -s "SubsCommand
-  }
+    # Prevents errors during mkvmerge execution
+    CommandLine = "-A"
+  } else
+    CommandLine = "-a " join(AudioCommand, ",")
+  if (length(SubsCommand) == 0)
+    CommandLine = CommandLine" -S"
+  else
+    CommandLine = CommandLine" -s " join(SubsCommand, ",")
   if (Debug >= 1) print "Debug|Executing: nice "MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\""
-  Result=system("nice "MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\"")
+  Result = system("nice "MKVMerge" --title \""Title"\" -q -o \""MKVVideo"\" "CommandLine" \""TempVideo"\"")
   if (Result>1) print "Error|["Result"] remuxing \""TempVideo"\"" > "/dev/stderr"
 }' | log
-
 #### END MAIN
 
 # Check for script completion and non-empty file
