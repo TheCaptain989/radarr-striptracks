@@ -5,8 +5,6 @@ on: [push, pull_request, workflow_dispatch]
 env:
   ENDPOINT: "thecaptain989/radarr-striptracks"
 
-
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,12 +14,15 @@ jobs:
       - name: Build image
         run: |
           # Build variables
-          VERSION=$(git describe --tags --always)
+          VERSION=${GITHUB_SHA:0:7}
           cat <<EOF
           Building version $VERSION
           EOF
           # Insert version into scripts
-          sed -i -e "s/{{VERSION}}/$VERSION/" $GITHUB_WORKSPACE/root/usr/local/bin/striptracks.sh $GITHUB_WORKSPACE/root/etc/cont-init.d/98-striptracks
+          sed -i -e "s/{{VERSION}}/$VERSION/" \
+            $GITHUB_WORKSPACE/root/usr/local/bin/striptracks.sh \
+            $GITHUB_WORKSPACE/root/etc/cont-init.d/98-striptracks \
+            $GITHUB_WORKSPACE/root/etc/s6-overlay/s6-rc.d/init-mod-radarr-striptracks-add-package/run
           # Build image
           docker build --no-cache \
                        --tag ${ENDPOINT}:${{ github.sha }} .

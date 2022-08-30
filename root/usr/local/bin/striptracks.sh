@@ -490,7 +490,7 @@ if [[ "${!striptracks_eventtype}" = "Test" ]]; then
   exit 0
 fi
 
-# Check if video file is blank
+# Check if video file variable is blank
 if [ -z "$striptracks_video" ]; then
   striptracks_message="Error|No video file detected! radarr_moviefile_path or sonarr_episodefile_path environment variable missing or -f option not specified on command line."
   echo "$striptracks_message" | log
