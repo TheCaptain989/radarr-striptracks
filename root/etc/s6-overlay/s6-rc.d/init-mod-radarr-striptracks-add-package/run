@@ -19,14 +19,18 @@ else
   echo "**** striptracks deps already installed, skipping ****"
 fi
 
-# Change ownership
-if [ $(stat -c '%G' /usr/local/bin/striptracks.sh) != "abc" ]; then
-  echo "Changing ownership on scripts."
-  chown abc:abc /usr/local/bin/striptracks*.sh
-fi
+# Check ownership and attributes on each script file
+for file in /usr/local/bin/striptracks*.sh
+do
+  # Change ownership
+  if [ $(stat -c '%G' $file) != "abc" ]; then
+    echo "Changing ownership on $file script."
+    chown abc:abc $file
+  fi
 
-# Make executable
-if [ ! -x /usr/local/bin/striptracks.sh ]; then
-  echo "Making scripts executable."
-  chmod +x /usr/local/bin/striptracks*.sh
-fi
+  # Make executable
+  if [ ! -x $file ]; then
+    echo "Making $file script executable."
+    chmod +x $file
+  fi
+done
