@@ -1,6 +1,6 @@
 name: Build Image
 
-on: [push, pull_request, workflow_dispatch]
+on: [push, pull_request_target, workflow_dispatch]
 
 env:
   ENDPOINT: "thecaptain989/radarr-striptracks"
@@ -9,23 +9,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.3.3
+      - uses: actions/checkout@v3
+
+      - name: Set Vars
+        run: |
+          echo "ENDPOINT=${ENDPOINT}" >> $GITHUB_STEP_SUMMARY
+          # **** If the mod needs to be versioned, set the versioning logic below. Otherwise leave as is. ****
+          MOD_VERSION=${GITHUB_SHA:0:7}
+          echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_ENV
+          echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_STEP_SUMMARY
 
       - name: Build image
         run: |
-          # Build variables
-          VERSION=${GITHUB_SHA:0:7}
-          cat <<EOF
-          Building version $VERSION
-          EOF
-          # Insert version into scripts
-          sed -i -e "s/{{VERSION}}/$VERSION/" \
-            $GITHUB_WORKSPACE/root/usr/local/bin/striptracks.sh \
-            $GITHUB_WORKSPACE/root/etc/cont-init.d/98-striptracks \
-            $GITHUB_WORKSPACE/root/etc/s6-overlay/s6-rc.d/init-mod-radarr-striptracks-add-package/run
-          # Build image
-          docker build --no-cache \
-                       --tag ${ENDPOINT}:${{ github.sha }} .
+          docker buildx build --no-cache --build-arg MOD_VERSION=${MOD_VERSION} --tag ${ENDPOINT}:${{ github.sha }} .
 
       - name: Tag image
         run: |
@@ -54,3 +50,6 @@ jobs:
         run: |
           docker push ${ENDPOINT}:${{ github.sha }}
           docker push ${ENDPOINT}:latest
+          echo "Pushed the following images/tags to Docker Hub:" >> $GITHUB_STEP_SUMMARY
+          echo "${ENDPOINT}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "${ENDPOINT}:latest" >> $GITHUB_STEP_SUMMARY
