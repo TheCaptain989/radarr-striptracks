@@ -32,6 +32,8 @@ jobs:
           fi
           echo "IMAGETAG=${IMAGETAG}" >> $GITHUB_ENV
           docker tag ${ENDPOINT}:${{ github.sha }} ${IMAGETAG}
+          docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/${ENDPOINT}:${{ github.sha }}
+          docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/${IMAGETAG}
 
       - name: Credential check
         run: |
