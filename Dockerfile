@@ -2,6 +2,10 @@
 
 FROM ghcr.io/linuxserver/baseimage-alpine:3.17 as buildstage
 
+LABEL org.opencontainers.image.source=https://github.com/TheCaptain989/radarr-striptracks
+LABEL org.opencontainers.image.description="A Docker Mod to Radarr/Sonarr to automatically strip out unwanted audio and subtitle streams"
+LABEL org.opencontainers.image.licenses=GPL-3.0-only
+
 ARG MOD_VERSION
 
 COPY root/ /root-layer/
