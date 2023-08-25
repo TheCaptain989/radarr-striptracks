@@ -15,9 +15,9 @@ Container info:
 Production Container info: ![Docker Image Size](https://img.shields.io/docker/image-size/linuxserver/mods/radarr-striptracks "Container Size")
 
 # Installation
-1. Pull your selected container ([linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "LinuxServer.io's Radarr container") or [linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "LinuxServer.io's Sonarr container")) from Docker Hub:  
-  `docker pull linuxserver/radarr:latest`   OR  
-  `docker pull linuxserver/sonarr:latest`   
+1. Pull your selected container ([linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "LinuxServer.io's Radarr container") or [linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "LinuxServer.io's Sonarr container")) from GitHub Container Registry or Docker Hub:  
+  `docker pull lscr.io/linuxserver/radarr:latest`   OR  
+  `docker pull lscr.io/linuxserver/sonarr:latest`   
 
 2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
    **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "Radarr Docker container")**  
@@ -39,7 +39,7 @@ Production Container info: ![Docker Image Size](https://img.shields.io/docker/im
          -v /path/to/movies:/movies \
          -v /path/to/downloadclient-downloads:/downloads \
          --restart unless-stopped \
-         ghcr.io/linuxserver/radarr
+         lscr.io/linuxserver/radarr
        ```   
 
       *Example Synology Configuration*  
