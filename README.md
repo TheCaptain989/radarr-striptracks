@@ -60,10 +60,12 @@ Production Container info: ![Docker Image Size](https://img.shields.io/docker/im
 The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name.  
 Chapters, if they exist, are preserved. The Title attribute in the MKV is set to the movie title plus year  
 (ex: `The Sting (1973)`) or the series title plus episode information (ex: `Happy! 01x01 - What Smiles Are For`).  
-The language of the video file will be updated in the Radarr or Sonarr database to reflect the actual languages preserved in the remuxed video.
+The language of the video file will be updated in the Radarr or Sonarr database to reflect the actual languages preserved in the remuxed video.  
 
 If you've configured the Radarr/Sonarr **Recycle Bin** path correctly, the original video will be moved there.  
 ![danger] **NOTE:** If you have *not* configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
+
+If the resulting video file would contain the same tracks as the original, the remux step is skipped *unless* the source file is not an MKV.
 
 ### Syntax
 Beginning with version 2.0 of this mod, the script may be called with no arguments.  In this configuration it will detect the language(s) defined in the profile (*Quality Profile* for Radarr, *Language Profile* for Sonarr) configured on the particular movie or TV show.  
