@@ -15,6 +15,9 @@ RUN \
 ## Single layer deployed image ##
 FROM scratch
 
+LABEL org.opencontainers.image.source=https://github.com/TheCaptain989/radarr-striptracks
+LABEL org.opencontainers.image.description="A Docker Mod to Radarr/Sonarr to automatically strip out unwanted audio and subtitle streams"
+LABEL org.opencontainers.image.licenses=GPL-3.0-only
 LABEL maintainer="TheCaptain989"
 
 # Copy local files
