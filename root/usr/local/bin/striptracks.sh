@@ -378,8 +378,9 @@ function rescan {
 function check_job {
   # Exit codes:
   #  0 - success
-  #  1 - loop timed out
-  #  2 - job returned failed status
+  #  1 - queued
+  #  2 - failed
+  #  3 - loop timed out
   # 10 - curl error
   local i=0
   local url="$striptracks_api_url/command/$striptracks_jobid"
@@ -404,6 +405,10 @@ function check_job {
       local striptracks_return=2
       break
     fi
+    if [ "$(echo $flac2mp3_result | jq -crM .status)" = "queued" ]; then
+      local flac2mp3_return=1
+      break
+    fi
     if [ "$(echo $striptracks_result | jq -crM .status)" = "completed" ]; then
       local striptracks_return=0
       break
@@ -411,7 +416,7 @@ function check_job {
 
     # It may have timed out, so let's wait a second
     [ $striptracks_debug -ge 1 ] && echo "Debug|Job not done. Waiting 1 second." | log
-    local striptracks_return=1
+    local striptracks_return=3
     sleep 1
   done
   return $striptracks_return
@@ -1167,11 +1172,14 @@ elif [ -n "$striptracks_api_url" ]; then
         check_job
         striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
           case $striptracks_return in
-            1) striptracks_message="Warn|Script timed out waiting on ${striptracks_type^} job ID $striptracks_jobid. Last status was: $(echo $striptracks_result | jq -crM .status)"
-               striptracks_exitstatus=18
+            1) striptracks_message="Info|${striptracks_type^} job ID $striptracks_jobid is queued. Trusting this will complete and exiting."
+               striptracks_exitstatus=0
             ;;
             2) striptracks_message="Warn|${striptracks_type^} job ID $striptracks_jobid failed."
                striptracks_exitstatus=17
+            ;;
+            3) striptracks_message="Warn|Script timed out waiting on ${striptracks_type^} job ID $striptracks_jobid. Last status was: $(echo $striptracks_result | jq -crM .status)"
+               striptracks_exitstatus=18
             ;;
            10) striptracks_message="Error|${striptracks_type^} job ID $striptracks_jobid returned a curl error."
                striptracks_exitstatus=17
@@ -1274,7 +1282,7 @@ elif [ -n "$striptracks_api_url" ]; then
               echo "$striptracks_message" >&2
               striptracks_exitstatus=9
             fi
-            # Check if video file needs to be renamed
+            # Get list of videos that could be renamed
             get_rename
             striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
               striptracks_message="Warn|[$striptracks_return] ${striptracks_type^} error when getting list of videos to rename."
@@ -1282,17 +1290,20 @@ elif [ -n "$striptracks_api_url" ]; then
               echo "$striptracks_message" >&2
               striptracks_exitstatus=17
             }
-            # Rename video if needed
+            # Check if new video is in list of files that can be renamed
             if [ -n "$striptracks_result" -a "$striptracks_result" != "[]" ]; then
               striptracks_videofile_id="$(echo $striptracks_result | jq -crM ".[] | select(.existingPath | endswith(\"${striptracks_newvideo##*/}\")) | .${striptracks_json_quality_root}Id")"
               striptracks_renamedvideo="${striptracks_newvideo%/*}/$(echo $striptracks_result | jq -crM ".[] | select(.existingPath | endswith(\"${striptracks_newvideo##*/}\")) | .newPath")"
-              rename_video
-              striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
-                striptracks_message="Error|[$striptracks_return] ${striptracks_type^} error when renaming \"${striptracks_newvideo##*/}\" to \"${striptracks_renamedvideo##*/}\""
-                echo "$striptracks_message" | log
-                echo "$striptracks_message" >&2
-                striptracks_exitstatus=17
-              }
+              # Rename video if needed
+              if [ -n striptracks_videofile_id ]; then
+                rename_video
+                striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
+                  striptracks_message="Error|[$striptracks_return] ${striptracks_type^} error when renaming \"${striptracks_newvideo##*/}\" to \"${striptracks_renamedvideo##*/}\""
+                  echo "$striptracks_message" | log
+                  echo "$striptracks_message" >&2
+                  striptracks_exitstatus=17
+                }
+              fi
             fi
           else
             # No '.path' in returned JSON
