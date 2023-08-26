@@ -352,8 +352,8 @@ function get_videofile_info {
 function rescan {
   local url="$striptracks_api_url/command"
   local data="{\"name\":\"$striptracks_rescan_api\",\"${striptracks_video_type}Id\":$striptracks_rescan_id}"
-  echo "Info|Calling ${striptracks_type^} API to rescan ${striptracks_video_type}, try #$loop" | log
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Forcing rescan of $striptracks_video_type '$striptracks_rescan_id', try #$loop. Calling ${striptracks_type^} API using POST and URL '$url' with data $data" | log
+  echo "Info|Calling ${striptracks_type^} API to rescan ${striptracks_video_type}" | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Forcing rescan of $striptracks_video_type '$striptracks_rescan_id'. Calling ${striptracks_type^} API using POST and URL '$url' with data $data" | log
   unset striptracks_result
   striptracks_result=$(curl -s --fail-with-body -H "X-Api-Key: $striptracks_apikey" \
     -H "Content-Type: application/json" \
@@ -1161,178 +1161,172 @@ elif [ -n "$striptracks_api_url" ]; then
       # }
       # striptracks_jobid="$(echo $striptracks_result | jq -crM .id)"
       # Check status of job
-    # Loop a maximum of twice
-    # Radarr needs to Rescan twice when the file extension changes (.avi -> .mkv for example)
-    for ((loop=1; $loop <= 2; loop++)); do
-      # Scan the disk for the new movie file
-      if rescan; then
-        # Give it a beat
-        sleep 1
-        # Check that the Rescan completed
-        check_job
-        striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
-          case $striptracks_return in
-            1) striptracks_message="Info|${striptracks_type^} job ID $striptracks_jobid is queued. Trusting this will complete and exiting."
-               striptracks_exitstatus=0
-            ;;
-            2) striptracks_message="Warn|${striptracks_type^} job ID $striptracks_jobid failed."
-               striptracks_exitstatus=17
-            ;;
-            3) striptracks_message="Warn|Script timed out waiting on ${striptracks_type^} job ID $striptracks_jobid. Last status was: $(echo $striptracks_result | jq -crM .status)"
-               striptracks_exitstatus=18
-            ;;
-           10) striptracks_message="Error|${striptracks_type^} job ID $striptracks_jobid returned a curl error."
-               striptracks_exitstatus=17
-           ;;
-          esac
-          echo "$striptracks_message" | log
-          echo "$striptracks_message" >&2
-          end_script
-        }
+    # Scan the disk for the new movie file
+    if rescan; then
+      # Give it a beat
+      sleep 1
+      # Check that the Rescan completed
+      check_job
+      striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
+        case $striptracks_return in
+          1) striptracks_message="Info|${striptracks_type^} job ID $striptracks_jobid is queued. Trusting this will complete and exiting."
+             striptracks_exitstatus=0
+          ;;
+          2) striptracks_message="Warn|${striptracks_type^} job ID $striptracks_jobid failed."
+             striptracks_exitstatus=17
+          ;;
+          3) striptracks_message="Warn|Script timed out waiting on ${striptracks_type^} job ID $striptracks_jobid. Last status was: $(echo $striptracks_result | jq -crM .status)"
+             striptracks_exitstatus=18
+          ;;
+         10) striptracks_message="Error|${striptracks_type^} job ID $striptracks_jobid returned a curl error."
+             striptracks_exitstatus=17
+         ;;
+        esac
+        echo "$striptracks_message" | log
+        echo "$striptracks_message" >&2
+        end_script
+      }
 
-        # Get new video file id
-        if get_video_info; then
-          striptracks_videofile_id="$(echo $striptracks_result | jq -crM .${striptracks_json_quality_root}.id)"
-          [ $striptracks_debug -ge 1 ] && echo "Debug|Set new video file id '$striptracks_videofile_id'." | log
-          # Get new video file info
-          if get_videofile_info; then
-            striptracks_videofile_info="$striptracks_result"
-            # Check that the file didn't get lost in the Rescan.
-            # If we lost the quality information, put it back
-            if [ "$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)" != "$(echo $striptracks_original_quality | jq -crM .quality.name)" ]; then
-              set_quality
-              # Check that the returned result shows the update
-              if [ "$(echo $striptracks_result | jq -crM .[].quality.quality.name)" = "$(echo $striptracks_original_quality | jq -crM .quality.name)" ]; then
-                # Updated successfully
-                [ $striptracks_debug -ge 1 ] && echo "Debug|Successfully updated quality to '$(echo $striptracks_result | jq -crM .[].quality.quality.name)'." | log
-                loop=2
-              else
-                striptracks_message="Warn|Unable to update ${striptracks_type^} $striptracks_video_api '$striptracks_title' to quality '$(echo $striptracks_original_quality | jq -crM .quality.name)'"
-                echo "$striptracks_message" | log
-                echo "$striptracks_message" >&2
-                striptracks_exitstatus=17
-              fi
+      # Get new video file id
+      if get_video_info; then
+        striptracks_videofile_id="$(echo $striptracks_result | jq -crM .${striptracks_json_quality_root}.id)"
+        [ $striptracks_debug -ge 1 ] && echo "Debug|Set new video file id '$striptracks_videofile_id'." | log
+        # Get new video file info
+        if get_videofile_info; then
+          striptracks_videofile_info="$striptracks_result"
+          # Check that the file didn't get lost in the Rescan.
+          # If we lost the quality information, put it back
+          if [ "$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)" != "$(echo $striptracks_original_quality | jq -crM .quality.name)" ]; then
+            set_quality
+            # Check that the returned result shows the update
+            if [ "$(echo $striptracks_result | jq -crM .[].quality.quality.name)" = "$(echo $striptracks_original_quality | jq -crM .quality.name)" ]; then
+              # Updated successfully
+              [ $striptracks_debug -ge 1 ] && echo "Debug|Successfully updated quality to '$(echo $striptracks_result | jq -crM .[].quality.quality.name)'." | log
             else
-              # The quality is already correct
-              [ $striptracks_debug -ge 1 ] && echo "Debug|Quality of '$(echo $striptracks_original_quality | jq -crM .quality.name)' remained unchanged." | log
-              loop=2
+              striptracks_message="Warn|Unable to update ${striptracks_type^} $striptracks_video_api '$striptracks_title' to quality '$(echo $striptracks_original_quality | jq -crM .quality.name)'"
+              echo "$striptracks_message" | log
+              echo "$striptracks_message" >&2
+              striptracks_exitstatus=17
             fi
+          else
+            # The quality is already correct
+            [ $striptracks_debug -ge 1 ] && echo "Debug|Quality of '$(echo $striptracks_original_quality | jq -crM .quality.name)' remained unchanged." | log
+          fi
 
-            # Check the languages returned
-            # If we stripped out other languages, remove them from Radarr
-            # Only works in Radarr (no per-episode edit function in Sonarr)
-            if get_mediainfo "$striptracks_newvideo"; then
-              # Build array of full name languages
-              striptracks_newvideo_langcodes="$(echo $striptracks_json | jq -crM '.tracks[] | select(.type == "audio") | .properties.language')"
-              unset striptracks_newvideo_languages
-              for i in $striptracks_newvideo_langcodes; do
-                striptracks_newvideo_languages+="$(echo $striptracks_isocodemap | jq -crM ".languages[] | .language | select((.\"iso639-2\"[]) == \"$i\") | select(.name != \"Any\" and .name != \"Original\").name")"
-              done
-              if [ -n "$striptracks_newvideo_languages" ]; then
-                # Covert to standard JSON
-                striptracks_json_languages="$(echo $striptracks_lang_codes | jq -crM "map(select(.name | inside(\"$striptracks_newvideo_languages\")) | {id, name})")"
-                # Check languages for Radarr
-                if [ "$(echo $striptracks_videofile_info | jq -crM .languages)" != "null" ]; then
-                  if [ "$(echo $striptracks_videofile_info | jq -crM ".languages")" != "$striptracks_json_languages" ]; then
-                    if set_radarr_language; then
-                      striptracks_exitstatus=0
-                    else
-                      striptracks_message="Error|${striptracks_type^} error when updating video language(s)."
-                      echo "$striptracks_message" | log
-                      echo "$striptracks_message" >&2
-                      striptracks_exitstatus=17
-                    fi
+          # Check the languages returned
+          # If we stripped out other languages, remove them from Radarr
+          # Only works in Radarr (no per-episode edit function in Sonarr)
+          if get_mediainfo "$striptracks_newvideo"; then
+            # Build array of full name languages
+            striptracks_newvideo_langcodes="$(echo $striptracks_json | jq -crM '.tracks[] | select(.type == "audio") | .properties.language')"
+            unset striptracks_newvideo_languages
+            for i in $striptracks_newvideo_langcodes; do
+              striptracks_newvideo_languages+="$(echo $striptracks_isocodemap | jq -crM ".languages[] | .language | select((.\"iso639-2\"[]) == \"$i\") | select(.name != \"Any\" and .name != \"Original\").name")"
+            done
+            if [ -n "$striptracks_newvideo_languages" ]; then
+              # Covert to standard JSON
+              striptracks_json_languages="$(echo $striptracks_lang_codes | jq -crM "map(select(.name | inside(\"$striptracks_newvideo_languages\")) | {id, name})")"
+              # Check languages for Radarr
+              if [ "$(echo $striptracks_videofile_info | jq -crM .languages)" != "null" ]; then
+                if [ "$(echo $striptracks_videofile_info | jq -crM ".languages")" != "$striptracks_json_languages" ]; then
+                  if set_radarr_language; then
+                    striptracks_exitstatus=0
                   else
-                    # The languages are already correct
-                    [ $striptracks_debug -ge 1 ] && echo "Debug|Language(s) '$(echo $striptracks_json_languages | jq -crM "[.[].name] | join(\",\")")' remained unchanged." | log
-                  fi
-                # Check languages for Sonarr
-                elif [ "$(echo $striptracks_videofile_info | jq -crM .language)" != "null" ]; then
-                  if [ "$(echo $striptracks_videofile_info | jq -crM ".language")" != "$(echo $striptracks_json_languages | jq -crM ".[0]")" ]; then
-                    if set_sonarr_language; then
-                      striptracks_exitstatus=0
-                    else
-                      striptracks_message="Error|${striptracks_type^} error when updating video language(s)."
-                      echo "$striptracks_message" | log
-                      echo "$striptracks_message" >&2
-                      striptracks_exitstatus=17
-                    fi
-                  else
-                    # The languages are already correct
-                    [ $striptracks_debug -ge 1 ] && echo "Debug|Language '$(echo $striptracks_json_languages | jq -crM ".[0].name")' remained unchanged." | log
+                    striptracks_message="Error|${striptracks_type^} error when updating video language(s)."
+                    echo "$striptracks_message" | log
+                    echo "$striptracks_message" >&2
+                    striptracks_exitstatus=17
                   fi
                 else
-                  # Some unknown JSON formatting
-                  striptracks_message="Warn|The '$striptracks_videofile_api' API returned unknown JSON language node."
-                  echo "$striptracks_message" | log
-                  echo "$striptracks_message" >&2
-                  striptracks_exitstatus=20
+                  # The languages are already correct
+                  [ $striptracks_debug -ge 1 ] && echo "Debug|Language(s) '$(echo $striptracks_json_languages | jq -crM "[.[].name] | join(\",\")")' remained unchanged." | log
+                fi
+              # Check languages for Sonarr
+              elif [ "$(echo $striptracks_videofile_info | jq -crM .language)" != "null" ]; then
+                if [ "$(echo $striptracks_videofile_info | jq -crM ".language")" != "$(echo $striptracks_json_languages | jq -crM ".[0]")" ]; then
+                  if set_sonarr_language; then
+                    striptracks_exitstatus=0
+                  else
+                    striptracks_message="Error|${striptracks_type^} error when updating video language(s)."
+                    echo "$striptracks_message" | log
+                    echo "$striptracks_message" >&2
+                    striptracks_exitstatus=17
+                  fi
+                else
+                  # The languages are already correct
+                  [ $striptracks_debug -ge 1 ] && echo "Debug|Language '$(echo $striptracks_json_languages | jq -crM ".[0].name")' remained unchanged." | log
                 fi
               else
-                # Video language not in striptracks_isocodemap
-                striptracks_message="Warn|Video language code(s) '${striptracks_newvideo_langcodes//$'\n'/,}' not found in the ISO Codemap. Cannot evaluate."
+                # Some unknown JSON formatting
+                striptracks_message="Warn|The '$striptracks_videofile_api' API returned unknown JSON language node."
                 echo "$striptracks_message" | log
                 echo "$striptracks_message" >&2
                 striptracks_exitstatus=20
               fi
             else
-              # Get media info failed
-              striptracks_message="Error|Could not get media info from new video file. Can't check resulting languages."
+              # Video language not in striptracks_isocodemap
+              striptracks_message="Warn|Video language code(s) '${striptracks_newvideo_langcodes//$'\n'/,}' not found in the ISO Codemap. Cannot evaluate."
               echo "$striptracks_message" | log
               echo "$striptracks_message" >&2
-              striptracks_exitstatus=9
-            fi
-            # Get list of videos that could be renamed
-            get_rename
-            striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
-              striptracks_message="Warn|[$striptracks_return] ${striptracks_type^} error when getting list of videos to rename."
-              echo "$striptracks_message" | log
-              echo "$striptracks_message" >&2
-              striptracks_exitstatus=17
-            }
-            # Check if new video is in list of files that can be renamed
-            if [ -n "$striptracks_result" -a "$striptracks_result" != "[]" ]; then
-              striptracks_videofile_id="$(echo $striptracks_result | jq -crM ".[] | select(.existingPath | endswith(\"${striptracks_newvideo##*/}\")) | .${striptracks_json_quality_root}Id")"
-              striptracks_renamedvideo="${striptracks_newvideo%/*}/$(echo $striptracks_result | jq -crM ".[] | select(.existingPath | endswith(\"${striptracks_newvideo##*/}\")) | .newPath")"
-              # Rename video if needed
-              if [ -n striptracks_videofile_id ]; then
-                rename_video
-                striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
-                  striptracks_message="Error|[$striptracks_return] ${striptracks_type^} error when renaming \"${striptracks_newvideo##*/}\" to \"${striptracks_renamedvideo##*/}\""
-                  echo "$striptracks_message" | log
-                  echo "$striptracks_message" >&2
-                  striptracks_exitstatus=17
-                }
-              fi
+              striptracks_exitstatus=20
             fi
           else
-            # No '.path' in returned JSON
-            striptracks_message="Warn|The '$striptracks_videofile_api' API with ${striptracks_video_api}File id $striptracks_videofile_id returned no path."
+            # Get media info failed
+            striptracks_message="Error|Could not get media info from new video file. Can't check resulting languages."
+            echo "$striptracks_message" | log
+            echo "$striptracks_message" >&2
+            striptracks_exitstatus=9
+          fi
+          # Get list of videos that could be renamed
+          get_rename
+          striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
+            striptracks_message="Warn|[$striptracks_return] ${striptracks_type^} error when getting list of videos to rename."
             echo "$striptracks_message" | log
             echo "$striptracks_message" >&2
             striptracks_exitstatus=17
+          }
+          # Check if new video is in list of files that can be renamed
+          if [ -n "$striptracks_result" -a "$striptracks_result" != "[]" ]; then
+            striptracks_videofile_id="$(echo $striptracks_result | jq -crM ".[] | select(.existingPath | endswith(\"${striptracks_newvideo##*/}\")) | .${striptracks_json_quality_root}Id")"
+            striptracks_renamedvideo="${striptracks_newvideo%/*}/$(echo $striptracks_result | jq -crM ".[] | select(.existingPath | endswith(\"${striptracks_newvideo##*/}\")) | .newPath")"
+            # Rename video if needed
+            if [ -n striptracks_videofile_id ]; then
+              rename_video
+              striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
+                striptracks_message="Error|[$striptracks_return] ${striptracks_type^} error when renaming \"${striptracks_newvideo##*/}\" to \"${striptracks_renamedvideo##*/}\""
+                echo "$striptracks_message" | log
+                echo "$striptracks_message" >&2
+                striptracks_exitstatus=17
+              }
+            fi
           fi
         else
-          # 'hasFile' is False in returned JSON
-          striptracks_message="Warn|The '$striptracks_video_api' API with id $striptracks_video_id returned a false 'hasFile'. (Normal with Radarr on try #1)"
+          # No '.path' in returned JSON
+          striptracks_message="Warn|The '$striptracks_videofile_api' API with ${striptracks_video_api}File id $striptracks_videofile_id returned no path."
           echo "$striptracks_message" | log
           echo "$striptracks_message" >&2
           striptracks_exitstatus=17
         fi
-    # else
-      # striptracks_message="Error|${striptracks_type^} error getting import file list in \"$striptracks_video_folder\" for $striptracks_video_type ID $striptracks_rescan_id. Cannot import remuxed video."
-      # echo "$striptracks_message" | log
-      # echo "$striptracks_message" >&2
-      # striptracks_exitstatus=17
-    # fi
       else
-        # Error from rescan API
-        striptracks_message="Error|The '$striptracks_rescan_api' API with ${striptracks_video_type}Id $striptracks_rescan_id failed."
+        # 'hasFile' is False in returned JSON
+        striptracks_message="Warn|The '$striptracks_video_api' API with id $striptracks_video_id returned a false 'hasFile'."
         echo "$striptracks_message" | log
         echo "$striptracks_message" >&2
         striptracks_exitstatus=17
       fi
-    done
+  # else
+    # striptracks_message="Error|${striptracks_type^} error getting import file list in \"$striptracks_video_folder\" for $striptracks_video_type ID $striptracks_rescan_id. Cannot import remuxed video."
+    # echo "$striptracks_message" | log
+    # echo "$striptracks_message" >&2
+    # striptracks_exitstatus=17
+  # fi
+    else
+      # Error from rescan API
+      striptracks_message="Error|The '$striptracks_rescan_api' API with ${striptracks_video_type}Id $striptracks_rescan_id failed."
+      echo "$striptracks_message" | log
+      echo "$striptracks_message" >&2
+      striptracks_exitstatus=17
+    fi
   else
     # No video ID means we can't call the API
     striptracks_message="Warn|Missing or empty environment variable: striptracks_video_id='$striptracks_video_id' or striptracks_videofile_id='$striptracks_videofile_id'. Cannot rescan for remuxed video."
