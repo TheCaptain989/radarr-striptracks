@@ -23,8 +23,8 @@ Production Container info: ![Docker Image Size](https://img.shields.io/docker/im
    **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "Radarr Docker container")**  
    **[linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "Sonarr Docker container")**
    1. Add the **DOCKER_MODS** environment variable to the `docker run` command, as follows:  
-      - Dev/test release: `-e DOCKER_MODS=thecaptain989/radarr-striptracks:latest`  
       - Stable release: `-e DOCKER_MODS=linuxserver/mods:radarr-striptracks`
+      - Dev/test release: `-e DOCKER_MODS=thecaptain989/radarr-striptracks:latest`  
 
       *Example Docker CLI Configuration*  
        ```shell
@@ -56,11 +56,11 @@ Production Container info: ![Docker Image Size](https://img.shields.io/docker/im
    The script will detect the language defined in the video profile for the movie or TV show and only keep the audio and subtitles selected.  
    Alternatively, a wrapper script may be used to more granularly define which tracks to keep.  See [Wrapper Scripts](./README.md#wrapper-scripts) for more details.
 
-## Usage
+## Usage Details
 The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name.  
 Chapters, if they exist, are preserved. The Title attribute in the MKV is set to the movie title plus year  
 (ex: `The Sting (1973)`) or the series title plus episode information (ex: `Happy! 01x01 - What Smiles Are For`).  
-The language of the video file will be updated in the Radarr or Sonarr database to reflect the actual languages preserved in the remuxed video.  
+The language of the video file will be updated in the Radarr or Sonarr database to reflect the actual languages preserved in the remuxed video, and the video will be renamed according to the Radarr/Sonarr rules if needed (for example, if a removed track would trigger a name change.)
 
 If you've configured the Radarr/Sonarr **Recycle Bin** path correctly, the original video will be moved there.  
 ![danger] **NOTE:** If you have *not* configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
@@ -73,7 +73,7 @@ Beginning with version 2.0 of this mod, the script may be called with no argumen
 #### Automatic Language Detection
 Both audio and subtitles that match the selected language(s) are kept.
 
->**Note:** The Radarr language selection 'Any' will preserve all languages in the video file.
+>**Note:** The Radarr language selection 'Any' will preserve all languages in the video file. Selecting this profile language is functionally equivalent to calling the script with `--audio :any --subs :any` command line options. See [Any language code](./README.md#any-language-code) below for more details.
 
 >**Note:** The Radarr language selection 'Original' will use the language Radarr pulled from [The Movie Database](https://www.themoviedb.org/ "TMDB") during its last refresh. Selecting this profile language is functionally equivalent to calling the script with `--audio :org --subs :org` command line options.  See [Original language code](./README.md#original-language-code) below for more details.
 
@@ -113,10 +113,10 @@ For example:
 
 Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.  Order is unimportant.
 
->**NOTE:** The script is smart enough to not remove the last audio track. (There is in fact no way to force the script to remove all audio.) This way you don't have to specify every possible language if you are importing a
-foreign film, for example.
-
 >![warning] **NOTE:** If no subtitle language is detected in the profile or specified on the command line, all subtitles are removed.
+
+#### Any language code
+The `:any` language code is a special code. When used, the script will preserve all language tracks, regardless of how they are tagged in the source video.
 
 #### Original language code
 The `:org` language code is a special code. When used, instead of retaining a specific language, the script substitutes the original movie language as specified in its [The Movie Database](https://www.themoviedb.org/ "TMDB") entry.  
@@ -128,6 +128,13 @@ Several [Included Wrapper Scripts](./README.md#included-wrapper-scripts) use thi
 #### Unknown language code
 The `:und` language code is a special code. When used, the script will match on any track that has a blank language entry. If not included, tracks with a blank language value will be removed.  
 >![danger] **NOTE:** It is common for M2TS and AVI containers to have tracks with unknown languages! It is strongly recommended to include `:und` in most instances unless you know exactly what you're doing.
+
+### Special Handling of Audio
+The script is smart enough to not remove the last audio track. There is in fact no way to force the script to remove all audio. This way you don't have to specify every possible language if you are importing a foreign film, for example.
+
+Additionally, two ISO 639-2 language codes are handled specially: the "*Uncoded languages*" code of `mis` and the "*No linguistic content*" code of `zxx`.  
+Tracks with either of these codes are always retained as they are often used for intrumental tracks in silent films.  
+There is no way to force the script to remove audio tracks with these codes.
 
 ### Examples
 ```
@@ -142,6 +149,7 @@ The `:und` language code is a special code. When used, the script will match on 
                             # Batch Mode
                             # Keep English and Unknown audio and English subtitles, converting
                             # video specified
+-a :any -s ""               # Keep all audio and remove all subtitles
 ```
 
 ### Wrapper Scripts
