@@ -133,7 +133,7 @@ The `:und` language code is a special code. When used, the script will match on 
 The script is smart enough to not remove the last audio track. There is in fact no way to force the script to remove all audio. This way you don't have to specify every possible language if you are importing a foreign film, for example.
 
 Additionally, two ISO 639-2 language codes are handled specially: the "*Uncoded languages*" code of `mis` and the "*No linguistic content*" code of `zxx`.  
-Tracks with either of these codes are always retained as they are often used for intrumental tracks in silent films.  
+Tracks with either of these codes are always retained as they are often used for instrumental tracks in silent films.  
 There is no way to force the script to remove audio tracks with these codes.
 
 ### Examples
@@ -205,7 +205,7 @@ Using this function, you can easily process all of your video files in any subdi
 Because the script is not called from within Radarr or Sonarr, expect the following behavior while in Batch Mode:
 * *The file name must be specified on the command line.*<br/>(The `-f` option places the script in Batch Mode)
 * *No audio or subtitles language detection occurs.*<br/>Both the audio and subtitles languages must be specified on the command line.
-* *The `:org` language code in meaningless.*<br/>The original video langauge cannot be determined without the Radarr database.
+* *The `:org` language code is meaningless.*<br/>The original video language cannot be determined without the Radarr database.
 * *The resultant MKV embedded title attribute is set to the basename of the file minus the extension.*<br/>The canonical name of the movie/TV show cannot otherwise be determined.
 * *Radarr or Sonarr APIs are not called and their database is not updated.*<br/>This may require a manual rescan of converted videos.
 * *Original video files are deleted.*<br/>The Recycle Bin function is not available.
