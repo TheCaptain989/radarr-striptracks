@@ -1012,7 +1012,7 @@ END {
   for (i = 1; i <= NoTr; i++) {
     if (Debug >= 2) print "Debug|i:"i,"Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"],"Codec:"Track[i, "codec"]
     if (Track[i, "typ"] == "audio") {
-      # Keep track if it matches command line selection, or if it is matches psuedo code ":any"
+      # Keep track if it matches command line selection, or if it is matches pseudo code ":any"
       if (AudioKeep ~ Track[i, "lang"] || AudioKeep ~ ":any") {
         print "Info|Keeping audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
         AudioCommand[i] = Track[i, "id"]
