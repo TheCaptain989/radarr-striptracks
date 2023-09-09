@@ -359,7 +359,7 @@ function rescan {
   striptracks_result=$(curl -s --fail-with-body -H "X-Api-Key: $striptracks_apikey" \
     -H "Content-Type: application/json" \
 		-H "Accept: application/json" \
-    -d $data \
+    -d "$data" \
     "$url")
   local striptracks_curlret=$?; [ $striptracks_curlret -ne 0 ] && {
     local striptracks_message=$(echo -e "[$striptracks_curlret] curl error when calling: \"$url\" with data $data\nWeb server returned: $(echo $striptracks_result | jq -crM .message?)" | awk '{print "Error|"$0}')
@@ -406,8 +406,8 @@ function check_job {
       local striptracks_return=2
       break
     fi
-    if [ "$(echo $flac2mp3_result | jq -crM .status)" = "queued" ]; then
-      local flac2mp3_return=1
+    if [ "$(echo $striptracks_result | jq -crM .status)" = "queued" ]; then
+      local striptracks_return=1
       break
     fi
     if [ "$(echo $striptracks_result | jq -crM .status)" = "completed" ]; then
@@ -1107,7 +1107,7 @@ if [ "$striptracks_type" = "batch" ]; then
   [ $striptracks_debug -ge 1 ] && echo "Debug|Deleting: \"$striptracks_video\"" | log
   rm "$striptracks_video" 2>&1 | log
   striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
-    striptracks_message="Error|[$striptracks_return] Error when deleting track: \"$striptracks_track\""
+    striptracks_message="Error|[$striptracks_return] Error when deleting video: \"$striptracks_video\""
     echo "$striptracks_message" | log
     echo "$striptracks_message" >&2
     striptracks_exitstatus=16
