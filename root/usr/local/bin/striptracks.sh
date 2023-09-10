@@ -518,11 +518,11 @@ function delete_video {
   # fi
   # return $striptracks_return
 # }
-# Update file quality in Radarr/Sonarr
-function set_quality {
+# Update file metadata in Radarr/Sonarr
+function set_metadata {
   local url="$striptracks_api_url/$striptracks_videofile_api/editor"
-  local data="{\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"quality\":$striptracks_original_quality}"
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Updating from quality '$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)' to '$(echo $striptracks_original_quality | jq -crM .quality.name)'. Calling ${striptracks_type^} API using PUT and URL '$url' with data $data" | log
+  local data="$(echo $striptracks_original_metadata | jq -crM "{${striptracks_videofile_api}Ids: [${striptracks_videofile_id}], quality, releaseGroup}")"
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Updating from quality '$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)' to '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' and release group '$(echo $striptracks_videofile_info | jq -crM '.releaseGroup | select(. != null)')' to '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'. Calling ${striptracks_type^} API using PUT and URL '$url' with data $data" | log
   unset striptracks_result
   striptracks_result=$(curl -s --fail-with-body -H "X-Api-Key: $striptracks_apikey" \
     -H "Content-Type: application/json" \
@@ -662,7 +662,7 @@ function set_radarr_language {
 function set_sonarr_language {
   local url="$striptracks_api_url/$striptracks_videofile_api/editor"
   local data="{\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"language\":$(echo $striptracks_json_languages | jq -crM ".[0]")}"
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Updating from language '$(echo $striptracks_videofile_info | jq -crM ".language.name")' to '$(echo $striptracks_json_languages | jq -crM ".[0].name")'. Calling ${striptracks_type^} API using PUT and URL '$striptracks_api_url/v3/$striptracks_videofile_api/editor' with data $data" | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Updating from language '$(echo $striptracks_videofile_info | jq -crM ".language.name")' to '$(echo $striptracks_json_languages | jq -crM ".[0].name")'. Calling ${striptracks_type^} API using PUT and URL '$url' with data $data" | log
   unset striptracks_result
   striptracks_result=$(curl -s -H "X-Api-Key: $striptracks_apikey" \
     -H "Content-Type: application/json" \
@@ -824,9 +824,10 @@ elif [ -n "$striptracks_api_url" ]; then
           echo "$striptracks_message" >&2
           striptracks_exitstatus=20
         }
-        # Save original quality
-        striptracks_original_quality="$(echo $striptracks_result | jq -crM .quality)"
-        [ $striptracks_debug -ge 1 ] && echo "Debug|Detected quality '$(echo $striptracks_original_quality | jq -crM .quality.name)'" | log
+        # Save original metadata
+        striptracks_original_metadata="$(echo $striptracks_result | jq -crM '{quality, releaseGroup}')"
+        [ $striptracks_debug -ge 1 ] && echo "Debug|Detected quality '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)'" | log
+        [ $striptracks_debug -ge 1 ] && echo "Debug|Detected release group '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'" | log
         [ $striptracks_debug -ge 1 ] && echo "Debug|Detected $striptracks_profile_type profile '(${striptracks_profileId}) ${striptracks_profileName}'" | log
         [ $striptracks_debug -ge 1 ] && echo "Debug|Detected $striptracks_profile_type profile language(s) '$(echo $striptracks_languages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')'" | log
         if [ -n "$striptracks_orglangName" -a "$striptracks_orglangName" != "null" ]; then
@@ -1201,24 +1202,19 @@ elif [ -n "$striptracks_api_url" ]; then
         if get_videofile_info; then
           striptracks_videofile_info="$striptracks_result"
           # Check that the file didn't get lost in the Rescan.
-          # TODO: Also losing releaseGroup
           # TODO: In Radarr, losing customFormats and customFormatScore
-          # If we lost the quality information, put it back
-          if [ "$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)" != "$(echo $striptracks_original_quality | jq -crM .quality.name)" ]; then
-            set_quality
-            # Check that the returned result shows the update
-            if [ "$(echo $striptracks_result | jq -crM .[].quality.quality.name)" = "$(echo $striptracks_original_quality | jq -crM .quality.name)" ]; then
-              # Updated successfully
-              [ $striptracks_debug -ge 1 ] && echo "Debug|Successfully updated quality to '$(echo $striptracks_result | jq -crM .[].quality.quality.name)'." | log
-            else
-              striptracks_message="Warn|Unable to update ${striptracks_type^} $striptracks_video_api '$striptracks_title' to quality '$(echo $striptracks_original_quality | jq -crM .quality.name)'"
-              echo "$striptracks_message" | log
-              echo "$striptracks_message" >&2
-              striptracks_exitstatus=17
-            fi
+          # Put back the missing metadata
+          set_metadata
+          # Check that the returned result shows the updates
+          if [ "$(echo $striptracks_result | jq -crM .[].quality.quality.name)" = "$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)" ]; then
+            # Updated successfully
+            [ $striptracks_debug -ge 1 ] && echo "Debug|Successfully updated quality to '$(echo $striptracks_result | jq -crM .[].quality.quality.name)'." | log
+            [ $striptracks_debug -ge 1 ] && echo "Debug|Successfully updated release group to '$(echo $striptracks_result | jq -crM '.[].releaseGroup | select(. != null)')'." | log
           else
-            # The quality is already correct
-            [ $striptracks_debug -ge 1 ] && echo "Debug|Quality of '$(echo $striptracks_original_quality | jq -crM .quality.name)' remained unchanged." | log
+            striptracks_message="Warn|Unable to update ${striptracks_type^} $striptracks_video_api '$striptracks_title' to quality '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' or release group to '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'"
+            echo "$striptracks_message" | log
+            echo "$striptracks_message" >&2
+            striptracks_exitstatus=17
           fi
 
           # Check the languages returned
