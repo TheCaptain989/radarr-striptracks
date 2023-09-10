@@ -36,7 +36,8 @@ jobs:
           VALIDATE_DOCKERFILE_HADOLINT: true
           VALIDATE_GITLEAKS: true
           VALIDATE_MARKDOWN: true
-          BASH_SEVERITY: info
+          BASH_SEVERITY: style
+          BASH_FILE_NAME: .shellcheckrc
           CREATE_LOG_FILE: true
           SUPPRESS_POSSUM: true
           ERROR_ON_MISSING_EXEC_BIT: true
