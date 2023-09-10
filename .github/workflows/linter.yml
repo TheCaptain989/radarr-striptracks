@@ -38,9 +38,9 @@ jobs:
           VALIDATE_MARKDOWN: true
           BASH_SEVERITY: info
           CREATE_LOG_FILE: true
-          SUPPRESS_POSSUM: false
+          SUPPRESS_POSSUM: true
           ERROR_ON_MISSING_EXEC_BIT: true
-          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_ALL_CODEBASE: true
           DEFAULT_BRANCH: master
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
