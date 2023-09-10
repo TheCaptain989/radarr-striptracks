@@ -3,7 +3,7 @@
 source-path=SCRIPTDIR
 
 # Invalid source location
-disable=SC1091,SC2086,SC2155,SC2166
+disable=SC1091
 
 # Double quote to prevent globbing and word splitting
 #disable=SC2086
