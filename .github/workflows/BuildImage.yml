@@ -1,14 +1,18 @@
 name: Build Image
 
-on: [push, pull_request_target, workflow_dispatch]
+on: 
+  workflow_run:
+    workflows: ["Lint Code Base"]
+    types:
+      - completed
 
 env:
   ENDPOINT: "thecaptain989/radarr-striptracks"
 
 jobs:
   build:
-    needs: run-lint
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v3
 

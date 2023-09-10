@@ -6,11 +6,12 @@
 # https://github.com/github/super-linter
 name: Lint Code Base
 
-on:
+on: 
   push:
     branches-ignore: [master, main]
-  pull_request:
+  pull_request_target:
     branches: [master, main]
+  workflow_dispatch:
 
 jobs:
   run-lint:
@@ -28,7 +29,7 @@ jobs:
           fetch-depth: 0
 
       - name: Lint Code Base
-        uses: github/super-linter@slim-v5
+        uses: super-linter/super-linter@slim-v5
         env:
           VALIDATE_BASH: true
           VALIDATE_BASH_EXEC: true
