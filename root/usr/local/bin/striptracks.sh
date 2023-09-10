@@ -175,7 +175,7 @@ while (( "$#" )); do
         exit 3
       fi
     ;;
-    -*|--*=) # Unknown option
+    --*=|-*) # Unknown option
       echo "Error|Unknown option: $1" >&2
       usage
       exit 20
@@ -212,6 +212,7 @@ if [[ "${striptracks_type,,}" = "batch" ]]; then
   export striptracks_title="$(basename "$striptracks_video" ".${striptracks_video##*.}")"
 elif [[ "${striptracks_type,,}" = "radarr" ]]; then
   # Radarr mode
+  # shellcheck disable=SC2154
   export striptracks_video="$radarr_moviefile_path"
   export striptracks_video_folder="$radarr_movie_path"
   export striptracks_video_api="movie"
@@ -229,6 +230,7 @@ elif [[ "${striptracks_type,,}" = "radarr" ]]; then
   # export striptracks_language_node="languages"
 elif [[ "${striptracks_type,,}" = "sonarr" ]]; then
   # Sonarr mode
+  # shellcheck disable=SC2154
   export striptracks_video="$sonarr_episodefile_path"
   export striptracks_video_folder="$sonarr_series_path"
   export striptracks_video_api="episode"
@@ -263,7 +265,7 @@ striptracks_isocodemap='{"languages":[{"language":{"name":"Any","iso639-2":["any
 # Can still go over striptracks_maxlog if read line is too long
 ## Must include whole function in subshell for read to work!
 function log {(
-  while read
+  while read -r
   do
     echo $(date +"%Y-%-m-%-d %H:%M:%S.%1N")\|"[$striptracks_pid]$REPLY" >>"$striptracks_log"
     local striptracks_filesize=$(stat -c %s "$striptracks_log")
@@ -280,7 +282,7 @@ function log {(
 # Inspired by https://stackoverflow.com/questions/893585/how-to-parse-xml-in-bash
 function read_xml {
   local IFS=\>
-  read -d \< striptracks_xml_entity striptracks_xml_content
+  read -r -d \< striptracks_xml_entity striptracks_xml_content
 }
 # Get Radarr/Sonarr version
 function get_version {
@@ -684,7 +686,7 @@ function set_sonarr_language {
 # Exit program
 function end_script {
   # Cool bash feature
-  striptracks_message="Info|Completed in $(($SECONDS/60))m $(($SECONDS%60))s"
+  striptracks_message="Info|Completed in $((SECONDS/60))m $((SECONDS%60))s"
   echo "$striptracks_message" | log
   [ "$1" != "" ] && striptracks_exitstatus=$1
   [ $striptracks_debug -ge 1 ] && echo "Debug|Exit code ${striptracks_exitstatus:-0}" | log

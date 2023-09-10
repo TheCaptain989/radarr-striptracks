@@ -15,20 +15,20 @@ Container info:
 Production Container info: ![Docker Image Size](https://img.shields.io/docker/image-size/linuxserver/mods/radarr-striptracks "Container Size")  
 [![GitHub Super-Linter](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/linter.xml/badge.svg)](https://github.com/marketplace/actions/super-linter)
 
-
 # Installation
 1. Pull your selected container ([linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "LinuxServer.io's Radarr container") or [linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "LinuxServer.io's Sonarr container")) from GitHub Container Registry or Docker Hub:  
   `docker pull lscr.io/linuxserver/radarr:latest`   OR  
-  `docker pull lscr.io/linuxserver/sonarr:latest`   
+  `docker pull lscr.io/linuxserver/sonarr:latest`  
 
 2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
    **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "Radarr Docker container")**  
    **[linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "Sonarr Docker container")**
    1. Add the **DOCKER_MODS** environment variable to the `docker run` command, as follows:  
       - Stable release: `-e DOCKER_MODS=linuxserver/mods:radarr-striptracks`
-      - Dev/test release: `-e DOCKER_MODS=thecaptain989/radarr-striptracks:latest`  
+      - Dev/test release: `-e DOCKER_MODS=thecaptain989/radarr-striptracks:latest`
 
-      *Example Docker CLI Configuration*  
+      *Example Docker CLI Configuration*
+
        ```shell
        docker run -d \
          --name=radarr \
@@ -42,7 +42,7 @@ Production Container info: ![Docker Image Size](https://img.shields.io/docker/im
          -v /path/to/downloadclient-downloads:/downloads \
          --restart unless-stopped \
          lscr.io/linuxserver/radarr
-       ```   
+       ```  
 
       *Example Synology Configuration*  
       ![striptracks](.assets/striptracks-synology.png "Synology container settings")
@@ -122,7 +122,7 @@ The `:any` language code is a special code. When used, the script will preserve 
 
 #### Original language code
 The `:org` language code is a special code. When used, instead of retaining a specific language, the script substitutes the original movie language as specified in its [The Movie Database](https://www.themoviedb.org/ "TMDB") entry.  
-As an example, when importing "_Amores Perros (2000)_" with options `--audio :org:eng`, the Spanish and English audio tracks are preserved.  
+As an example, when importing "*Amores Perros (2000)*" with options `--audio :org:eng`, the Spanish and English audio tracks are preserved.  
 Several [Included Wrapper Scripts](./README.md#included-wrapper-scripts) use this special code.
 
 >![danger] **NOTE:** This feature relies on the 'originalLanguage' field in the Radarr database. It is not known to exist in Sonarr, and the `:org` code will therefore be ignored. It is also invalid to in Batch Mode.
@@ -139,7 +139,8 @@ Tracks with either of these codes are always retained as they are often used for
 There is no way to force the script to remove audio tracks with these codes.
 
 ### Examples
-```
+
+```shell
 -d 2                        # Enable debugging level 2, audio and subtitles
                             # languages detected from Radarr/Sonarr
 -a :eng:und -s :eng         # Keep English and Unknown audio, and English subtitles
@@ -161,7 +162,7 @@ To supply arguments to the script, one of the included wrapper scripts may be us
 For your convenience, several wrapper scripts are included in the `/usr/local/bin/` directory.  
 You may use any of these scripts in place of `striptracks.sh` mentioned in the [Installation](./README.md#installation) section above.
 
-```
+```shell
 striptracks-debug.sh       # Use detected languages, but enable debug logging
 striptracks-debug-2.sh     # Use detected languages, enable debug logging level 2
 striptracks-debug-max.sh   # Use detected languages, enable highest debug logging
@@ -181,12 +182,15 @@ striptracks-org-spa.sh     # Keep Original and Spanish audio, and Original and S
 
 #### Example Wrapper Script
 To configure an entry from the [Examples](./README.md#examples) section above, create and save a file called `striptracks-custom.sh` to `/config` containing the following text:
+
 ```shell
 #!/bin/bash
 
 . /usr/local/bin/striptracks.sh -d :eng:kor:jpn :eng:spa
 ```
+
 Make it executable:
+
 ```shell
 chmod +x /config/striptracks-custom.sh
 ```
@@ -214,6 +218,7 @@ Because the script is not called from within Radarr or Sonarr, expect the follow
 
 #### Batch Example
 To keep English and Unknown audio and English subtitles on all video files ending in .MKV, .AVI, or .MP4 in the `/movies` directory, enter the following at the Linux command line:
+
 ```shell
 find /movies/ -type f \( -name "*.mkv" -o -name "*.avi" -o -name "*.mp4" \) | while read file; do /usr/local/bin/striptracks.sh -f "$file" -a :eng:und -s :eng; done
 ```
