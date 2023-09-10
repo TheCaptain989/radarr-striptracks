@@ -40,7 +40,6 @@
 #  9 - mkvmerge get media info failed
 # 10 - remuxing completed, but no output file found
 # 11 - source video had no audio or subtitle tracks
-# 12 - no tracks would be removed; remuxing not performed
 # 13 - awk script exited abnormally
 # 16 - could not delete the original file
 # 17 - Radarr/Sonarr API error
@@ -1085,7 +1084,7 @@ striptracks_return="${PIPESTATUS[1]}"
        echo "$striptracks_message" | log
        [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: /usr/bin/mkvpropedit -q --edit info --set \"title=$striptracks_title\" \"$striptracks_video\"" | log
        /usr/bin/mkvpropedit -q --edit info --set "title=$striptracks_title" "$striptracks_video" 2>&1 | log
-       end_script 12
+       end_script 0
     ;;
     *) striptracks_message="Error|[$striptracks_return] Script exited abnormally."
        echo "$striptracks_message" | log
