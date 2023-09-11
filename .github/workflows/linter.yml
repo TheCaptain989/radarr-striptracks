@@ -29,13 +29,13 @@ jobs:
           fetch-depth: 0
 
       - name: Lint Code Base
-        uses: super-linter/super-linter/slim@v5
+        uses: super-linter/super-linter@v5
         env:
         # ShellCheck configuration totally doesn't work in the .shellcheckrc file.
         # Commenting out for now
-#          VALIDATE_BASH: true
-#          BASH_SEVERITY: style
-#          BASH_FILE_NAME: .shellcheckrc
+          VALIDATE_BASH: true
+          BASH_SEVERITY: style
+          BASH_FILE_NAME: .shellcheckrc
           VALIDATE_BASH_EXEC: true
           VALIDATE_DOCKERFILE_HADOLINT: true
           VALIDATE_GITLEAKS: true
