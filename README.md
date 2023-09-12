@@ -1,5 +1,5 @@
 # Development Repository
-This is a development and test repo.  Visit the [production repository and branch](https://github.com/linuxserver/docker-mods/tree/radarr-striptracks) for stable/production releases.
+This is a development and test repository.  Visit the [production repository and branch](https://github.com/linuxserver/docker-mods/tree/radarr-striptracks) for stable/production releases.
 
 # About
 A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.io Radarr/Sonarr v3 Docker container that adds a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages.
@@ -13,7 +13,7 @@ Container info:
 ![Docker Image Size](https://img.shields.io/docker/image-size/thecaptain989/radarr-striptracks "Container Size")
 ![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/radarr-striptracks "Container Pulls")  
 Production Container info: ![Docker Image Size](https://img.shields.io/docker/image-size/linuxserver/mods/radarr-striptracks "Container Size")  
-[![GitHub Super-Linter](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/linter.xml/badge.svg)](https://github.com/marketplace/actions/super-linter)
+[![GitHub Super-Linter](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/linter.yml/badge.svg)](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/linter.yml)
 
 # Installation
 1. Pull your selected container ([linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "LinuxServer.io's Radarr container") or [linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "LinuxServer.io's Sonarr container")) from GitHub Container Registry or Docker Hub:  
@@ -75,11 +75,11 @@ Beginning with version 2.0 of this mod, the script may be called with no argumen
 #### Automatic Language Detection
 Both audio and subtitles that match the selected language(s) are kept.
 
->**Note:** The Radarr language selection 'Any' will preserve all languages in the video file. Selecting this profile language is functionally equivalent to calling the script with `--audio :any --subs :any` command line options. See [Any language code](./README.md#any-language-code) below for more details.
+>**Note:** The Radarr language selection 'Any' will preserve all languages in the video file. Selecting this profile language is functionally equivalent to calling the script with `--audio :any --subs :any` command-line options. See [Any language code](./README.md#any-language-code) below for more details.
 
->**Note:** The Radarr language selection 'Original' will use the language Radarr pulled from [The Movie Database](https://www.themoviedb.org/ "TMDB") during its last refresh. Selecting this profile language is functionally equivalent to calling the script with `--audio :org --subs :org` command line options.  See [Original language code](./README.md#original-language-code) below for more details.
+>**Note:** The Radarr language selection 'Original' will use the language Radarr pulled from [The Movie Database](https://www.themoviedb.org/ "TMDB") during its last refresh. Selecting this profile language is functionally equivalent to calling the script with `--audio :org --subs :org` command-line options.  See [Original language code](./README.md#original-language-code) below for more details.
 
->**Note:** The Sonarr language selection 'Unknown' will match tracks with no configured language in the video file. Selecting this profile language is functionally equivalent to calling the script with `--audio :und --subs :und` command line options. See [Unknown language code](./README.md#unknown-language-code) below for more details.
+>**Note:** The Sonarr language selection 'Unknown' will match tracks with no configured language in the video file. Selecting this profile language is functionally equivalent to calling the script with `--audio :und --subs :und` command-line options. See [Unknown language code](./README.md#unknown-language-code) below for more details.
 
 *Radarr Quality Profile Example*  
 ![radarr profile](.assets/radarr-quality-profile.png "Radarr Quality Profile settings")
@@ -87,10 +87,10 @@ Both audio and subtitles that match the selected language(s) are kept.
 *Sonarr Language Profile Example*  
 ![sonarr profile](.assets/sonarr-language-profile.png "Sonarr Language Profile settings")
 
-#### Command Line Options and Arguments
-The script also supports command line arguments that will override the automatic language detection.  More granular control can therefore be exerted or extended using tagging and defining multiple Connect scripts (this is native Radarr/Sonarr functionality outside the scope of this documentation).
+#### Command-Line Options and Arguments
+The script also supports command-line arguments that will override the automatic language detection.  More granular control can therefore be exerted or extended using tagging and defining multiple Connect scripts (this is native Radarr/Sonarr functionality outside the scope of this documentation).
 
-The syntax for the command line is:  
+The syntax for the command-line is:  
 `striptracks.sh [{-d|--debug} [<level>]] [[{-f|--file} <video_file>] {-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>]]`  
 
 Where:
@@ -115,7 +115,7 @@ For example:
 
 Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.  Order is unimportant.
 
->![warning] **NOTE:** If no subtitle language is detected in the profile or specified on the command line, all subtitles are removed.
+>![warning] **NOTE:** If no subtitle language is detected in the profile or specified on the command-line, all subtitles are removed.
 
 #### Any language code
 The `:any` language code is a special code. When used, the script will preserve all language tracks, regardless of how they are tagged in the source video.
@@ -203,21 +203,21 @@ Then put `/config/striptracks-custom.sh` in the **Path** field in place of `/usr
 The only events/notification triggers that have been tested are **On Import** and **On Upgrade**
 
 ### Batch Mode
-Batch mode allows the script to be executed independently of Radarr or Sonarr.  It converts the file specified on the command line and ignores any environment variables that are normally expected to be set by the video management program.
+Batch mode allows the script to be executed independently of Radarr or Sonarr.  It converts the file specified on the command-line and ignores any environment variables that are normally expected to be set by the video management program.
 
 Using this function, you can easily process all of your video files in any subdirectory at once.  See the [Batch Example](./README.md#batch-example) below.
 
 #### Script Execution Differences in Batch Mode
 Because the script is not called from within Radarr or Sonarr, expect the following behavior while in Batch Mode:
-* *The file name must be specified on the command line.*<br/>(The `-f` option places the script in Batch Mode)
-* *No audio or subtitles language detection occurs.*<br/>Both the audio and subtitles languages must be specified on the command line.
+* *The filename must be specified on the command-line.*<br/>(The `-f` option places the script in Batch Mode)
+* *No audio or subtitles language detection occurs.*<br/>Both the audio and subtitles languages must be specified on the command-line.
 * *The `:org` language code is meaningless.*<br/>The original video language cannot be determined without the Radarr database.
 * *The resultant MKV embedded title attribute is set to the basename of the file minus the extension.*<br/>The canonical name of the movie/TV show cannot otherwise be determined.
 * *Radarr or Sonarr APIs are not called and their database is not updated.*<br/>This may require a manual rescan of converted videos.
 * *Original video files are deleted.*<br/>The Recycle Bin function is not available.
 
 #### Batch Example
-To keep English and Unknown audio and English subtitles on all video files ending in .MKV, .AVI, or .MP4 in the `/movies` directory, enter the following at the Linux command line:
+To keep English and Unknown audio and English subtitles on all video files ending in .MKV, .AVI, or .MP4 in the `/movies` directory, enter the following at the Linux command-line:
 
 ```shell
 find /movies/ -type f \( -name "*.mkv" -o -name "*.avi" -o -name "*.mp4" \) | while read file; do /usr/local/bin/striptracks.sh -f "$file" -a :eng:und -s :eng; done

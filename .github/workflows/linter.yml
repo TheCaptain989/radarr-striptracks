@@ -11,7 +11,6 @@ on:
     branches-ignore: [master, main]
   pull_request_target:
     branches: [master, main]
-  workflow_dispatch:
 
 jobs:
   run-lint:
@@ -29,17 +28,16 @@ jobs:
           fetch-depth: 0
 
       - name: Lint Code Base
-        uses: super-linter/super-linter@v5
+        uses: super-linter/super-linter/slim@v5
         env:
-        # ShellCheck configuration totally doesn't work in the .shellcheckrc file.
-        # Commenting out for now
-#          VALIDATE_BASH: true
-#          BASH_SEVERITY: style
+          VALIDATE_BASH: true
+          BASH_SEVERITY: style
           BASH_FILE_NAME: .shellcheckrc
-#          VALIDATE_BASH_EXEC: true
-#          VALIDATE_DOCKERFILE_HADOLINT: true
-#          VALIDATE_GITLEAKS: true
-#          VALIDATE_MARKDOWN: true
+          VALIDATE_BASH_EXEC: true
+          VALIDATE_DOCKERFILE_HADOLINT: true
+          VALIDATE_GITLEAKS: true
+          VALIDATE_MARKDOWN: true
+          VALIDATE_NATURAL_LANGUAGE: true
           CREATE_LOG_FILE: true
           SUPPRESS_POSSUM: false
           ERROR_ON_MISSING_EXEC_BIT: true
