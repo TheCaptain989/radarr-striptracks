@@ -11,10 +11,14 @@ env:
 
 jobs:
   build:
+    name: Build Job
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v3
+        # Fix for workflow_run only executing the the context of default branch.
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
 
       - name: Set Vars
         run: |
