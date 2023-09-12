@@ -1,5 +1,4 @@
-# ~/.shellcheckrc
-
+# ShellCheck global configuration
 source-path=SCRIPTDIR
 
 # Invalid source location
