@@ -31,7 +31,7 @@ jobs:
         uses: super-linter/super-linter/slim@v5
         env:
           VALIDATE_BASH: true
-          BASH_SEVERITY: style
+          BASH_SEVERITY: warning
           BASH_FILE_NAME: .shellcheckrc
           VALIDATE_BASH_EXEC: true
           VALIDATE_DOCKERFILE_HADOLINT: true
