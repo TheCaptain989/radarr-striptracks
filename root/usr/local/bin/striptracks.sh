@@ -759,7 +759,7 @@ elif [ -f "$striptracks_arr_config" ]; then
   [[ $striptracks_bindaddress = "*" ]] && striptracks_bindaddress=localhost
 
   # Build URL to Radarr/Sonarr API
-  striptracks_api_url="http://$striptracks_bindaddress:$striptracks_port$striptracks_urlbase/api/v3"
+  striptracks_api_url="http://$striptracks_bindaddress:$striptracks_port${striptracks_urlbase:+/$striptracks_urlbase}/api/v3"
 
   # Check Radarr/Sonarr version
   if get_version; then
