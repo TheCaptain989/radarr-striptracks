@@ -381,7 +381,7 @@ function rescan {
     }
     [ $striptracks_debug -ge 2 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
     # Exit loop if database is not locked, else wait 1 minute
-    if [[ ! "$(echo $striptracks_result | jq -jcrM .message?)" =~ database is locked ]]; then
+    if [[ ! "$(echo $striptracks_result | jq -jcrM .message?)" =~ database\ is\ locked ]]; then
       break
     else
       [ $striptracks_debug -ge 1 ] && echo "Debug|Database is locked. Waiting 1 minute." | log
@@ -506,7 +506,7 @@ function delete_video {
     }
     [ $striptracks_debug -ge 2 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
     # Exit loop if database is not locked, else wait 1 minute
-    if [[ ! "$(echo $striptracks_result | jq -jcrM .message?)" =~ database is locked ]]; then
+    if [[ ! "$(echo $striptracks_result | jq -jcrM .message?)" =~ database\ is\ locked ]]; then
       break
     else
       [ $striptracks_debug -ge 1 ] && echo "Debug|Database is locked. Waiting 1 minute." | log
@@ -569,7 +569,7 @@ function set_metadata {
     }
     [ $striptracks_debug -ge 3 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
     # Exit loop if database is not locked, else wait 1 minute
-    if [[ ! "$(echo $striptracks_result | jq -jcrM .message?)" =~ database is locked ]]; then
+    if [[ ! "$(echo $striptracks_result | jq -jcrM .message?)" =~ database\ is\ locked ]]; then
       break
     else
       [ $striptracks_debug -ge 1 ] && echo "Debug|Database is locked. Waiting 1 minute." | log
