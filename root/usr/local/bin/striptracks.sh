@@ -587,9 +587,9 @@ function set_metadata {
 function get_mediainfo {
   [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: /usr/bin/mkvmerge -J \"$1\"" | log
   unset striptracks_json
-  striptracks_json=$(/usr/bin/mkvmerge -J "$1")
+  striptracks_json=$(/usr/bin/mkvmerge -J "$1" 2>&1)
   local striptracks_curlret=$?; [ $striptracks_curlret -ne 0 ] && {
-    local striptracks_message="Error|[$striptracks_curlret] Error executing mkvmerge."
+    local striptracks_message="Error|[$striptracks_curlret] Error executing mkvmerge. It returned: $striptracks_json"
     echo "$striptracks_message" | log
     echo "$striptracks_message" >&2
   }
@@ -988,7 +988,11 @@ if get_mediainfo "$striptracks_video"; then
   [ $striptracks_debug -ge 1 ] && echo "$striptracks_json_processed" | awk '{print "Debug|"$0}' | log
 else
   # Get media info failed
-  striptracks_message="Error|Container format '$(echo $striptracks_json | jq -crM .container.type)' is unsupported by mkvmerge. Unable to continue."
+  if [ "$(echo $striptracks_json | jq -crM '.container.supported')" = "false" ]; then
+    striptracks_message="Error|Container format '$(echo $striptracks_json | jq -crM .container.type)' is unsupported by mkvmerge. Unable to continue."
+  else
+    striptracks_message="Error|mkvmerge error. Unable to continue."
+  fi
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
   end_script 9
