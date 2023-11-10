@@ -229,7 +229,7 @@ By default, a log file is created for the script activity called:
 
 `/config/logs/striptracks.txt`
 
-This log can be inspected or downloaded from Radarr/Sonarr under *System* > *Logs* > *Files*.  The log file name can be modified with the `--log` command-line option.
+This log can be inspected or downloaded from Radarr/Sonarr under *System* > *Logs* > *Files*.  The log filename can be modified with the `--log` command-line option.
 
 Script errors will show up in both the script log and the native Radarr/Sonarr log.
 
