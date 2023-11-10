@@ -100,7 +100,7 @@ Option|Argument|Description
 -a, --audio|<audio_languages>|Audio languages to keep<br/>ISO639-2 code(s) prefixed with a colon (`:`)
 -s, --subs|<subtitle_languages>|Subtitle languages to keep<br/>IISO639-2 code(s) prefixed with a colon (`:`)
 -f, --file|<video_file>|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified video file.<br/>Requires the `-a` option.<br/>![danger] **WARNING:** Do not use this argument when called from Radarr or Sonarr!
--l, --log|\<log_file\>|The log file name<br/>Default of /config/log/striptracks.txt
+-l, --log|\<log_file\>|The log filename<br/>Default of /config/log/striptracks.txt
 -d, --debug|\[\<level\>\]|Enables debug logging. Level is optional.<br/>Default of 1 (low)<br/>2 includes JSON output<br/>3 contains even more JSON output
 --help| |Display help and exit.
 --version| |Display version and exit.
