@@ -22,6 +22,8 @@
 #  stat
 #  nice
 #  basename
+#  dirname
+#  mktemp
 
 # Exit codes:
 #  0 - success; or test
@@ -36,6 +38,7 @@
 #  9 - mkvmerge get media info failed
 # 10 - remuxing completed, but no output file found
 # 11 - source video had no audio or subtitle tracks
+# 12 - log file is not writable
 # 13 - awk script exited abnormally
 # 16 - could not delete the original file
 # 17 - Radarr/Sonarr API error
@@ -65,11 +68,9 @@ mode.
 Source: https://github.com/TheCaptain989/radarr-striptracks
 
 Usage:
-  $0 [{-d|--debug} [<level>]] [[{-f|--file} <video_file>] {-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>]]
+  $0 [[{-f|--file} <video_file>] {-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>]] [{-l|--log} <log_file>] [{-d|--debug} [<level>]]
 
 Options and Arguments:
-  -d, --debug [<level>]            enable debug logging
-                                   Level is optional, default of 1 (low)
   -a, --audio <audio_languages>    audio languages to keep
                                    ISO639-2 code(s) prefixed with a colon \`:\`
                                    Multiple codes may be concatenated.
@@ -80,6 +81,10 @@ Options and Arguments:
                                    and converts the specified video file.
                                    WARNING: Do not use this argument when called
                                    from Radarr or Sonarr!
+  -l, --log <log_file>             log file name
+                                   [default of /config/log/striptracks.txt]
+  -d, --debug [<level>]            enable debug logging
+                                   Level is optional, [default of 1 (low)]
       --help                       display this help and exit
       --version                    display script version and exit
       
@@ -131,6 +136,16 @@ while (( "$#" )); do
       else
         export striptracks_debug=1
         shift
+      fi
+    ;;
+    -l|--log ) # Log file
+      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        export striptracks_log="$2"
+        shift 2
+      else
+        echo "Error|Invalid option: $1 requires an argument." >&2
+        usage
+        exit 1
       fi
     ;;
     --help ) # Display usage
@@ -263,7 +278,7 @@ else
 fi
 export striptracks_rescan_api="Rescan${striptracks_video_type^}"
 export striptracks_eventtype="${striptracks_type,,}_eventtype"
-export striptracks_tempvideo="${striptracks_video%.*}.tmp"
+export striptracks_tempvideo="$(mktemp "${striptracks_video%.*}-XXX.tmp")"
 export striptracks_newvideo="${striptracks_video%.*}.mkv"
 # If this were defined directly in Radarr or Sonarr this would not be needed here
 # shellcheck disable=SC2089
@@ -277,7 +292,7 @@ function log {(
   while read -r
   do
     # shellcheck disable=2046
-    echo $(date +"%Y-%-m-%-d %H:%M:%S.%1N")\|"[$striptracks_pid]$REPLY" >>"$striptracks_log"
+    echo $(date +"%Y-%-m-%-d %H:%M:%S.%1N")"|[$striptracks_pid]$REPLY" >>"$striptracks_log"
     local striptracks_filesize=$(stat -c %s "$striptracks_log")
     if [ $striptracks_filesize -gt $striptracks_maxlogsize ]
     then
@@ -733,6 +748,25 @@ function end_script {
   exit ${striptracks_exitstatus:-0}
 }
 ### End Functions
+
+# Check that log path exists
+if [ ! -d "$(dirname $striptracks_log)" ]; then
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Log file path does not exist: '$(dirname $striptracks_log)'. Using log file in current directory."
+  striptracks_log=./striptracks.txt
+fi
+
+# Check that the log file exists
+if [ ! -f "$striptracks_log" ]; then
+  echo "Info|Creating a new log file: $striptracks_log"
+  touch "$striptracks_log" 2>&1
+fi
+
+# Check that the log file is writable
+if [ ! -w "$striptracks_log" ]; then
+  echo "Error|Log file '$striptracks_log' is not writable or does not exist." >&2
+  striptracks_log=/dev/null
+  striptracks_exitstatus=12
+fi
 
 # Check for required binaries
 if [ ! -f "/usr/bin/mkvmerge" ]; then

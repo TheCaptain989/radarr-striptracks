@@ -91,16 +91,17 @@ Both audio and subtitles that match the selected language(s) are kept.
 The script also supports command-line arguments that will override the automatic language detection.  More granular control can therefore be exerted or extended using tagging and defining multiple Connect scripts (this is native Radarr/Sonarr functionality outside the scope of this documentation).
 
 The syntax for the command-line is:  
-`striptracks.sh [{-d|--debug} [<level>]] [[{-f|--file} <video_file>] {-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>]]`  
+`striptracks.sh [[{-f|--file} <video_file>] {-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>]] [{-l,--log} <log_file>] [{-d|--debug} [<level>]]`  
 
 Where:
 
 Option|Argument|Description
 ---|---|---
--d, --debug|\[\<level\>\]|Enables debug logging. Level is optional.<br/>Default of 1 (low)<br/>2 includes JSON output<br/>3 contains even more JSON output
 -a, --audio|<audio_languages>|Audio languages to keep<br/>ISO639-2 code(s) prefixed with a colon (`:`)
 -s, --subs|<subtitle_languages>|Subtitle languages to keep<br/>IISO639-2 code(s) prefixed with a colon (`:`)
 -f, --file|<video_file>|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified video file.<br/>Requires the `-a` option.<br/>![danger] **WARNING:** Do not use this argument when called from Radarr or Sonarr!
+-l, --log|\<log_file\>|The log file name<br/>Default of /config/log/striptracks.txt
+-d, --debug|\[\<level\>\]|Enables debug logging. Level is optional.<br/>Default of 1 (low)<br/>2 includes JSON output<br/>3 contains even more JSON output
 --help| |Display help and exit.
 --version| |Display version and exit.
 
@@ -224,11 +225,11 @@ find /movies/ -type f \( -name "*.mkv" -o -name "*.avi" -o -name "*.mp4" \) | wh
 ```
 
 ### Logs
-A log file is created for the script activity called:
+By default, a log file is created for the script activity called:
 
 `/config/logs/striptracks.txt`
 
-This log can be inspected or downloaded from Radarr/Sonarr under *System* > *Logs* > *Files*
+This log can be inspected or downloaded from Radarr/Sonarr under *System* > *Logs* > *Files*.  The log file name can be modified with the `--log` command-line option.
 
 Script errors will show up in both the script log and the native Radarr/Sonarr log.
 
