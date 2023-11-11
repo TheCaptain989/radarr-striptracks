@@ -71,22 +71,24 @@ Usage:
   $0 [[{-f|--file} <video_file>] {-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>]] [{-l|--log} <log_file>] [{-d|--debug} [<level>]]
 
 Options and Arguments:
-  -a, --audio <audio_languages>    audio languages to keep
+  -a, --audio <audio_languages>    Audio languages to keep
                                    ISO639-2 code(s) prefixed with a colon \`:\`
-                                   Multiple codes may be concatenated.
-  -s, --subs <subtitle_languages>  subtitles languages to keep
+                                   multiple codes may be concatenated.
+  -s, --subs <subtitle_languages>  Subtitles languages to keep
                                    ISO639-2 code(s) prefixed with a colon \`:\`
-                                   Multiple codes may be concatenated.
-  -f, --file <video_file>          if included, the script enters batch mode
+                                   multiple codes may be concatenated.
+  -f, --file <video_file>          If included, the script enters batch mode
                                    and converts the specified video file.
                                    WARNING: Do not use this argument when called
                                    from Radarr or Sonarr!
-  -l, --log <log_file>             log file name
-                                   [default of /config/log/striptracks.txt]
-  -d, --debug [<level>]            enable debug logging
-                                   Level is optional, [default of 1 (low)]
-      --help                       display this help and exit
-      --version                    display script version and exit
+  -l, --log <log_file>             Log filename
+                                   [default: /config/log/striptracks.txt]
+  -d, --debug [<level>]            Enable debug logging
+                                   level is optional, between 1-3
+                                   1 is lowest, 3 is highest
+                                   [default: 1]
+      --help                       Display this help and exit
+      --version                    Display script version and exit
       
 When audio_languages and subtitle_languages are omitted the script detects the
 audio or subtitle languages configured in the Radarr or Sonarr profile.  When
