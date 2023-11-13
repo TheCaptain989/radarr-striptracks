@@ -280,7 +280,7 @@ else
 fi
 export striptracks_rescan_api="Rescan${striptracks_video_type^}"
 export striptracks_eventtype="${striptracks_type,,}_eventtype"
-export striptracks_tempvideo="$(mktemp "${striptracks_video%.*}-XXX.tmp")"
+export striptracks_tempvideo="$(mktemp "${striptracks_video:0:5}-XXXXX.tmp")"
 export striptracks_newvideo="${striptracks_video%.*}.mkv"
 # If this were defined directly in Radarr or Sonarr this would not be needed here
 # shellcheck disable=SC2089
@@ -999,7 +999,7 @@ fi
 
 #### BEGIN MAIN
 # shellcheck disable=SC2046
-striptracks_filesize=$(numfmt --to iec --format "%.3f" $(stat -c %s "${striptracks_video:-/dev/null}"))
+striptracks_filesize=$(stat -c %s "${striptracks_video}" | numfmt --to iec --format "%.3f")
 striptracks_message="Info|${striptracks_type^} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $striptracks_filesize, AudioKeep: $striptracks_audiokeep, SubsKeep: $striptracks_subskeep"
 echo "$striptracks_message" | log
 
@@ -1208,6 +1208,14 @@ else
   }
 fi
 
+# Another check for the temporary file, to make sure it wasn't deleted
+if [ ! -f "$striptracks_tempvideo" ]; then
+  striptracks_message="Error|${striptracks_type^} deleted the temporary remuxed file: \"$striptracks_tempvideo\".  Halting."
+  echo "$striptracks_message" | log
+  echo "$striptracks_message" >&2
+  end_script 10
+fi
+
 # Rename the temporary video file to MKV
 [ $striptracks_debug -ge 1 ] && echo "Debug|Renaming: \"$striptracks_tempvideo\" to \"$striptracks_newvideo\"" | log
 mv -f "$striptracks_tempvideo" "$striptracks_newvideo" 2>&1 | log
@@ -1219,7 +1227,7 @@ striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
 }
 
 # shellcheck disable=SC2046
-striptracks_filesize=$(numfmt --to iec --format "%.3f" $(stat -c %s "${striptracks_newvideo:-/dev/null}"))
+striptracks_filesize=$(stat -c %s "${striptracks_newvideo}" | numfmt --to iec --format "%.3f")
 striptracks_message="Info|New size: $striptracks_filesize"
 echo "$striptracks_message" | log
 
