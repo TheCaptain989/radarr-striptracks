@@ -999,7 +999,7 @@ fi
 
 #### BEGIN MAIN
 # shellcheck disable=SC2046
-striptracks_filesize=$(numfmt --to iec --format "%.3f" $(stat -c %s "$striptracks_video"))
+striptracks_filesize=$(numfmt --to iec --format "%.3f" $(stat -c %s "${striptracks_video:-/dev/null}"))
 striptracks_message="Info|${striptracks_type^} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $striptracks_filesize, AudioKeep: $striptracks_audiokeep, SubsKeep: $striptracks_subskeep"
 echo "$striptracks_message" | log
 
@@ -1219,7 +1219,7 @@ striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
 }
 
 # shellcheck disable=SC2046
-striptracks_filesize=$(numfmt --to iec --format "%.3f" $(stat -c %s "$striptracks_newvideo"))
+striptracks_filesize=$(numfmt --to iec --format "%.3f" $(stat -c %s "${striptracks_newvideo:-/dev/null}"))
 striptracks_message="Info|New size: $striptracks_filesize"
 echo "$striptracks_message" | log
 
