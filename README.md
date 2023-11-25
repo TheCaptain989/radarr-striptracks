@@ -11,9 +11,9 @@ A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.i
 
 Container info:
 ![Docker Image Size](https://img.shields.io/docker/image-size/thecaptain989/radarr-striptracks "Container Size")
-![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/radarr-striptracks "Container Pulls")  
+![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/radarr-striptracks "Container Pulls")
+[![GitHub Super-Linter](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/linter.yml/badge.svg)](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/linter.yml "Linter Job")  
 Production Container info: ![Docker Image Size](https://img.shields.io/docker/image-size/linuxserver/mods/radarr-striptracks "Container Size")  
-[![GitHub Super-Linter](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/linter.yml/badge.svg)](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/linter.yml)
 
 # Installation
 1. Pull your selected container ([linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "LinuxServer.io's Radarr container") or [linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "LinuxServer.io's Sonarr container")) from GitHub Container Registry or Docker Hub:  
@@ -23,11 +23,33 @@ Production Container info: ![Docker Image Size](https://img.shields.io/docker/im
 2. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
    **[linuxserver/radarr](https://hub.docker.com/r/linuxserver/radarr "Radarr Docker container")**  
    **[linuxserver/sonarr](https://hub.docker.com/r/linuxserver/sonarr "Sonarr Docker container")**
-   1. Add the **DOCKER_MODS** environment variable to the `docker run` command, as follows:  
-      - Stable release: `-e DOCKER_MODS=linuxserver/mods:radarr-striptracks`
-      - Dev/test release: `-e DOCKER_MODS=thecaptain989/radarr-striptracks:latest`
+   1. Add the **DOCKER_MODS** environment variable to your `compose.yml` file or `docker run` command, as follows:  
+      - Stable release: `DOCKER_MODS=linuxserver/mods:radarr-striptracks`
+      - Dev/test release: `DOCKER_MODS=thecaptain989/radarr-striptracks:latest`
 
-      *Example Docker CLI Configuration*
+      *Example Docker Compose YAML Configuration*  
+
+      ```yaml
+      version: "2.1"
+      services:
+        radarr:
+          image: lscr.io/linuxserver/radarr
+          container_name: radarr
+          environment:
+            - PUID=1000
+            - PGID=1000
+            - TZ=America/Chicago
+            - DOCKER_MODS=linuxserver/mods:radarr-striptracks
+          volumes:
+            - /path/to/data:/config
+            - /path/to/movies:/movies
+            - /path/to/downloadclient-downloads:/downloads
+          ports:
+            - 7878:7878
+          restart: unless-stopped
+      ```  
+
+      *Example Docker Run Command*
 
        ```shell
        docker run -d \
@@ -91,7 +113,7 @@ Both audio and subtitles that match the selected language(s) are kept.
 The script also supports command-line arguments that will override the automatic language detection.  More granular control can therefore be exerted or extended using tagging and defining multiple Connect scripts (this is native Radarr/Sonarr functionality outside the scope of this documentation).
 
 The syntax for the command-line is:  
-`striptracks.sh [[{-f|--file} <video_file>] {-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>]] [{-l,--log} <log_file>] [{-d|--debug} [<level>]]`  
+`striptracks.sh [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [{-l,--log} <log_file>] [{-d|--debug} [<level>]]`  
 
 Where:
 
@@ -126,10 +148,12 @@ The `:org` language code is a special code. When used, instead of retaining a sp
 As an example, when importing "*Amores Perros (2000)*" with options `--audio :org:eng`, the Spanish and English audio tracks are preserved.  
 Several [Included Wrapper Scripts](./README.md#included-wrapper-scripts) use this special code.
 
->![danger] **NOTE:** This feature relies on the 'originalLanguage' field in the Radarr database. It is not known to exist in Sonarr, and the `:org` code will therefore be ignored. It is also invalid to in Batch Mode.
+>![danger] **NOTE:** This feature relies on the 'originalLanguage' field in the Radarr database. It is not known to exist in Sonarr, and the `:org` code will therefore be ignored. It is also invalid when used in Batch Mode.  
+> The script will log a warning if it detects the use of `:org` in an invalid way, though it will continue to execute.
+
 
 #### Unknown language code
-The `:und` language code is a special code. When used, the script will match on any track that has a blank language entry. If not included, tracks with a blank language value will be removed.  
+The `:und` language code is a special code. When used, the script will match on any track that has a null or blank language entry. If not included, tracks with a blank language value will be removed.  
 >![danger] **NOTE:** It is common for M2TS and AVI containers to have tracks with unknown languages! It is strongly recommended to include `:und` in most instances unless you know exactly what you're doing.
 
 ### Special Handling of Audio
@@ -142,18 +166,18 @@ There is no way to force the script to remove audio tracks with these codes.
 ### Examples
 
 ```shell
--d 2                        # Enable debugging level 2, audio and subtitles
-                            # languages detected from Radarr/Sonarr
--a :eng:und -s :eng         # Keep English and Unknown audio, and English subtitles
--a :org:eng -s :eng         # Keep English and Original audio, and English subtitles
-:eng ""                     # Keep English audio and remove all subtitles
--d :eng:kor:jpn :eng:spa    # Enable debugging level 1, keeping English, Korean, and Japanese audio, and
-                            # English and Spanish subtitles
+-d 2                              # Enable debugging level 2, audio and subtitles
+                                  # languages detected from Radarr/Sonarr
+-a :eng:und -s :eng               # Keep English and Unknown audio, and English subtitles
+-a :org:eng -s :eng               # Keep English and Original audio, and English subtitles
+:eng ""                           # Keep English audio and remove all subtitles
+-d -a :eng:kor:jpn -s :eng:spa    # Enable debugging level 1, keeping English, Korean, and Japanese audio, and
+                                  # English and Spanish subtitles
 -f "/path/to/movies/Finding Nemo (2003).mkv" -a :eng:und -s :eng
-                            # Batch Mode
-                            # Keep English and Unknown audio and English subtitles, converting
-                            # video specified
--a :any -s ""               # Keep all audio and remove all subtitles
+                                  # Batch Mode
+                                  # Keep English and Unknown audio and English subtitles, converting
+                                  # video specified
+-a :any -s ""                     # Keep all audio and remove all subtitles
 ```
 
 ### Wrapper Scripts
@@ -187,7 +211,7 @@ To configure an entry from the [Examples](./README.md#examples) section above, c
 ```shell
 #!/bin/bash
 
-. /usr/local/bin/striptracks.sh -d :eng:kor:jpn :eng:spa
+. /usr/local/bin/striptracks.sh -d -a :eng:kor:jpn -s :eng:spa
 ```
 
 Make it executable:
@@ -235,6 +259,12 @@ Script errors will show up in both the script log and the native Radarr/Sonarr l
 
 Log rotation is performed with 5 log files of 512KB each being kept.  
 >![danger] **NOTE:** If debug logging is enabled with a level above 1, the log file can grow very large very quickly.  *Do not leave high-level debug logging enabled permanently.*
+
+# Uninstall
+To completely remove the mod:
+1. Delete the custom script from Radarr's or Sonarr's *Settings* > *Connect* screen that you created in the [Installation](./README.md#installation) section above.
+2. Stop and delete the Radarr/Sonarr container.
+3. Exclude the **DOCKER_MODS** environment variable from your `compose.yaml` file or the `docker run` command when re-creating the Radarr/Sonarr container.
 
 ___
 

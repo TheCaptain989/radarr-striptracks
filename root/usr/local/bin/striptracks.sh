@@ -68,7 +68,7 @@ mode.
 Source: https://github.com/TheCaptain989/radarr-striptracks
 
 Usage:
-  $0 [[{-f|--file} <video_file>] {-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>]] [{-l|--log} <log_file>] [{-d|--debug} [<level>]]
+  $0 [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [{-l|--log} <log_file>] [{-d|--debug} [<level>]]
 
 Options and Arguments:
   -a, --audio <audio_languages>    Audio languages to keep
