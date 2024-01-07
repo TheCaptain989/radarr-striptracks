@@ -326,7 +326,7 @@ function get_version {
     echo "$striptracks_message" >&2
   }
   [ $striptracks_debug -ge 2 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
-  if [ "$(echo $striptracks_result | jq -crM '.version?')" != "null" ]; then
+  if [ "$(echo $striptracks_result | jq -crM '.version?')" != "null" ] && [ "$(echo $striptracks_result | jq -crM '.version?')" != "" ]; then
     local striptracks_return=0
   else
     local striptracks_return=1
@@ -856,10 +856,16 @@ elif [ -f "$striptracks_arr_config" ]; then
   striptracks_api_url="http://$striptracks_bindaddress:$striptracks_port${striptracks_urlbase:+/$striptracks_urlbase}/api/v3"
 
   # Check Radarr/Sonarr version
-  if get_version; then
-    striptracks_arr_version="$(echo $striptracks_result | jq -crM .version)"
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Detected ${striptracks_type^} version $striptracks_arr_version" | log
-  fi
+  get_version
+  striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
+    # curl errored out. API calls are really broken at this point.
+    striptracks_message="Error|Unable to get ${striptracks_type^} version information. It is not safe to continue."
+    echo "$striptracks_message" | log
+    echo "$striptracks_message" >&2
+    end_script 17
+  }
+  striptracks_arr_version="$(echo $striptracks_result | jq -crM .version)"
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Detected ${striptracks_type^} version $striptracks_arr_version" | log
 
   # Requires API v3
   if ! check_compat apiv3; then
@@ -1129,7 +1135,7 @@ END {
   print "Info|Original tracks: "NoTr" (audio: "AudCnt", subtitles: "SubsCnt")"
   if (Chapters) print "Info|Chapters: "Chapters
   for (i = 1; i <= NoTr; i++) {
-    if (Debug >= 2) print "Debug|i:"i,"Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"],"Codec:"Track[i, "codec"]
+    if (Debug >= 2) print "Debug|Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"],"Codec:"Track[i, "codec"]
     if (Track[i, "typ"] == "audio") {
       # Keep track if it matches command line selection, or if it is matches pseudo code ":any"
       if (AudioKeep ~ Track[i, "lang"] || AudioKeep ~ ":any") {
