@@ -15,6 +15,7 @@
 # Dependencies:
 #  mkvmerge
 #  mkvpropedit
+#  sed
 #  awk
 #  curl
 #  jq
@@ -120,7 +121,7 @@ Examples:
                                            # Keep English and Unknown audio and
                                            # English subtitles, converting video
                                            # specified
-  $striptracks_script -a :any -s \"\"           # Keep all audio and no subtitles
+  $striptracks_script -a :any -s \"\"             # Keep all audio and no subtitles
 "
   echo "$usage" >&2
 }
@@ -697,7 +698,7 @@ function set_radarr_language {
   local data="{\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"languages\":${striptracks_json_languages}}"
   [ $striptracks_debug -ge 1 ] && echo "Debug|Updating from language(s) '$(echo $striptracks_videofile_info | jq -crM "[.languages[].name] | join(\",\")")' to '$(echo $striptracks_json_languages | jq -crM "[.[].name] | join(\",\")")'. Calling ${striptracks_type^} API using PUT and URL '$url' with data $data" | log
   unset striptracks_result
-  striptracks_result=$(curl -s -H "X-Api-Key: $striptracks_apikey" \
+  striptracks_result=$(curl -s --fail-with-body -H "X-Api-Key: $striptracks_apikey" \
     -H "Content-Type: application/json" \
 		-H "Accept: application/json" \
     -d "$data" \
@@ -721,7 +722,7 @@ function set_sonarr_language {
   local data="{\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"language\":$(echo $striptracks_json_languages | jq -crM ".[0]")}"
   [ $striptracks_debug -ge 1 ] && echo "Debug|Updating from language '$(echo $striptracks_videofile_info | jq -crM ".language.name")' to '$(echo $striptracks_json_languages | jq -crM ".[0].name")'. Calling ${striptracks_type^} API using PUT and URL '$url' with data $data" | log
   unset striptracks_result
-  striptracks_result=$(curl -s -H "X-Api-Key: $striptracks_apikey" \
+  striptracks_result=$(curl -s --fail-with-body -H "X-Api-Key: $striptracks_apikey" \
     -H "Content-Type: application/json" \
 		-H "Accept: application/json" \
     -d "$data" \
@@ -737,6 +738,31 @@ function set_sonarr_language {
   else
     local striptracks_return=1
   fi
+  return $striptracks_return
+}
+# Compatibility checker
+function check_compat {
+  # return of 1 = the feature is incompatible
+  local striptracks_return=1
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Checking compatibility of ${striptracks_type^} version ${striptracks_arr_version} against feature $1" | log
+  case "$1" in
+    apiv3)
+      [ ${striptracks_arr_version/.*/} -ge 3 ] && local striptracks_return=0
+    ;;
+    languageprofile)
+      [ "${striptracks_type,,}" = "sonarr" ] && [ ${striptracks_arr_version/.*/} -eq 3 ] && local striptracks_return=0
+    ;;
+    customformat)
+      [ "${striptracks_type,,}" = "radarr" ] && [ ${striptracks_arr_version/.*/} -ge 2 ] && local striptracks_return=0
+      [ "${striptracks_type,,}" = "sonarr" ] && [ ${striptracks_arr_version/.*/} -ge 4 ] && local striptracks_return=0
+    ;;
+    *)  # Unknown feature
+      local striptracks_message="Error|Unknown feature $1 in ${striptracks_type^}"
+      echo "$striptracks_message" | log
+      echo "$striptracks_message" >&2
+    ;;
+  esac
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Feature $1 is $([ $striptracks_return -eq 1 ] && echo "not ")compatible." | log
   return $striptracks_return
 }
 # Exit program
@@ -823,6 +849,9 @@ elif [ -f "$striptracks_arr_config" ]; then
   # Check for localhost
   [[ $striptracks_bindaddress = "*" ]] && striptracks_bindaddress=localhost
 
+  # Strip leading and trailing forward slashes from URL base
+  striptracks_urlbase="$(echo "$striptracks_urlbase" | sed -re 's/^\/+//; s/\/+$//')"
+  
   # Build URL to Radarr/Sonarr API
   striptracks_api_url="http://$striptracks_bindaddress:$striptracks_port${striptracks_urlbase:+/$striptracks_urlbase}/api/v3"
 
@@ -833,8 +862,8 @@ elif [ -f "$striptracks_arr_config" ]; then
   fi
 
   # Requires API v3
-  if [ "${striptracks_arr_version/.*/}" = "2" ]; then
-    # Radarr/Sonarr version 2
+  if ! check_compat apiv3; then
+    # Radarr/Sonarr version 3 required
     striptracks_message="Error|This script does not support ${striptracks_type^} version ${striptracks_arr_version}. Please upgrade."
     echo "$striptracks_message" | log
     echo "$striptracks_message" >&2
