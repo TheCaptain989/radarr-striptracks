@@ -161,10 +161,10 @@ The following chart represents the order of precedence that the script follows t
 ```mermaid
 graph LR
   A[Command-Line]
-  B[Quality
-  Profile]
-  C[Custom
-  Formats]
+  B["Quality
+  Profile"]
+  C["Custom
+  Formats"]
   D["Language Profile
   (Sonarr only)"]
   A-->B-->C-->D
