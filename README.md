@@ -92,10 +92,10 @@ If you've configured the Radarr/Sonarr **Recycle Bin** path correctly, the origi
 If the resulting video file would contain the same tracks as the original, the remux step is skipped *unless* the source file is not an MKV.
 
 ## Automatic Language Detection
-Beginning with version 2.0 of this mod, the script may be called with no arguments.  It will detect the language(s) configured within Radarr/Sonarr on the particular movie or TV show.  Language selection(s) may be configured in ***Quality Profiles*** (only in Radarr), ***Custom Formats*** (in Radarr v3 and higher and Sonarr v4 and higher), or ***Language Profiles*** (Sonarr v3 and earlier). Example screenshots are below.
+Beginning with version 2.0 of this mod, the script may be called with no arguments.  It will detect the language(s) configured within Radarr/Sonarr on the particular movie or TV show.
+Language selection(s) may be configured in ***Quality Profiles*** (only in Radarr), ***Custom Formats*** (in Radarr v3 and higher and Sonarr v4 and higher), or ***Language Profiles*** (Sonarr v3 and earlier). Example screenshots are below.
 
 Both audio **and** subtitle tracks that match the configured language(s) are kept.
-
 
 The language selection **'Original'** will use the language Radarr pulled from [The Movie Database](https://www.themoviedb.org/ "TMDB") or that Sonarr pulled from [The TVDB](https://www.thetvdb.com/ "TVDB") during its last refresh.
 Selecting this language is functionally equivalent to calling the script with `--audio :org --subs :org` command-line options.  See [Original language code](./README.md#original-language-code) below for more details.
