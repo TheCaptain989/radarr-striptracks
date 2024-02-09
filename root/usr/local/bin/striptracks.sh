@@ -972,6 +972,7 @@ elif [ -n "$striptracks_api_url" ]; then
             # Get list of Custom Formats, and hopefully languages
             get_custom_formats
             striptracks_customFormats="$striptracks_result"
+            [ $striptracks_debug -ge 1 ] && echo "Debug|Processing custom format(s) '$(echo "$striptracks_customFormats" | jq -crM '[.[] | select(.specifications[].implementation == "LanguageSpecification") | .name] | join(",")')'" | log
 
             # Pick our languages by combining data from quality profile and custom format configuration.
             # I'm open to suggestions if there's a better way to get this list or selected languages.
@@ -1446,20 +1447,23 @@ elif [ -n "$striptracks_api_url" ]; then
         # Get new video file info
         if get_videofile_info; then
           striptracks_videofile_info="$striptracks_result"
-          # Check that the file didn't get lost in the Rescan.
-          # TODO: In Radarr, losing customFormats and customFormatScore
-          # Put back the missing metadata
-          set_metadata
-          # Check that the returned result shows the updates
-          if [ "$(echo $striptracks_result | jq -crM .[].quality.quality.name)" = "$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)" ]; then
-            # Updated successfully
-            [ $striptracks_debug -ge 1 ] && echo "Debug|Successfully updated quality to '$(echo $striptracks_result | jq -crM .[].quality.quality.name)'" | log
-            [ $striptracks_debug -ge 1 ] && echo "Debug|Successfully updated release group to '$(echo $striptracks_result | jq -crM '.[].releaseGroup | select(. != null)')'" | log
+          # Check that the metadata didn't get lost in the rescan.
+          if [ "$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)" != "$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)" -o "$(echo $striptracks_videofile_info | jq -crM '.releaseGroup | select(. != null)')" != "$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')" ] then;
+            # Put back the missing metadata
+            set_metadata
+            # Check that the returned result shows the updates
+            if [ "$(echo $striptracks_result | jq -crM .[].quality.quality.name)" = "$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)" ]; then
+              # Updated successfully
+              echo "Info|Successfully updated quality to '$(echo $striptracks_result | jq -crM .[].quality.quality.name)' and release group to '$(echo $striptracks_result | jq -crM '.[].releaseGroup | select(. != null)')'" | log
+            else
+              striptracks_message="Warn|Unable to update ${striptracks_type^} $striptracks_video_api '$striptracks_title' to quality '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' or release group to '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'"
+              echo "$striptracks_message" | log
+              echo "$striptracks_message" >&2
+              striptracks_exitstatus=17
+            fi
           else
-            striptracks_message="Warn|Unable to update ${striptracks_type^} $striptracks_video_api '$striptracks_title' to quality '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' or release group to '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'"
-            echo "$striptracks_message" | log
-            echo "$striptracks_message" >&2
-            striptracks_exitstatus=17
+            # The metadata was already set correctly
+            [ $striptracks_debug -ge 1 ] && echo "Debug|Metadata quality '$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)' and release group '$(echo $striptracks_videofile_info | jq -crM '.releaseGroup | select(. != null)')' remained unchanged." | log
           fi
 
           # Check the languages returned
@@ -1528,6 +1532,7 @@ elif [ -n "$striptracks_api_url" ]; then
             echo "$striptracks_message" >&2
             striptracks_exitstatus=9
           fi
+
           # Get list of videos that could be renamed
           get_rename
           striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
