@@ -957,15 +957,14 @@ elif [ -n "$striptracks_api_url" ]; then
 
           # Save original metadata
           striptracks_original_metadata="$(echo $striptracks_videofile_info | jq -crM '{quality, releaseGroup}')"
-          [ $striptracks_debug -ge 1 ] && echo "Debug|Detected video file quality '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)'" | log
-          [ $striptracks_debug -ge 1 ] && echo "Debug|Detected video file release group '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'" | log
+          [ $striptracks_debug -ge 1 ] && echo "Debug|Detected video file quality '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' and release group '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'" | log
 
           # Get language name(s) from quality profile used by video
           striptracks_profileId="$(echo $striptracks_videoinfo | jq -crM .qualityProfileId)"
           striptracks_profileName="$(echo $striptracks_qualityProfiles | jq -crM ".[] | select(.id == $striptracks_profileId).name")"
           striptracks_profileLanguages="$(echo $striptracks_qualityProfiles | jq -cM "[.[] | select(.id == $striptracks_profileId) | .language]")"
           striptracks_languageSource="quality profile"
-          [ $striptracks_debug -ge 1 ] && echo "Debug|Detected quality profile '(${striptracks_profileId}) ${striptracks_profileName}' and language '$(echo $striptracks_profileLanguages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')'" | log
+          [ $striptracks_debug -ge 1 ] && echo "Debug|Detected quality profile '(${striptracks_profileId}) ${striptracks_profileName}' with language '$(echo $striptracks_profileLanguages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')'" | log
 
           # Query custom formats if returned language from quality profile is null or -1 (Any)
           if [ -z "$striptracks_profileLanguages" -o "$striptracks_profileLanguages" = "[null]" -o "$(echo $striptracks_profileLanguages | jq -crM '.[].id')" = "-1" ] && check_compat customformat; then
@@ -975,6 +974,7 @@ elif [ -n "$striptracks_api_url" ]; then
             striptracks_customFormats="$striptracks_result"
 
             # Pick our languages by combining data from quality profile and custom format configuration.
+            # I'm open to suggestions if there's a better way to get this list or selected languages.
             # Did I mention that JQ is crazy hard?
             striptracks_qcf_langcodes=$(echo "$striptracks_qualityProfiles $striptracks_customFormats" | jq -s -crM "
               [
@@ -1039,7 +1039,7 @@ elif [ -n "$striptracks_api_url" ]; then
           else
             # Final determination of configured languages in profiles or custom formats
             striptracks_profileLangNames="$(echo $striptracks_profileLanguages | jq -crM '[.[].name]')"
-            [ $striptracks_debug -ge 1 ] && echo "Debug|Evaluated ${striptracks_type^} configured language(s) as '$(echo $striptracks_profileLanguages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')' from $striptracks_languageSource" | log
+            [ $striptracks_debug -ge 1 ] && echo "Debug|Determined ${striptracks_type^} configured language(s) of '$(echo $striptracks_profileLanguages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')' from $striptracks_languageSource" | log
           fi
           
           # Get originalLanguage of video
@@ -1061,7 +1061,7 @@ elif [ -n "$striptracks_api_url" ]; then
             # shellcheck disable=SC2090
             striptracks_profileLangCodes+="$(echo $striptracks_isocodemap | jq -jcrM ".languages[] | select(.language.name == \"$striptracks_templang\") | .language | \":\(.\"iso639-2\"[])\"")"
           done
-          [ $striptracks_debug -ge 1 ] && echo "Debug|Mapped $striptracks_languageSource language(s) '$(echo $striptracks_profileLangNames | jq -crM "join(\",\")")' to ISO639-2 code string '$striptracks_profileLangCodes'" | log
+          [ $striptracks_debug -ge 1 ] && echo "Debug|Mapped $striptracks_languageSource language(s) '$(echo $striptracks_profileLangNames | jq -crM "join(\",\")")' to ISO639-2 code list '$striptracks_profileLangCodes'" | log
         else
           # Get qualityprofile API failed
           striptracks_message="Warn|Unable to retrieve quality profiles from ${striptracks_type^} API"
@@ -1129,7 +1129,7 @@ if [ -z "$striptracks_audiokeep" -a -z "$striptracks_profileLangCodes" ]; then
 fi
 ## Allows command line argument to override detected languages
 if [ -z "$striptracks_audiokeep" -a -n "$striptracks_profileLangCodes" ]; then
-  [ $striptracks_debug -ge 1 ] && echo "Debug|No command line audio languages specified. Using detected code(s) of '$striptracks_profileLangCodes'" | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|No command line audio languages specified. Using code list '$striptracks_profileLangCodes'" | log
   striptracks_audiokeep="$striptracks_profileLangCodes"
 else
   [ $striptracks_debug -ge 1 ] && echo "Debug|Using command line audio languages '$striptracks_audiokeep'" | log
@@ -1143,7 +1143,7 @@ if [ -z "$striptracks_subskeep" -a -z "$striptracks_profileLangCodes" ]; then
 fi
 ## Allows command line argument to override detected languages
 if [ -z "$striptracks_subskeep" -a -n "$striptracks_profileLangCodes" ]; then
-  [ $striptracks_debug -ge 1 ] && echo "Debug|No command line subtitle languages specified. Using detected code(s) of '$striptracks_profileLangCodes'" | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|No command line subtitle languages specified. Using code list '$striptracks_profileLangCodes'" | log
   striptracks_subskeep="$striptracks_profileLangCodes"
 else
   [ $striptracks_debug -ge 1 ] && echo "Debug|Using command line subtitle languages '$striptracks_subskeep'" | log
