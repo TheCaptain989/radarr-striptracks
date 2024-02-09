@@ -977,10 +977,6 @@ elif [ -n "$striptracks_api_url" ]; then
             # Get list of Custom Formats, and hopefully languages
             get_custom_formats
             striptracks_customFormats="$striptracks_result"
-            # Get custom formats applied to video file
-            striptracks_videofile_cfs="$(echo $striptracks_videofile_info | jq -crM '[.customFormats[].id] | join(",")')"
-            #[ $striptracks_debug -ge 1 ] && echo "Debug|Detected video file custom format(s) '$(echo $striptracks_videofile_info | jq -crM '[.customFormats[].name] | join(",")')'" | log
-            [ $striptracks_debug -ge 1 ] && echo "Debug|Detected video file custom format(s) with language definitions '$(echo "$striptracks_customFormats" | jq -crM "[.[] | select(.id | inside($striptracks_videofile_cfs)) | select(.specifications[].implementation == \"LanguageSpecification\") | .name] | join(\",\")")'" | log
 
             # Pick our languages by combining data from quality profile and custom format configuration.
             # Did I mention that JQ is crazy hard?
@@ -989,10 +985,11 @@ elif [ -n "$striptracks_api_url" ]; then
                 # This combines the custom formats [1] with the quality profiles [0], iterating over custom formats that
                 # specify languages and evaluating the scoring from the selected quality profile.
                 (
-                  .[1] | .[] | select(.id | inside($striptracks_videofile_cfs)) |
+                  .[1] | .[] |
                   {id, specs: [.specifications[] | select(.implementation == \"LanguageSpecification\") | {langCode: .fields[].value, negate}]}
                 ) as \$cf |
-                .[0] | .[] | select(.id == $striptracks_profileId) | .formatItems[] | select(.format == \$cf.id) |
+                .[0] | .[] |
+                select(.id == $striptracks_profileId) | .formatItems[] | select(.format == \$cf.id) |
                 {format, name, score, specs: \$cf.specs}
               ] |
               [
