@@ -242,8 +242,6 @@ elif [[ "${striptracks_type,,}" = "radarr" ]]; then
   export striptracks_rescan_id="${radarr_movie_id}"
   export striptracks_json_quality_root="movieFile"
   export striptracks_video_type="movie"
-  export striptracks_profile_type="quality"
-  export striptracks_profile_jq=".qualityProfileId"
   # shellcheck disable=SC2154
   export striptracks_title="${radarr_movie_title:-UNKNOWN} (${radarr_movie_year:-UNKNOWN})"
   export striptracks_language_jq=".language"
@@ -264,11 +262,9 @@ elif [[ "${striptracks_type,,}" = "sonarr" ]]; then
   export striptracks_rescan_id="${sonarr_series_id}"
   export striptracks_json_quality_root="episodeFile"
   export striptracks_video_type="series"
-  export striptracks_profile_type="language"
   export striptracks_profile_jq=".series.languageProfileId"
   # shellcheck disable=SC2154
   export striptracks_title="${sonarr_series_title:-UNKNOWN} $(numfmt --format "%02f" ${sonarr_episodefile_seasonnumber:-0})x$(numfmt --format "%02f" ${sonarr_episodefile_episodenumbers:-0}) - ${sonarr_episodefile_episodetitles:-UNKNOWN}"
-  export striptracks_language_jq=".languages[] | select(.allowed).language"
   # export striptracks_language_node="language"
   # # Sonarr requires the episodeIds array
   # export striptracks_sonarr_json=" \"episodeIds\":[.episodes[].id],"
@@ -998,6 +994,7 @@ elif [ -n "$striptracks_api_url" ]; then
                 (select(.score > 0) | .specs[] | select(.negate == false)), (select(.score < 0) | .specs[] | select(.negate == true)) |
                 .langCode
               ] |
+              unique |
               join(\",\")
             ")
             [ $striptracks_debug -ge 2 ] && echo "Debug|Custom format language code(s) '$striptracks_qcf_langcodes' were selected based on quality profile scores." | log
@@ -1008,7 +1005,7 @@ elif [ -n "$striptracks_api_url" ]; then
               striptracks_languageSource="custom format"
               [ $striptracks_debug -ge 1 ] && echo "Debug|Detected custom format language(s) '$(echo $striptracks_profileLanguages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')'" | log
             else
-              [ $striptracks_debug -ge 1 ] && echo "Debug|None of the applied custom formats have language definitions." | log
+              [ $striptracks_debug -ge 1 ] && echo "Debug|None of the applied custom formats have language conditions with usable scores." | log
             fi
           fi
 
