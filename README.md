@@ -155,6 +155,21 @@ Several [Included Wrapper Scripts](./README.md#included-wrapper-scripts) use thi
 The `:und` language code is a special code. When used, the script will match on any track that has a null or blank language entry. If not included, tracks with a blank language value will be removed.  
 >![danger] **NOTE:** It is common for M2TS and AVI containers to have tracks with unknown languages! It is strongly recommended to include `:und` in most instances unless you know exactly what you're doing.
 
+#### Language Selection Precedence
+The following chart represents the order of precedence that the script follows to decide which language(s) to select when there are multiple options.
+
+```mermaid
+flowchart LR;
+  A[Command-Line];
+  B[Quality
+  Profile];
+  C[Custom
+  Formats];
+  D["Language Profile
+  (Sonarr only)"];
+  A-->B-->C-->D;
+```
+
 ### Special Handling of Audio
 The script is smart enough to not remove the last audio track. There is in fact no way to force the script to remove all audio. This way you don't have to specify every possible language if you are importing a foreign film, for example.
 
