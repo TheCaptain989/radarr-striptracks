@@ -159,15 +159,15 @@ The `:und` language code is a special code. When used, the script will match on 
 The following chart represents the order of precedence that the script follows to decide which language(s) to select when there are multiple options.
 
 ```mermaid
-flowchart LR;
-  A[Command-Line];
+graph LR
+  A[Command-Line]
   B[Quality
-  Profile];
+  Profile]
   C[Custom
-  Formats];
+  Formats]
   D["Language Profile
-  (Sonarr only)"];
-  A-->B-->C-->D;
+  (Sonarr only)"]
+  A-->B-->C-->D
 ```
 
 ### Special Handling of Audio
