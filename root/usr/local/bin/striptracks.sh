@@ -1481,7 +1481,7 @@ elif [ -n "$striptracks_api_url" ]; then
             unset striptracks_newvideo_languages
             for i in $striptracks_newvideo_langcodes; do
               # shellcheck disable=SC2090
-              # Exclude Any and Original, and Unknown
+              # Exclude Any, Original, and Unknown
               striptracks_newvideo_languages+="$(echo $striptracks_isocodemap | jq -crM ".languages[] | .language | select((.\"iso639-2\"[]) == \"$i\") | select(.name != \"Any\" and .name != \"Original\" and .name != \"Unknown\").name")"
             done
             if [ -n "$striptracks_newvideo_languages" ]; then
@@ -1526,6 +1526,9 @@ elif [ -n "$striptracks_api_url" ]; then
                 echo "$striptracks_message" >&2
                 striptracks_exitstatus=20
               fi
+            elif [ "$striptracks_newvideo_langcodes" = "und" ]; then
+              # Only language detected is Unknown
+              echo "Warn|The only language in the video file was Unknown (:und). Not updating ${striptracks_type^} database."
             else
               # Video language not in striptracks_isocodemap
               striptracks_message="Warn|Video language code(s) '${striptracks_newvideo_langcodes//$'\n'/,}' not found in the ISO Codemap. Cannot evaluate."
