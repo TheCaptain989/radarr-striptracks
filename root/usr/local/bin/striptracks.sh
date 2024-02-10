@@ -1565,6 +1565,9 @@ elif [ -n "$striptracks_api_url" ]; then
                 echo "$striptracks_message" >&2
                 striptracks_exitstatus=17
               }
+            else
+              # This file doesn't need to be
+              [ $striptracks_debug -ge 1 ] && echo "Debug|This video file doesn't need to be renamed." | log
             fi
           else
             # Nothing to rename
