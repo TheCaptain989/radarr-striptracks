@@ -855,7 +855,7 @@ if [[ "${!striptracks_eventtype}" = "Test" ]]; then
   end_script 0
 fi
 
-# First log entry (when there are no errors)
+# First normal log entry (when there are no errors)
 # shellcheck disable=SC2046
 striptracks_filesize=$(stat -c %s "${striptracks_video}" | numfmt --to iec --format "%.3f")
 striptracks_message="Info|${striptracks_type^} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $striptracks_filesize"
@@ -1040,7 +1040,7 @@ elif [ -n "$striptracks_api_url" ]; then
 
           # Check if after all of the above we still couldn't get any languages
           if [ -z "$striptracks_profileLanguages" -o "$striptracks_profileLanguages" = "[null]" ]; then
-            striptracks_message="Warn|No languages found in any profile or custom format."
+            striptracks_message="Warn|No languages found in any profile or custom format. Unable to use automatic language detection."
             echo "$striptracks_message" | log
             echo "$striptracks_message" >&2
             striptracks_exitstatus=20
@@ -1158,7 +1158,7 @@ else
 fi
 
 # Display what we're doing
-striptracks_message="Info|Keeping audio tracks with codes '$striptracks_audiokeep' and subtitle tracks with codes '$striptracks_subskeep'"
+striptracks_message="Info|Keeping audio tracks with codes '$(echo $striptracks_audiokeep | sed -e 's/^://; s/:/,/g')' and subtitle tracks with codes '$(echo $striptracks_subskeep | sed -e 's/^://; s/:/,/g')'"
 echo "$striptracks_message" | log
 
 #### BEGIN MAIN
