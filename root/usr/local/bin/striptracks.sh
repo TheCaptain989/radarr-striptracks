@@ -271,7 +271,7 @@ elif [[ "${striptracks_type,,}" = "sonarr" ]]; then
   # export striptracks_sonarr_json=" \"episodeIds\":[.episodes[].id],"
 else
   # Called in an unexpected way
-  echo -e "Error|Unknown or missing '*_eventtype' environment variable: ${striptracks_type}\nNot called from Radarr/Sonarr.\nTry using Batch Mode option: -f <file>"
+  echo -e "Error|Unknown or missing '*_eventtype' environment variable: ${striptracks_type}\nNot called from Radarr/Sonarr.\nTry using Batch Mode option: -f <file>" >&2
   exit 7
 fi
 export striptracks_rescan_api="Rescan${striptracks_video_type^}"
@@ -1376,7 +1376,7 @@ if [ ! -f "$striptracks_tempvideo" ]; then
 fi
 
 # Rename the temporary video file to MKV
-[ $striptracks_debug -ge 1 ] && echo "Debug|Renaming: \"$striptracks_tempvideo\" to \"$striptracks_newvideo\"" | log
+[ $striptracks_debug -ge 1 ] && echo "Debug|Renaming \"$striptracks_tempvideo\" to \"$striptracks_newvideo\"" | log
 mv -f "$striptracks_tempvideo" "$striptracks_newvideo" 2>&1 | log
 striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
   striptracks_message="Error|[$striptracks_return] Unable to rename temp video: \"$striptracks_tempvideo\" to: \"$striptracks_newvideo\".  Halting."
@@ -1449,7 +1449,7 @@ elif [ -n "$striptracks_api_url" ]; then
       # Get new video file id
       if get_video_info; then
         striptracks_videofile_id="$(echo $striptracks_result | jq -crM .${striptracks_json_quality_root}.id)"
-        [ $striptracks_debug -ge 1 ] && echo "Debug|Set new video file id '$striptracks_videofile_id'" | log
+        [ $striptracks_debug -ge 1 ] && echo "Debug|Using new video file id '$striptracks_videofile_id'" | log
         # Get new video file info
         if get_videofile_info; then
           striptracks_videofile_info="$striptracks_result"
@@ -1475,6 +1475,7 @@ elif [ -n "$striptracks_api_url" ]; then
           # Check the languages returned
           # If we stripped out other languages, remove them
           # Only works in Radarr and Sonarr v4 (no per-episode edit function in Sonarr v3)
+          [ $striptracks_debug -ge 1 ] && echo "Debug|Getting languages in new video file \"$striptracks_newvideo\"" | log
           if get_mediainfo "$striptracks_newvideo"; then
             # Build array of full name languages
             striptracks_newvideo_langcodes="$(echo $striptracks_json | jq -crM '.tracks[] | select(.type == "audio") | .properties.language')"
@@ -1528,7 +1529,7 @@ elif [ -n "$striptracks_api_url" ]; then
               fi
             elif [ "$striptracks_newvideo_langcodes" = "und" ]; then
               # Only language detected is Unknown
-              echo "Warn|The only language in the video file was Unknown (:und). Not updating ${striptracks_type^} database."
+              echo "Warn|The only language in the video file was Unknown (und). Not updating ${striptracks_type^} database." | log
             else
               # Video language not in striptracks_isocodemap
               striptracks_message="Warn|Video language code(s) '${striptracks_newvideo_langcodes//$'\n'/,}' not found in the ISO Codemap. Cannot evaluate."
@@ -1565,6 +1566,9 @@ elif [ -n "$striptracks_api_url" ]; then
                 striptracks_exitstatus=17
               }
             fi
+          else
+            # Nothing to rename
+            [ $striptracks_debug -ge 1 ] && echo "Debug|No video files need to be renamed." | log
           fi
         else
           # No '.path' in returned JSON
