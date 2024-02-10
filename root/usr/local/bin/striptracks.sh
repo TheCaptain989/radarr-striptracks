@@ -242,6 +242,7 @@ elif [[ "${striptracks_type,,}" = "radarr" ]]; then
   export striptracks_rescan_id="${radarr_movie_id}"
   export striptracks_json_quality_root="movieFile"
   export striptracks_video_type="movie"
+  export striptracks_video_rootNode=""
   # shellcheck disable=SC2154
   export striptracks_title="${radarr_movie_title:-UNKNOWN} (${radarr_movie_year:-UNKNOWN})"
   export striptracks_language_jq=".language"
@@ -262,7 +263,7 @@ elif [[ "${striptracks_type,,}" = "sonarr" ]]; then
   export striptracks_rescan_id="${sonarr_series_id}"
   export striptracks_json_quality_root="episodeFile"
   export striptracks_video_type="series"
-  export striptracks_profile_jq=".series.languageProfileId"
+  export striptracks_video_rootNode=".series"
   # shellcheck disable=SC2154
   export striptracks_title="${sonarr_series_title:-UNKNOWN} $(numfmt --format "%02f" ${sonarr_episodefile_seasonnumber:-0})x$(numfmt --format "%02f" ${sonarr_episodefile_episodenumbers:-0}) - ${sonarr_episodefile_episodetitles:-UNKNOWN}"
   # export striptracks_language_node="language"
@@ -835,9 +836,15 @@ if [ ! -f "/usr/bin/mkvpropedit" ]; then
   end_script 4
 fi
 
+# First log entry (when there are no errors)
+# shellcheck disable=SC2046
+striptracks_filesize=$(stat -c %s "${striptracks_video}" | numfmt --to iec --format "%.3f")
+striptracks_message="Info|${striptracks_type^} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $striptracks_filesize"
+echo "$striptracks_message" | log
+
 # Log Debug state
 if [ $striptracks_debug -ge 1 ]; then
-  striptracks_message="Debug|Enabling debug logging level ${striptracks_debug}. Starting ${striptracks_type^} run for: $striptracks_title"
+  striptracks_message="Debug|Enabling debug logging level ${striptracks_debug}. Starting run for: $striptracks_title"
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
 fi
@@ -960,7 +967,7 @@ elif [ -n "$striptracks_api_url" ]; then
           [ $striptracks_debug -ge 1 ] && echo "Debug|Detected video file quality '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' and release group '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'" | log
 
           # Get language name(s) from quality profile used by video
-          striptracks_profileId="$(echo $striptracks_videoinfo | jq -crM .qualityProfileId)"
+          striptracks_profileId="$(echo $striptracks_videoinfo | jq -crM ${striptracks_video_rootNode}.qualityProfileId)"
           striptracks_profileName="$(echo $striptracks_qualityProfiles | jq -crM ".[] | select(.id == $striptracks_profileId).name")"
           striptracks_profileLanguages="$(echo $striptracks_qualityProfiles | jq -cM "[.[] | select(.id == $striptracks_profileId) | .language]")"
           striptracks_languageSource="quality profile"
@@ -972,7 +979,7 @@ elif [ -n "$striptracks_api_url" ]; then
             # Get list of Custom Formats, and hopefully languages
             get_custom_formats
             striptracks_customFormats="$striptracks_result"
-            [ $striptracks_debug -ge 1 ] && echo "Debug|Processing custom format(s) '$(echo "$striptracks_customFormats" | jq -crM '[.[] | select(.specifications[].implementation == "LanguageSpecification") | .name] | join(",")')'" | log
+            [ $striptracks_debug -ge 1 ] && echo "Debug|Processing custom format(s) '$(echo "$striptracks_customFormats" | jq -crM '[.[] | select(.specifications[].implementation == "LanguageSpecification") | .name] | unique | join(",")')'" | log
 
             # Pick our languages by combining data from quality profile and custom format configuration.
             # I'm open to suggestions if there's a better way to get this list or selected languages.
@@ -1045,7 +1052,7 @@ elif [ -n "$striptracks_api_url" ]; then
           
           # Get originalLanguage of video
           if check_compat originallanguage; then
-            striptracks_originalLangName="$(echo $striptracks_videoinfo | jq -crM .originalLanguage.name)"
+            striptracks_originalLangName="$(echo $striptracks_videoinfo | jq -crM ${striptracks_video_rootNode}.originalLanguage.name)"
 
             # shellcheck disable=SC2090
             striptracks_originalLangCode="$(echo $striptracks_isocodemap | jq -jcrM ".languages[] | select(.language.name == \"$striptracks_originalLangName\") | .language | \":\(.\"iso639-2\"[])\"")"
@@ -1150,12 +1157,11 @@ else
   [ $striptracks_debug -ge 1 ] && echo "Debug|Using command line subtitle languages '$striptracks_subskeep'" | log
 fi
 
-#### BEGIN MAIN
-# shellcheck disable=SC2046
-striptracks_filesize=$(stat -c %s "${striptracks_video}" | numfmt --to iec --format "%.3f")
-striptracks_message="Info|${striptracks_type^} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $striptracks_filesize, AudioKeep: $striptracks_audiokeep, SubsKeep: $striptracks_subskeep"
+# Display what we're doing
+striptracks_message="Info|Keeping audio tracks with codes '$striptracks_audiokeep' and subtitle tracks with codes '$striptracks_subskeep'"
 echo "$striptracks_message" | log
 
+#### BEGIN MAIN
 # Read in the output of mkvmerge info extraction
 if get_mediainfo "$striptracks_video"; then
   # This and the modified AWK script are a hack, and I know it.  JQ is crazy hard to learn, BTW.
@@ -1448,7 +1454,7 @@ elif [ -n "$striptracks_api_url" ]; then
         if get_videofile_info; then
           striptracks_videofile_info="$striptracks_result"
           # Check that the metadata didn't get lost in the rescan.
-          if [ "$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)" != "$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)" -o "$(echo $striptracks_videofile_info | jq -crM '.releaseGroup | select(. != null)')" != "$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')" ] then;
+          if [ "$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)" != "$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)" -o "$(echo $striptracks_videofile_info | jq -crM '.releaseGroup | select(. != null)')" != "$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')" ]; then
             # Put back the missing metadata
             set_metadata
             # Check that the returned result shows the updates
