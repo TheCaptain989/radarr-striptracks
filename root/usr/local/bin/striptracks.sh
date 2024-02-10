@@ -1473,23 +1473,25 @@ elif [ -n "$striptracks_api_url" ]; then
           fi
 
           # Check the languages returned
-          # If we stripped out other languages, remove them from Radarr
-          # Only works in Radarr (no per-episode edit function in Sonarr)
+          # If we stripped out other languages, remove them
+          # Only works in Radarr and Sonarr v4 (no per-episode edit function in Sonarr v3)
           if get_mediainfo "$striptracks_newvideo"; then
             # Build array of full name languages
             striptracks_newvideo_langcodes="$(echo $striptracks_json | jq -crM '.tracks[] | select(.type == "audio") | .properties.language')"
             unset striptracks_newvideo_languages
             for i in $striptracks_newvideo_langcodes; do
               # shellcheck disable=SC2090
-              striptracks_newvideo_languages+="$(echo $striptracks_isocodemap | jq -crM ".languages[] | .language | select((.\"iso639-2\"[]) == \"$i\") | select(.name != \"Any\" and .name != \"Original\").name")"
+              # Exclude Any and Original, and Unknown
+              striptracks_newvideo_languages+="$(echo $striptracks_isocodemap | jq -crM ".languages[] | .language | select((.\"iso639-2\"[]) == \"$i\") | select(.name != \"Any\" and .name != \"Original\" and .name != \"Unknown\").name")"
             done
             if [ -n "$striptracks_newvideo_languages" ]; then
               # Covert to standard JSON
               striptracks_json_languages="$(echo $striptracks_lang_codes | jq -crM "map(select(.name | inside(\"$striptracks_newvideo_languages\")) | {id, name})")"
               
-              # Check languages for Radarr
+              # Check languages for Radarr and Sonarr v4
+              # Sooooo glad I did it this way
               if [ "$(echo $striptracks_videofile_info | jq -crM .languages)" != "null" ]; then
-                if [ "$(echo $striptracks_videofile_info | jq -crM ".languages")" != "$striptracks_json_languages" ]; then
+                if [ "$(echo $striptracks_videofile_info | jq -crM .languages)" != "$striptracks_json_languages" ]; then
                   if set_radarr_language; then
                     striptracks_exitstatus=0
                   else
@@ -1502,9 +1504,9 @@ elif [ -n "$striptracks_api_url" ]; then
                   # The languages are already correct
                   [ $striptracks_debug -ge 1 ] && echo "Debug|Language(s) '$(echo $striptracks_json_languages | jq -crM "[.[].name] | join(\",\")")' remained unchanged." | log
                 fi
-              # Check languages for Sonarr
+              # Check languages for Sonarr v3 and earlier
               elif [ "$(echo $striptracks_videofile_info | jq -crM .language)" != "null" ]; then
-                if [ "$(echo $striptracks_videofile_info | jq -crM ".language")" != "$(echo $striptracks_json_languages | jq -crM ".[0]")" ]; then
+                if [ "$(echo $striptracks_videofile_info | jq -crM .language)" != "$(echo $striptracks_json_languages | jq -crM '.[0]')" ]; then
                   if set_sonarr_language; then
                     striptracks_exitstatus=0
                   else
