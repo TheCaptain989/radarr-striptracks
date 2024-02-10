@@ -108,9 +108,8 @@ Examples:
                                            # Radarr/Sonarr
   $striptracks_script -a :eng:und -s :eng       # keep English and Unknown audio and
                                            # English subtitles
-  $striptracks_script -a :eng:org -s :eng       # keep English and Original* audio and
+  $striptracks_script -a :eng:org -s :eng       # keep English and Original audio and
                                            # English subtitles
-                                           # *Only supported in Radarr!
   $striptracks_script :eng \"\"                   # keep English audio and no subtitles
   $striptracks_script -d :eng:kor:jpn :eng:spa  # Enable debugging level 1, keeping
                                            # English, Korean, and Japanese
