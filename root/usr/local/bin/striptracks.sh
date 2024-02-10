@@ -836,12 +836,6 @@ if [ ! -f "/usr/bin/mkvpropedit" ]; then
   end_script 4
 fi
 
-# First log entry (when there are no errors)
-# shellcheck disable=SC2046
-striptracks_filesize=$(stat -c %s "${striptracks_video}" | numfmt --to iec --format "%.3f")
-striptracks_message="Info|${striptracks_type^} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $striptracks_filesize"
-echo "$striptracks_message" | log
-
 # Log Debug state
 if [ $striptracks_debug -ge 1 ]; then
   striptracks_message="Debug|Enabling debug logging level ${striptracks_debug}. Starting run for: $striptracks_title"
@@ -860,6 +854,12 @@ if [[ "${!striptracks_eventtype}" = "Test" ]]; then
   echo "$striptracks_message"
   end_script 0
 fi
+
+# First log entry (when there are no errors)
+# shellcheck disable=SC2046
+striptracks_filesize=$(stat -c %s "${striptracks_video}" | numfmt --to iec --format "%.3f")
+striptracks_message="Info|${striptracks_type^} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $striptracks_filesize"
+echo "$striptracks_message" | log
 
 # Log Batch mode
 if [ "$striptracks_type" = "batch" ]; then
