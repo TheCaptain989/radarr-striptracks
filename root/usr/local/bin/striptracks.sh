@@ -481,6 +481,9 @@ function get_profiles {
 # Get language codes
 function get_language_codes {
   local url="$striptracks_api_url/language"
+  if check_compat languageprofile; then
+    local url="$striptracks_api_url/languageprofile"
+  fi
   [ $striptracks_debug -ge 1 ] && echo "Debug|Getting list of language codes. Calling ${striptracks_type^} API using GET and URL '$url'" | log
   unset striptracks_result
   striptracks_result=$(curl -s --fail-with-body -H "X-Api-Key: $striptracks_apikey" \
@@ -1018,7 +1021,7 @@ elif [ -n "$striptracks_api_url" ]; then
 
           # Check if the languageprofile API is supported (only in legacy Sonarr; but it was *way* better than Custom Formats <sigh>)
           if [ -z "$striptracks_profileLanguages" -o "$striptracks_profileLanguages" = "[null]" ] && check_compat languageprofile; then
-            [ $striptracks_debug -ge 1 ] && echo "Debug|No language found in quality profile or in custom formats. This is normal in older versions of Sonarr." | log
+            [ $striptracks_debug -ge 1 ] && echo "Debug|No language found in quality profile or in custom formats. This is normal in legacy versions of Sonarr." | log
             if get_profiles language; then
               striptracks_languageProfiles="$striptracks_result"
 
