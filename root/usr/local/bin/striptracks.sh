@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Video remuxing script designed for use with Radarr and Sonarr
-# Automatically strips out unwanted audio and subtitles streams, keeping only the desired languages.
+# Automatically strips out unwanted audio and subtitles tracks, keeping only the desired languages.
 #  Prod: https://github.com/linuxserver/docker-mods/tree/radarr-striptracks
 #  Dev/test: https://github.com/TheCaptain989/radarr-striptracks
 #
@@ -778,11 +778,11 @@ function check_compat {
       [ "${striptracks_type,,}" = "sonarr" ] && [ ${striptracks_arr_version/.*/} -eq 3 ] && local striptracks_return=0
     ;;
     customformat)
-      [ "${striptracks_type,,}" = "radarr" ] && [ ${striptracks_arr_version/.*/} -ge 2 ] && local striptracks_return=0
+      [ "${striptracks_type,,}" = "radarr" ] && [ ${striptracks_arr_version/.*/} -ge 3 ] && local striptracks_return=0
       [ "${striptracks_type,,}" = "sonarr" ] && [ ${striptracks_arr_version/.*/} -ge 4 ] && local striptracks_return=0
     ;;
     originallanguage)
-      [ "${striptracks_type,,}" = "radarr" ] && [ ${striptracks_arr_version/.*/} -ge 2 ] && local striptracks_return=0
+      [ "${striptracks_type,,}" = "radarr" ] && [ ${striptracks_arr_version/.*/} -ge 3 ] && local striptracks_return=0
       [ "${striptracks_type,,}" = "sonarr" ] && [ ${striptracks_arr_version/.*/} -ge 4 ] && local striptracks_return=0
     ;;
     *)  # Unknown feature
