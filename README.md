@@ -2,7 +2,7 @@
 This is a development and test repository.  Visit the [production repository and branch](https://github.com/linuxserver/docker-mods/tree/radarr-striptracks) for stable/production releases.
 
 # About
-A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.io Radarr/Sonarr v3 Docker container that adds a script to automatically strip out unwanted audio and subtitle streams, keeping only the desired languages.
+A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.io Radarr/Sonarr v3 Docker container that adds a script to automatically strip out unwanted audio and subtitle tracks, keeping only the desired languages.
 
 **Beginning with version 2.0 of this mod, it only supports v3 or later of Radarr/Sonarr.  For legacy Radarr/Sonarr v2 please use mod release 1.3 or earlier**
 
@@ -89,20 +89,22 @@ The language of the video file will be updated in the Radarr or Sonarr database 
 If you've configured the Radarr/Sonarr **Recycle Bin** path correctly, the original video will be moved there.  
 ![danger] **NOTE:** If you have *not* configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
 
-If the resulting video file would contain the same tracks as the original, the remux step is skipped *unless* the source file is not an MKV.
+If the resulting video file would contain the same tracks as the original, and it's already an MKV, the remux step is skipped.
 
 ## Automatic Language Detection
 Beginning with version 2.0 of this mod, the script may be called with no arguments.  It will detect the language(s) configured within Radarr/Sonarr on the particular movie or TV show.
-Language selection(s) may be configured in ***Quality Profiles*** (only in Radarr), ***Custom Formats*** (in Radarr v3 and higher and Sonarr v4 and higher), or ***Language Profiles*** (Sonarr v3 and earlier). Example screenshots are below.
+Language selection(s) may be configured in ***Quality Profiles*** (only in Radarr), ***Custom Formats*** (in Radarr v3 and higher and Sonarr v4 and higher), or ***Language Profiles*** (Sonarr v3). Example screenshots are below.
 
 Both audio **and** subtitle tracks that match the configured language(s) are kept.
 
 The language selection **'Original'** will use the language Radarr pulled from [The Movie Database](https://www.themoviedb.org/ "TMDB") or that Sonarr pulled from [The TVDB](https://www.thetvdb.com/ "TVDB") during its last refresh.
 Selecting this language is functionally equivalent to calling the script with `--audio :org --subs :org` command-line options.  See [Original language code](./README.md#original-language-code) below for more details.
 
-The Radarr language selection **'Any'** will preserve **all languages** in the video file. Selecting this language is functionally equivalent to calling the script with `--audio :any --subs :any` command-line options. See [Any language code](./README.md#any-language-code) below for more details.
-
 The language selection **'Unknown'** will match tracks with **no configured language** in the video file. Selecting this language is functionally equivalent to calling the script with `--audio :und --subs :und` command-line options. See [Unknown language code](./README.md#unknown-language-code) below for more details.
+
+The Radarr language selection **'Any'** has two purposes:
+   1) It will trigger a search of languages in ***Custom Formats***
+   2) If none are found, it will will preserve **all languages** in the video file. This is functionally equivalent to calling the script with `--audio :any --subs :any` command-line options. See [Any language code](./README.md#any-language-code) below for more details.
 
 >**Note:** When using the *Custom Format* conditions and scoring to select languages you may not get the results you expect.
 >This can be non-intuitive configuration, especially when using negative scoring and the 'Negate' option.
@@ -139,9 +141,9 @@ Descriptively, these steps are:
 1. Command-line options override all automatic language selection.
 2. If there are no command-line options, the video's *Quality Profile* is examined for a language configuration (only supported in Radarr).
 3. If there is no *Quality Profile* language **or** it is set to 'Any', then examine the *Custom Formats* and scores associated with the quality profile.  All language conditions with positive scores *and* negated conditions with negative score are selected.
-4. If the *Custom Format* scores are zero (0) or there are none with configured language conditions, examine the *Language Profile* (only supported in legacy Sonarr versions)
+4. If the *Custom Format* scores are zero (0) or there are none with configured language conditions, examine the *Language Profile* (only supported in Sonarr v3)
 
->**Note:** For step 3 above, continuing the search when 'Any' is in the *Quality Profile* is consistent with the behavior described in [TRaSH Guides](https://trash-guides.info/Sonarr/Tips/How-to-setup-language-custom-formats/ "TraSH Guides: How to setup Language Custom Formats").
+>**Note:** For step 3 above, using *Custom Formats* when 'Any' is in the *Quality Profile* is consistent with the behavior described in [TRaSH Guides](https://trash-guides.info/Sonarr/Tips/How-to-setup-language-custom-formats/ "TraSH Guides: How to setup Language Custom Formats").
 
 ## Command-Line Syntax
 
