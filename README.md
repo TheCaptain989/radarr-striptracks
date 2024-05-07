@@ -82,7 +82,7 @@ Production Container info: ![Docker Image Size](https://img.shields.io/docker/im
 
 # Usage
 The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name.  
-Chapters, if they exist, are preserved. The Title attribute in the MKV is set to the movie title plus year 
+Chapters, if they exist, are preserved. The Title attribute in the MKV is set to the movie title plus year  
 (ex: `The Sting (1973)`) or the series title plus episode information (ex: `Happy! 01x01 - What Smiles Are For`).  
 The language of the video file will be updated in the Radarr or Sonarr database to reflect the actual languages preserved in the remuxed video, and the video will be renamed according to the Radarr/Sonarr rules if needed (for example, if a removed track would trigger a name change.)
 
@@ -265,11 +265,13 @@ Then put `/config/striptracks-custom.sh` in the **Path** field in place of `/usr
 The `striptracks.sh` script also allows the use of arguments provided by the `STRIPTRACKS_ARGS` environment variable. This allows advanced use cases without having to provide a custom script.
 
 For example, the following value in your `docker run` command would Keep English, Japanese, and Unknown audio and English subtitles:
-```
+
+```shell
 -e STRIPTRACKS_ARGS='--audio :eng:jpn:und --subs :eng'
 ```
 
 In Docker Compose this will look like this:
+
 ```yaml
 environment:
   - STRIPTRACKS_ARGS=--audio :eng:jpn:und --subs :eng
@@ -278,7 +280,7 @@ environment:
 *Example Synology Configuration*  
 ![striptracks](.assets/radarr-synology-2.png "Synology container settings")
 
->**NOTE:** The environment variable settings are _only_ used when **no** command line arguments are present. **Any** command line argument will disable the use of the environment variable.
+>**NOTE:** The environment variable settings are *only* used when **no** command line arguments are present. **Any** command line argument will disable the use of the environment variable.
 
 ## Triggers
 The only events/notification triggers that have been tested are **On Import** and **On Upgrade**
