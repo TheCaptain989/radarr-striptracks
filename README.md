@@ -218,7 +218,7 @@ There is no way to force the script to remove audio tracks with these codes.
 ```
 
 ## Wrapper Scripts
-To supply arguments to the script, one of the included wrapper scripts may be used or a custom wrapper script must be created.
+To supply arguments to the script, you must either use one of the included wrapper scripts, create a custom wrapper script, or set the `STRIPTRACKS_ARGS` [environment variable](./README.md#environment-variable).
 
 ### Included Wrapper Scripts
 For your convenience, several wrapper scripts are included in the `/usr/local/bin/` directory.  
