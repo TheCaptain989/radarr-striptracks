@@ -283,7 +283,7 @@ environment:
 >**NOTE:** The environment variable settings are *only* used when **no** command line arguments are present. **Any** command line argument will disable the use of the environment variable.
 
 ## Triggers
-The only events/notification triggers that have been tested are **On Import** and **On Upgrade**
+The only events/notification triggers that are supported are **On Import** and **On Upgrade**
 
 ## Batch Mode
 Batch mode allows the script to be executed independently of Radarr or Sonarr.  It converts the file specified on the command-line and ignores any environment variables that are normally expected to be set by the video management program.
