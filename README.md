@@ -280,7 +280,7 @@ environment:
 *Example Synology Configuration*  
 ![striptracks](.assets/radarr-synology-2.png "Synology container settings")
 
->**NOTE:** The environment variable settings are *only* used when **no** command line arguments are present. **Any** command line argument will disable the use of the environment variable.
+>**NOTE:** The environment variable settings are *only* used when **no** command-line arguments are present. **Any** command-line argument will disable the use of the environment variable.
 
 ## Triggers
 The only events/notification triggers that are supported are **On Import** and **On Upgrade**
