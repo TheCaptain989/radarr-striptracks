@@ -41,6 +41,7 @@
 # 11 - source video had no audio or subtitle tracks
 # 12 - log file is not writable
 # 13 - awk script exited abnormally
+# 15 - could not set permissions and/or owner on new file
 # 16 - could not delete the original file
 # 17 - Radarr/Sonarr API error
 # 18 - Radarr/Sonarr job timeout
@@ -1380,6 +1381,30 @@ if [ ! -s "$striptracks_tempvideo" ]; then
   echo "$striptracks_message" >&2
   end_script 10
 fi
+
+# Checking that we're running as root
+if [ "$(id -u)" -eq 0 ]; then
+  # Set owner
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Changing owner of file \"$striptracks_tempvideo\"" | log
+  chown --reference="$striptracks_video" "$striptracks_tempvideo" >&2
+  striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
+    striptracks_message="Error|[$striptracks_return] Error when changing owner of file: \"$striptracks_tempvideo\""
+    echo "$striptracks_message" | log
+    echo "$striptracks_message" >&2
+    striptracks_exitstatus=15
+  }
+else
+  # Unable to change owner when not running as root
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Unable to change owner of file because we're running as user '$(id -un)'" | log
+fi
+# Set permissions
+chmod --reference="$striptracks_video" "$striptracks_tempvideo" >&2
+striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
+  striptracks_message="Error|[$striptracks_return] Error when changing permissions of file: \"$striptracks_tempvideo\""
+  echo "$striptracks_message" | log
+  echo "$striptracks_message" >&2
+  striptracks_exitstatus=15
+}
 
 # Just delete the original video if running in batch mode
 if [ "$striptracks_type" = "batch" ]; then

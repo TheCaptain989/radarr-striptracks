@@ -81,7 +81,7 @@ Production Container info: ![Docker Image Size](https://img.shields.io/docker/im
    Alternatively, a wrapper script or an environment variable may be used to more granularly define which tracks to keep.  See [Wrapper Scripts](./README.md#wrapper-scripts) or [Environment Variable](./README.md#environment-variable) for more details.
 
 # Usage
-The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name.  
+The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name and the same permissions. Owner is preserved if the script is executed as root.  
 Chapters, if they exist, are preserved. The Title attribute in the MKV is set to the movie title plus year  
 (ex: `The Sting (1973)`) or the series title plus episode information (ex: `Happy! 01x01 - What Smiles Are For`).  
 The language of the video file will be updated in the Radarr or Sonarr database to reflect the actual languages preserved in the remuxed video, and the video will be renamed according to the Radarr/Sonarr rules if needed (for example, if a removed track would trigger a name change.)
@@ -278,7 +278,7 @@ environment:
 ```
 
 *Example Synology Configuration*  
-![striptracks](.assets/radarr-synology-2.png "Synology container settings")
+![striptracks](.assets/striptracks-synology-2.png "Synology container settings")
 
 >**NOTE:** The environment variable settings are *only* used when **no** command-line arguments are present. **Any** command-line argument will disable the use of the environment variable.
 
