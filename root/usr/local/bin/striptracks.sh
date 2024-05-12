@@ -871,7 +871,7 @@ fi
 [ $striptracks_debug -ge 2 ] && printenv | sort | sed 's/^/Debug|/' | log
 
 # Check for invalid _eventtypes
-if [[ "${!striptracks_eventtype}" =~ Grab|Rename|MovieAdded|MovieDelete|MovieFileDelete|SeriesDelete|EpisodeFileDelete|HealthIssue|ApplicationUpdate ]]; then
+if [[ "${!striptracks_eventtype}" =~ Grab|Rename|MovieAdded|MovieDelete|MovieFileDelete|SeriesAdd|SeriesDelete|EpisodeFileDelete|HealthIssue|ApplicationUpdate ]]; then
   striptracks_message="Error|${striptracks_type^} event ${!striptracks_eventtype} is not supported. Exiting."
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
