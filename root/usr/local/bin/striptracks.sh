@@ -871,7 +871,7 @@ fi
 [ $striptracks_debug -ge 2 ] && printenv | sort | sed 's/^/Debug|/' | log
 
 # Check for invalid _eventtypes
-if [[ "${!striptracks_eventtype}" =~ Grab|Rename|EpisodeFileDelete|SeriesDelete|HealthIssue|ApplicationUpdate ]]; then
+if [[ "${!striptracks_eventtype}" =~ Grab|Rename|MovieAdded|MovieDelete|MovieFileDelete|SeriesDelete|EpisodeFileDelete|HealthIssue|ApplicationUpdate ]]; then
   striptracks_message="Error|${striptracks_type^} event ${!striptracks_eventtype} is not supported. Exiting."
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
@@ -1395,7 +1395,7 @@ if [ "$(id -u)" -eq 0 ]; then
   }
 else
   # Unable to change owner when not running as root
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Unable to change owner of file because we're running as user '$(id -un)'" | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Unable to change owner of file when running as user '$(id -un)'" | log
 fi
 # Set permissions
 chmod --reference="$striptracks_video" "$striptracks_tempvideo" >&2
