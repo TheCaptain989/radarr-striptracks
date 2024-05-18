@@ -901,6 +901,11 @@ fi
 # Check for config file
 if [ "$striptracks_type" = "batch" ]; then
   [ $striptracks_debug -ge 1 ] && echo "Debug|Not using config file in batch mode." | log
+# TODO: Allow use of new environment variables from https://github.com/Sonarr/Sonarr/pull/6746
+#   SONARR__SERVER__PORT
+#   SONARR__SERVER__URLBASE
+#   SONARR__SERVER__BINDADDRESS
+#   SONARR__AUTH__APIKEY
 elif [ -f "$striptracks_arr_config" ]; then
   # Read *arr config.xml
   [ $striptracks_debug -ge 1 ] && echo "Debug|Reading from ${striptracks_type^} config file '$striptracks_arr_config'" | log
