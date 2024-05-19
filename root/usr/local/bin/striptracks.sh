@@ -901,11 +901,6 @@ fi
 # Check for config file
 if [ "$striptracks_type" = "batch" ]; then
   [ $striptracks_debug -ge 1 ] && echo "Debug|Not using config file in batch mode." | log
-# TODO: Allow use of new environment variables from https://github.com/Sonarr/Sonarr/pull/6746
-#   SONARR__SERVER__PORT
-#   SONARR__SERVER__URLBASE
-#   SONARR__SERVER__BINDADDRESS
-#   SONARR__AUTH__APIKEY
 elif [ -f "$striptracks_arr_config" ]; then
   # Read *arr config.xml
   [ $striptracks_debug -ge 1 ] && echo "Debug|Reading from ${striptracks_type^} config file '$striptracks_arr_config'" | log
@@ -915,6 +910,16 @@ elif [ -f "$striptracks_arr_config" ]; then
     [[ $striptracks_xml_entity = "BindAddress" ]] && striptracks_bindaddress=$striptracks_xml_content
     [[ $striptracks_xml_entity = "ApiKey" ]] && striptracks_apikey=$striptracks_xml_content
   done < $striptracks_arr_config
+
+  # Allow use of environment variables from https://github.com/Sonarr/Sonarr/pull/6746
+  striptracks_port_var="${striptracks_type^^}__SERVER__PORT"
+  [ -n "${!striptracks_port_var}" ] && striptracks_port="${!striptracks_port_var}"
+  striptracks_urlbase_var="${striptracks_type^^}__SERVER__URLBASE"
+  [ -n "${!striptracks_urlbase_var}" ] && striptracks_urlbase="${!striptracks_urlbase_var}"
+  striptracks_bindaddress_var="${striptracks_type^^}__SERVER__BINDADDRESS"
+  [ -n "${!striptracks_bindaddress_var}" ] && striptracks_bindaddress="${!striptracks_bindaddress_var}"
+  striptracks_apikey_var="${striptracks_type^^}__AUTH__APIKEY"
+  [ -n "${!striptracks_apikey_var}" ] && striptracks_apikey="${!striptracks_apikey_var}"
 
   # Check for localhost
   [[ $striptracks_bindaddress = "*" ]] && striptracks_bindaddress=localhost
