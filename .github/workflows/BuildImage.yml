@@ -18,6 +18,8 @@ jobs:
       - name: Incrementing version
         id: semantic_version
         uses: paulhatch/semantic-version@v5.4.0
+            with:
+                search_commit_body: true
 
       - name: Set Vars
         run: |
@@ -38,10 +40,14 @@ jobs:
           else
             IMAGETAG="${ENDPOINT}:${{ github.ref_name }}"
           fi
+          IMAGEVERTAG="${ENDPOINT}:${{ steps.semantic_version.outputs.version_tag }}"
           echo "IMAGETAG=${IMAGETAG}" >> $GITHUB_ENV
+          echo "IMAGEVERTAG=${IMAGEVERTAG}" >> $GITHUB_ENV
           docker tag ${ENDPOINT}:${{ github.sha }} "${IMAGETAG}"
+          docker tag ${ENDPOINT}:${{ github.sha }} "${IMAGEVERTAG}"
           docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/${ENDPOINT}:${{ github.sha }}
           docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/"${IMAGETAG}"
+          docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/"${IMAGEVERTAG}"
 
       - name: Credential check
         run: |
@@ -66,9 +72,11 @@ jobs:
         run: |
           docker push ghcr.io/${ENDPOINT}:${{ github.sha }}
           docker push ghcr.io/"${IMAGETAG}"
+          docker push ghcr.io/"${IMAGEVERTAG}"
           echo "Pushed the following images/tags to GHCR:" >> $GITHUB_STEP_SUMMARY
           echo "ghcr.io/${ENDPOINT}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "ghcr.io/${IMAGETAG}" >> $GITHUB_STEP_SUMMARY
+          echo "ghcr.io/${IMAGEVERTAG}" >> $GITHUB_STEP_SUMMARY
 
       - name: Login to DockerHub
         if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
@@ -80,6 +88,8 @@ jobs:
         run: |
           docker push ${ENDPOINT}:${{ github.sha }}
           docker push "${IMAGETAG}"
+          docker push "${IMAGEVERTAG}"
           echo "Pushed the following images/tags to Docker Hub:" >> $GITHUB_STEP_SUMMARY
           echo "${ENDPOINT}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "${IMAGETAG}" >> $GITHUB_STEP_SUMMARY
+          echo "${IMAGEVERTAG}" >> $GITHUB_STEP_SUMMARY
