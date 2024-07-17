@@ -18,8 +18,8 @@ jobs:
       - name: Incrementing version
         id: semantic_version
         uses: paulhatch/semantic-version@v5.4.0
-            with:
-                search_commit_body: true
+        with:
+            search_commit_body: true
 
       - name: Set Vars
         run: |
