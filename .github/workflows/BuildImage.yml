@@ -19,9 +19,6 @@ jobs:
       - name: Incrementing version
         id: semantic_version
         uses: paulhatch/semantic-version@v5.4.0
-        run: |
-            echo "version=${version}" >> $GITHUB_ENV
-            echo "version_tag=${version_tag}" >> $GITHUB_ENV
 
       - name: Set Vars
         run: |
