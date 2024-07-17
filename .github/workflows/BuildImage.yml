@@ -27,8 +27,8 @@ jobs:
           MOD_VERSION=${GITHUB_SHA:0:7}
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_ENV
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_STEP_SUMMARY
-          echo "version=${{ steps.semantic_version.output.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "version_tag=${{ steps.semantic_version.output.version_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "version=${{ steps.semantic_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "version_tag=${{ steps.semantic_version.outputs.version_tag }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Build image
         run: |
