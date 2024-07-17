@@ -21,6 +21,9 @@ jobs:
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_ENV
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_STEP_SUMMARY
 
+      - name: Incrementing version
+        uses: paulhatch/semantic-version@latest
+      
       - name: Build image
         run: |
           docker buildx build --no-cache --build-arg MOD_VERSION=${MOD_VERSION} --tag ${ENDPOINT}:${{ github.sha }} .
