@@ -23,7 +23,7 @@ jobs:
         run: |
           echo "ENDPOINT=${ENDPOINT}" >> $GITHUB_STEP_SUMMARY
           # **** If the mod needs to be versioned, set the versioning logic below. Otherwise leave as is. ****
-          MOD_VERSION=${{ steps.semantic_version.outputs.version }} build ${GITHUB_SHA:0:7}
+          MOD_VERSION="${{ steps.semantic_version.outputs.version }} build ${GITHUB_SHA:0:7}"
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_ENV
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_STEP_SUMMARY
 
