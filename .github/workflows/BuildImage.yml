@@ -13,8 +13,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-            fetch-depth: 2
-            fetch-tags: true
+            fetch-depth: 0  # Needed for semantic_version to work correctly
 
       - name: Incrementing version
         id: semantic_version
@@ -24,11 +23,9 @@ jobs:
         run: |
           echo "ENDPOINT=${ENDPOINT}" >> $GITHUB_STEP_SUMMARY
           # **** If the mod needs to be versioned, set the versioning logic below. Otherwise leave as is. ****
-          MOD_VERSION=${GITHUB_SHA:0:7}
+          MOD_VERSION=${{ steps.semantic_version.outputs.version }} build ${GITHUB_SHA:0:7}
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_ENV
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_STEP_SUMMARY
-          echo "version=${{ steps.semantic_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "version_tag=${{ steps.semantic_version.outputs.version_tag }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Build image
         run: |
