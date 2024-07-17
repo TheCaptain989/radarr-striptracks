@@ -29,7 +29,7 @@ jobs:
 
       - name: Build image
         run: |
-          docker buildx build --no-cache --build-arg MOD_VERSION=${MOD_VERSION} --tag ${ENDPOINT}:${{ github.sha }} .
+          docker buildx build --no-cache --build-arg MOD_VERSION="${MOD_VERSION}" --tag ${ENDPOINT}:${{ github.sha }} .
 
       - name: Tag image
         run: |
