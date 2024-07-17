@@ -17,7 +17,11 @@ jobs:
             fetch-tags: true
 
       - name: Incrementing version
+        id: semantic_version
         uses: paulhatch/semantic-version@v5.4.0
+        run: |
+            echo "version=${version}" >> $GITHUB_ENV
+            echo "version_tag=${version_tag}" >> $GITHUB_ENV
 
       - name: Set Vars
         run: |
@@ -26,8 +30,8 @@ jobs:
           MOD_VERSION=${GITHUB_SHA:0:7}
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_ENV
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_STEP_SUMMARY
-          echo "version=${version} >> $GITHUB_STEP_SUMMARY
-          echo "version_tag=${version_tag} >> $GITHUB_STEP_SUMMARY
+          echo "version=${{ steps.semantic_version.output.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "version_tag=${{ steps.semantic_version.output.version_tag }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Build image
         run: |
