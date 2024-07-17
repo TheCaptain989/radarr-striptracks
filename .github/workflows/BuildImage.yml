@@ -22,7 +22,7 @@ jobs:
           echo "MOD_VERSION=${MOD_VERSION}" >> $GITHUB_STEP_SUMMARY
 
       - name: Incrementing version
-        uses: paulhatch/semantic-version@latest
+        uses: paulhatch/semantic-version@v5.4.0
       
       - name: Build image
         run: |
