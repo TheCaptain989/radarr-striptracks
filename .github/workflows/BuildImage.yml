@@ -46,8 +46,8 @@ jobs:
           docker tag ${ENDPOINT}:${{ github.sha }} "${IMAGETAG}"
           docker tag ${ENDPOINT}:${{ github.sha }} "${IMAGEVERTAG}"
           docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/${ENDPOINT}:${{ github.sha }}
-          docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/"${IMAGETAG}"
           docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/"${IMAGEVERTAG}"
+          docker tag ${ENDPOINT}:${{ github.sha }} ghcr.io/"${IMAGETAG}"
 
       - name: Credential check
         run: |
@@ -87,8 +87,8 @@ jobs:
         if: ${{ env.DOCKERUSER && env.DOCKERPASS }}
         run: |
           docker push ${ENDPOINT}:${{ github.sha }}
-          docker push "${IMAGETAG}"
           docker push "${IMAGEVERTAG}"
+          docker push "${IMAGETAG}"
           echo "Pushed the following images/tags to Docker Hub:" >> $GITHUB_STEP_SUMMARY
           echo "${ENDPOINT}:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "${IMAGETAG}" >> $GITHUB_STEP_SUMMARY
