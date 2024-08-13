@@ -2,23 +2,35 @@
 # shellcheck shell=bash
 
 # Custom script to install Striptracks Mod meant for Radarr or Sonarr Docker containers
+# WARNING: Minimal error handling!
 
 # Pre-set LSIO Docker Mod variables
 DOCKER_MODS=thecaptain989/radarr-striptracks:latest
-DOCKER_MODS_DEBUG=true
+#DOCKER_MODS_DEBUG=true
 export DOCKER_MODS
 export DOCKER_MODS_DEBUG
+[[ ${DOCKER_MODS_DEBUG,,} = "true" ]] && echo "[mod-install] DOCKER_MODS: $DOCKER_MODS" && echo "[mod-install] DOCKER_MODS_DEBUG: $DOCKER_MODS_DEBUG"
+echo "[mod-install] installing $DOCKER_MODS mod"
 
 # Steal the current docker-mods version from the source
-MODS_VERSION=$(curl -s "https://raw.githubusercontent.com/linuxserver/docker-baseimage-alpine/master/Dockerfile" | sed -nr "s/^ARG MODS_VERSION=//p")
+MODS_VERSION=$(curl -s --fail-with-body "https://raw.githubusercontent.com/linuxserver/docker-baseimage-alpine/master/Dockerfile" | sed -nr 's/^ARG MODS_VERSION="?([^"]+)"?/\1/p')
+[[ ${DOCKER_MODS_DEBUG,,} = "true" ]] && echo "[mod-install] MODS_VERSION: $MODS_VERSION"
 
-# Download and execute the main the docker-mods script to install the mod
+# Download and execute the main docker-mods script to install the mod
 # Very well thought out code, this.  Why reinvent?
-curl -s -o "/docker-mods" "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/docker-mods.${MODS_VERSION}"
+curl -s --fail-with-body -o /docker-mods "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/docker-mods.${MODS_VERSION}"
+ret=$?
+[ $ret -ne 0 ] && echo "[mod-install] unable to download docker-mods: Exit code: $ret. Exiting." && exit 1
+
+chmod +x /docker-mods
+
 . /docker-mods
+[ $ret -ne 0 ] && echo "[mod-install] docker-mods installation error: $ret. Exiting." && exit 1
+[ $ret -ne 0 ] && echo "[mod-install] docker-mods installation error: $ret. Exiting." && exit 1
 
 # Get script version from installed mod
-VERSION=$(sed -nr "s/^export striptracks_ver=//p" /usr/local/bin/striptracks.sh)
+VERSION=$(sed -nr 's/^export striptracks_ver="?([^"]+)"?/\1/p' /usr/local/bin/striptracks.sh)
+[[ ${DOCKER_MODS_DEBUG,,} = "true" ]] && echo "[mod-install] striptracks.sh version: $VERSION"
 
 # Remaining setup that is normally done with s6-overlay init scripts, but that rely on a lot of Docker Mods dependencies
 cat <<EOF
@@ -34,23 +46,23 @@ EOF
 
 # Determine if setup is needed
 if [ ! -f /usr/bin/mkvmerge ]; then
-  echo "Running first time setup."
+  echo "[mod-install] Running first time setup."
 
   if [ -f /usr/bin/apt ]; then
     # Ubuntu
-    echo "Installing MKVToolNix using apt-get"
+    echo "[mod-install] Installing MKVToolNix using apt-get"
     apt-get update && \
         apt-get -y install mkvtoolnix && \
         rm -rf /var/lib/apt/lists/*
   elif [ -f /sbin/apk ]; then
     # Alpine
-    echo "Installing MKVToolNix using apk"
+    echo "[mod-install] Installing MKVToolNix using apk"
     apk upgrade --no-cache && \
         apk add --no-cache mkvtoolnix && \
         rm -rf /var/lib/apt/lists/*
   else
     # Unknown
-    echo "Unknown package manager.  Attempting to install MKVToolNix using apt-get"
+    echo "[mod-install] Unknown package manager.  Attempting to install MKVToolNix using apt-get"
     apt-get update && \
         apt-get -y install mkvtoolnix && \
         rm -rf /var/lib/apt/lists/*
@@ -61,14 +73,14 @@ fi
 for file in /usr/local/bin/striptracks*.sh
 do
   # Change ownership
-  if [ $(stat -c '%G' $file) != "abc" ]; then
-    echo "Changing ownership on $file script."
-    chown abc:abc $file
+  if [ "$(stat -c '%G' "$file")" != "root" ]; then
+    echo "[mod-install] Changing ownership on $file script."
+    chown root:root "$file"
   fi
 
   # Make executable
-  if [ ! -x $file ]; then
-    echo "Making $file script executable."
-    chmod +x $file
+  if [ ! -x "$file" ]; then
+    echo "[mod-install] Making $file script executable."
+    chmod +x "$file"
   fi
 done

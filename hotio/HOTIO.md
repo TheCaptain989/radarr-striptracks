@@ -2,7 +2,7 @@
 This mod can now be easily used with [hotio](https://hotio.dev/) containers, using the method described in the hotio [FAQ](https://hotio.dev/faq/#:~:text=I%20would%20like%20to%20execute%20my%20own%20scripts%20on%20startup%2C%20how%20would%20I%20do%20this%3F) (This relies on s6-overlay v2 behavior still working, though v3 is the current version.)
 
 # Installation
-1. Download the **[99-striptracks.sh](./hotio/99-striptracks.sh)** install script and save it somewhere that can be mountable by your container.  
+1. Download the **[99-striptracks.sh](./99-striptracks.sh)** install script and save it somewhere that can be mountable by your container.  
 
     *Example location:*  `/volume1/docker/99-striptracks.sh`  
 
