@@ -26,7 +26,6 @@ chmod +x /docker-mods
 
 . /docker-mods
 [ $ret -ne 0 ] && echo "[mod-install] docker-mods installation error: $ret. Exiting." && exit 1
-[ $ret -ne 0 ] && echo "[mod-install] docker-mods installation error: $ret. Exiting." && exit 1
 
 # Get script version from installed mod
 VERSION=$(sed -nr 's/^export striptracks_ver="?([^"]+)"?/\1/p' /usr/local/bin/striptracks.sh)
