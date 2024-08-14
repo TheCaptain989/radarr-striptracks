@@ -1,5 +1,5 @@
-#!/command/with-contenv sh
-# shellcheck shell=sh
+#!/command/with-contenv bash
+# shellcheck shell=bash
 
 # Custom script to install Striptracks Mod meant for Radarr or Sonarr Docker containers
 # WARNING: Minimal error handling!

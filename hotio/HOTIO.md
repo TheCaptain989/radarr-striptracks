@@ -1,6 +1,9 @@
 # About
 This mod can now be easily used with [hotio](https://hotio.dev/) containers using the method described in the hotio [FAQ](https://hotio.dev/faq/#:~:text=I%20would%20like%20to%20execute%20my%20own%20scripts%20on%20startup%2C%20how%20would%20I%20do%20this%3F) (This relies on s6-overlay v2 behavior still working, though v3 is the current version.)
 
+# Requirement
+You must have the bash shell available in your host path.  You might attempt editing the [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) in the 99-striptracks.sh script to get around this, but that is beyond the scope of this document.
+
 # Installation
 1. Download the **[99-striptracks.sh](./99-striptracks.sh)** install script and save it somewhere that can be mounted by your container.  
 
