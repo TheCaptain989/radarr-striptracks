@@ -5,7 +5,7 @@
 # WARNING: Minimal error handling!
 
 # Pre-set LSIO Docker Mod variables
-DOCKER_MODS=thecaptain989/radarr-striptracks:latest
+DOCKER_MODS=linuxserver/mods:radarr-striptracks
 #DOCKER_MODS_DEBUG=true
 export DOCKER_MODS
 export DOCKER_MODS_DEBUG
