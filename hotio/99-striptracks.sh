@@ -1,5 +1,5 @@
-#!/command/with-contenv bash
-# shellcheck shell=bash
+#!/command/with-contenv sh
+# shellcheck shell=sh
 
 # Custom script to install Striptracks Mod meant for Radarr or Sonarr Docker containers
 # WARNING: Minimal error handling!
@@ -9,12 +9,12 @@ DOCKER_MODS=linuxserver/mods:radarr-striptracks
 #DOCKER_MODS_DEBUG=true
 export DOCKER_MODS
 export DOCKER_MODS_DEBUG
-[[ ${DOCKER_MODS_DEBUG,,} = "true" ]] && echo "[mod-install] DOCKER_MODS: $DOCKER_MODS" && echo "[mod-install] DOCKER_MODS_DEBUG: $DOCKER_MODS_DEBUG"
+[ "$DOCKER_MODS_DEBUG" = "true" ] && echo "[mod-install] DOCKER_MODS: $DOCKER_MODS" && echo "[mod-install] DOCKER_MODS_DEBUG: $DOCKER_MODS_DEBUG"
 echo "[mod-install] installing $DOCKER_MODS mod"
 
 # Steal the current docker-mods version from the source
 MODS_VERSION=$(curl -s --fail-with-body "https://raw.githubusercontent.com/linuxserver/docker-baseimage-alpine/master/Dockerfile" | sed -nr 's/^ARG MODS_VERSION="?([^"]+)"?/\1/p')
-[[ ${DOCKER_MODS_DEBUG,,} = "true" ]] && echo "[mod-install] MODS_VERSION: $MODS_VERSION"
+[ "$DOCKER_MODS_DEBUG" = "true" ] && echo "[mod-install] MODS_VERSION: $MODS_VERSION"
 
 # Download and execute the main docker-mods script to install the mod
 # Very well thought out code, this.  Why reinvent?
@@ -29,7 +29,7 @@ chmod +x /docker-mods
 
 # Get script version from installed mod
 VERSION=$(sed -nr 's/^export striptracks_ver="?([^"]+)"?/\1/p' /usr/local/bin/striptracks.sh)
-[[ ${DOCKER_MODS_DEBUG,,} = "true" ]] && echo "[mod-install] striptracks.sh version: $VERSION"
+[ "$DOCKER_MODS_DEBUG" = "true" ] && echo "[mod-install] striptracks.sh version: $VERSION"
 
 # Remaining setup that is normally done with s6-overlay init scripts, but that rely on a lot of Docker Mods dependencies
 cat <<EOF

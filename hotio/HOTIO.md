@@ -25,6 +25,9 @@ This mod can now be easily used with [hotio](https://hotio.dev/) containers usin
 4. Configure the Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
    **[hotio/radarr](https://hotio.dev/containers/radarr/ "Radarr Docker container")**  
    **[hotio/sonarr](https://hotio.dev/containers/sonarr/ "Sonarr Docker container")**
+
+   >**Note:** Notice that no environment variables are used in this setup.  That is a specific feature of LSIO containers and is not applicable to hotio containers.  
+
    1. Add the **99-striptracks.sh** file path as a mount point in your `compose.yml` file or `docker run` command.
       >**Note:** The `/etc/cont-init.d/99-striptracks` path below is important; don't change it!  
 
@@ -63,6 +66,11 @@ This mod can now be easily used with [hotio](https://hotio.dev/) containers usin
             -v /volume1/docker/99-striptracks.sh:/etc/cont-init.d/99-striptracks \
             ghcr.io/hotio/sonarr
        ```  
+
+      *Example Synology Configuration*  
+      ![striptracks](.assets/hotio-striptracks-synology.png "Synology container settings")
+
+      >**Note:** Please be sure that your mount points for `/config` and `/data` above do not overlap with the newly added mount point!
 
    2. Start the container.
 
