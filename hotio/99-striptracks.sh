@@ -69,12 +69,14 @@ if [ ! -f /usr/bin/mkvmerge ]; then
 fi
 
 # Check ownership and attributes on each script file
+[ -z "$PUID" ] && owner_user="root" || owner_user="$PUID"
+[ -z "$PGID" ] && owner_group="root" || owner_group="$PGID"
 for file in /usr/local/bin/striptracks*.sh
 do
   # Change ownership
-  if [ "$(stat -c '%G' "$file")" != "root" ]; then
-    echo "[mod-install] Changing ownership on $file script."
-    chown root:root "$file"
+  if [ "$(stat -c '%G' "$file")" != "$owner_group" ]; then
+    echo "[mod-install] Changing ownership on $file script to $owner_user:$owner_group."
+    chown "$owner_user":"$owner_group" "$file"
   fi
 
   # Make executable
