@@ -71,7 +71,7 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
        ```  
 
       *Example Synology Configuration*  
-      ![striptracks](.assets/hotio-striptracks-synology.png "Synology container settings")
+      ![striptracks hotio](../.assets/hotio-striptracks-synology.png "Synology container settings")
 
       >**Note:** Please be sure that your mount points for `/config` and `/data` above do not overlap with the newly added mount point!
 
