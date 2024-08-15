@@ -1,15 +1,15 @@
 # About
-This mod can now be easily used with [hotio](https://hotio.dev/) containers using the method described in the hotio [FAQ](https://hotio.dev/faq/#:~:text=I%20would%20like%20to%20execute%20my%20own%20scripts%20on%20startup%2C%20how%20would%20I%20do%20this%3F) (This relies on s6-overlay v2 behavior still working, though v3 is the current version.)
+This mod can now be used with [hotio](https://hotio.dev/) containers by using the method described in the hotio [FAQ](https://hotio.dev/faq/#:~:text=I%20would%20like%20to%20execute%20my%20own%20scripts%20on%20startup%2C%20how%20would%20I%20do%20this%3F) to install it.
+(This method relies on s6-overlay v2 behavior still working, though v3 is the current version.)
 
-# Requirement
-You must have the bash shell available in your host path.  You might attempt editing the [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) in the 99-striptracks.sh script to get around this, but that is beyond the scope of this document.
+>This is a quick and dirty script with minimal testing or error checking.  Note that it only runs *inside* the hotio container.
 
 # Installation
 1. Download the **[99-striptracks.sh](./99-striptracks.sh)** install script and save it somewhere that can be mounted by your container.  
 
     *Example location:*  `/volume1/docker/99-striptracks.sh`  
 
-    *Example curl line to download install script:*  
+    *Example curl line to download the installation script:*  
 
     ```shell
     curl -s https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/master/hotio/99-striptracks.sh >/volume1/docker/99-striptracks.sh
@@ -78,3 +78,9 @@ You must have the bash shell available in your host path.  You might attempt edi
    2. Start the container.
 
 5. After the container has fully started, continue with Installation step 3 in the previous [README](../README.md#installation).
+
+## Requirements
+You must have the **bash** shell available in your host path.  You *might* attempt editing the [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) in the 99-striptracks.sh script to get around this, but that is beyond the scope of this document.
+
+## Known Problems
+On at least *some* Synology hosts that use the ash shell, this script will cause the container to abort and not start.  If this happens, ***check your container logs*** for hints as to what may be wrong.
