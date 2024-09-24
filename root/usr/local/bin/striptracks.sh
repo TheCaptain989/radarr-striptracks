@@ -1096,9 +1096,10 @@ elif [ -n "$striptracks_api_url" ]; then
                 {format, name, score, specs: \$cf.specs}
               ] |
               [
-                # Only count languages with positive scores plus languages with negative scores that are negated.
+                # Only count languages with positive scores plus languages with negative scores that are negated, and
+                # languages with negative scores that use Except
                 .[] |
-                (select(.score > 0) | .specs[] | select(.negate == false)), (select(.score < 0) | .specs[] | select(.negate == true)) |
+                (select(.score > 0) | .specs[] | select(.negate == false and .except == false)), (select(.score < 0) | .specs[] | select(.negate == true and .except == false)), (select(.score < 0) | .specs[] | select(.negate == false and .except == true)) |
                 .langCode
               ] |
               unique |
