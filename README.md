@@ -4,6 +4,8 @@ This is a development and test repository.  Visit the [production repository and
 # About
 A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.io Radarr/Sonarr v3 or higher Docker containers that adds a script to automatically strip out unwanted audio and subtitle tracks, keeping only the desired languages.
 
+**NEW!** The script can now be executed from Windows installs of Radarr and Sonarr by using WSL!  See the [WSL.md](./wsl/WSL.md) file for more details.  
+
 **NEW!** There is a now an installer for **hotio** containers!  See the [HOTIO.md](./hotio/HOTIO.md) file for more details.  
 
 **This unified script works in both Radarr and Sonarr.  Use this mod in either container!**
