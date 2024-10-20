@@ -82,5 +82,5 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 ## Requirements
 You must have the **bash** shell available in your host path.  You *might* attempt editing the [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) in the 99-striptracks.sh script to get around this, but that is beyond the scope of this document.
 
-## Known Problems
+## Known Issues
 On at least *some* Synology hosts that use the ash shell, this script will cause the container to abort and not start.  If this happens, ***check your container logs*** for hints as to what may be wrong.

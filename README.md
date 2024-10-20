@@ -4,6 +4,8 @@ This is a development and test repository.  Visit the [production repository and
 # About
 A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.io Radarr/Sonarr v3 or higher Docker containers that adds a script to automatically strip out unwanted audio and subtitle tracks, keeping only the desired languages.
 
+**NEW!** The script can now be executed from Windows installs of Radarr and Sonarr by using WSL!  See the [WSL.md](./wsl/WSL.md) file for more details.  
+
 **NEW!** There is a now an installer for **hotio** containers!  See the [HOTIO.md](./hotio/HOTIO.md) file for more details.  
 
 **This unified script works in both Radarr and Sonarr.  Use this mod in either container!**
@@ -164,8 +166,9 @@ Option|Argument|Description
 -a, --audio|<audio_languages>|Audio languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)
 -s, --subs|<subtitle_languages>|Subtitle languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)
 -f, --file|<video_file>|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified video file.<br/>Requires the `-a` option.<br/>![danger] **WARNING:** Do not use this argument when called from Radarr or Sonarr!
--l, --log|\<log_file\>|The log filename<br/>Default of /config/log/striptracks.txt
--d, --debug|\[\<level\>\]|Enables debug logging. Level is optional.<br/>Default of 1 (low)<br/>2 includes JSON output<br/>3 contains even more JSON output
+-l, --log|\<log_file\>|The log filename<br/>Default is /config/log/striptracks.txt
+-c, --config|\<config_file\>|Radarr/Sonarr XML configuration file<br/>Default is /config/config.xml
+-d, --debug|\[\<level\>\]|Enables debug logging. Level is optional.<br/>Default is 1 (low)<br/>2 includes JSON output<br/>3 contains even more JSON output
 --help| |Display help and exit.
 --version| |Display version and exit.
 
