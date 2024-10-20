@@ -18,7 +18,7 @@ Below are highly simplified installation instructions assuming defaults on a bas
     wsl sudo bash -c "apt update && apt install mkvtoolnix jq"
     ```
 
-4. Download the **[striptracks.sh](../usr/local/bin/striptracks.sh)** mod script and the required **[wsl_striptracks.cmd](https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/master/wsl/wsl_striptracks.cmd)**
+4. Download the **[striptracks.sh](../root/usr/local/bin/striptracks.sh)** mod script and the required **[wsl_striptracks.cmd](./wsl_striptracks.cmd)**
 wrapper script and save them to a new **C:\ProgramData\striptracks** directory:
 
     ```powershell
