@@ -23,7 +23,7 @@ if defined sonarr_eventtype (
 )
 
 REM Add the log path so script logs show up in Radarr/Sonarr
-set ARRLOGOPTION=--log ./logs/striptracks.txt
+set CMDLINEARGS=--log ./logs/striptracks.txt
 
 REM Test for the STRIPTRACKS_ARGS variable and add the log option
 REM but don't override if set manually
@@ -31,16 +31,16 @@ if defined STRIPTRACKS_ARGS (
   set WSLENV=STRIPTRACKS_ARGS:%WSLENV%
   REM Check for existing log option, both long and short
   echo "%STRIPTRACKS_ARGS%" | find "--log " >nul
-  if %ERRORLEVEL% == 1 (
+  if ERRORLEVEL 1 (
     echo "%STRIPTRACKS_ARGS%" | find "-l " >nul
-    if %ERRORLEVEL% == 1 (
+    if ERRORLEVEL 1 (
       REM No log option, so add it
-      set STRIPTRACKS_ARGS=%STRIPTRACKS_ARGS% %ARRLOGOPTION%
-      set ARRLOGOPTION=
+      set STRIPTRACKS_ARGS=%STRIPTRACKS_ARGS% %CMDLINEARGS%
+      set CMDLINEARGS=
     )
   )
 )
 
 REM Call striptracks script using WSL
 REM Pass command-line arguments if they exist
-wsl $STRIPTRACKS_ROOT/striptracks.sh %ARRLOGOPTION% %*
+wsl $STRIPTRACKS_ROOT/striptracks.sh %CMDLINEARGS% %*

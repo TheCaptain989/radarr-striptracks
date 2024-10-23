@@ -23,7 +23,7 @@ wrapper script and save them to a new **C:\ProgramData\striptracks** directory:
 
     ```powershell
     $BRANCH="master"
-    $MOD_VERSION="2.9.0-wsl"
+    $MOD_VERSION="2.9.1-wsl"
     New-Item -ItemType Directory "$env:ProgramData\striptracks" | Set-Location
     Invoke-WebRequest "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/$BRANCH/wsl/wsl_striptracks.cmd" -OutFile wsl_striptracks.cmd
     wsl bash -c "wget https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/$BRANCH/root/usr/local/bin/striptracks.sh && chmod +x striptracks.sh && sed -i -e 's/{{VERSION}}/$MOD_VERSION/' striptracks.sh"

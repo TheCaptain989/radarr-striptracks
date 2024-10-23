@@ -91,8 +91,6 @@ Options and Arguments:
                                    from Radarr or Sonarr!
   -l, --log <log_file>             Log filename
                                    [default: /config/log/striptracks.txt]
-  -c, --config <config_file>       Radarr/Sonarr XML config file
-                                   [default: /config/config.xml]
   -d, --debug [<level>]            Enable debug logging
                                    level is optional, between 1-3
                                    1 is lowest, 3 is highest
@@ -133,6 +131,11 @@ Examples:
 "
   echo "$usage" >&2
 }
+
+# Log command-line arguments
+if [ $# -ne 0 ]; then
+  striptracks_prelogmessagedebug="Debug|Command line arguments are '$@'"
+fi
 
 # Check for environment variable arguments
 if [ -n "$STRIPTRACKS_ARGS" ]; then
@@ -927,6 +930,12 @@ if [ $striptracks_debug -ge 1 ]; then
   striptracks_message="Debug|Enabling debug logging level ${striptracks_debug}. Starting run for: $striptracks_title"
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
+fi
+
+# Log command line parameters
+if [ -n "$striptracks_prelogmessagedebug" ]; then
+  # striptracks_prelogmessagedebug is set above, before argument processing
+  [ $striptracks_debug -ge 1 ] && echo "$striptracks_prelogmessagedebug" | log
 fi
 
 # Log STRIPTRACKS_ARGS usage
