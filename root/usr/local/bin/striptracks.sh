@@ -134,7 +134,7 @@ Examples:
 
 # Log command-line arguments
 if [ $# -ne 0 ]; then
-  striptracks_prelogmessagedebug="Debug|Command line arguments are '$@'"
+  striptracks_prelogmessagedebug="Debug|Command line arguments are '$*'"
 fi
 
 # Check for environment variable arguments
