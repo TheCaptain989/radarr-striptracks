@@ -40,9 +40,8 @@ function Check-WSL {
   wsl --status
   if ($LASTEXITCODE -eq 50) {
       Write-Error -Message "WSL does not appear to be installed.  Run 'wsl --install' first."
-      if (-not $Host.Interactive) { exit 1 } else return 0
+      if (-not $Host.Interactive) { exit 1 } else return 1
   }
-  return 1
 }
 
 function Prep-WSL {
@@ -50,12 +49,11 @@ function Prep-WSL {
   wsl -- echo "$Password" `| sudo -S bash -c "apt update && apt install mkvtoolnix jq"
   if ($LASTEXITCODE -ne 0) {
       Write-Error -Message "There was an error when attempting to install required Linux packages."
-      if (-not $Host.Interactive) { exit 1 } else return 0
+      if (-not $Host.Interactive) { exit 1 } else return 1
   }
-  return 1
 }
 
-if ((Check-WSL) -and (Prep-WSL)) {
+if ((Check-WSL) -eq 0 -and (Prep-WSL) -eq 0) {
   # Create the new directory
   New-Item -ItemType Directory $Directory | Set-Location
 
