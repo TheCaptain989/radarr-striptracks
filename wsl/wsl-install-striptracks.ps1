@@ -1,13 +1,12 @@
 <#
-.Name
-  wsl-install-striptracks.ps1
 .Synopsis
   This script installs striptracks.sh in a Windows Subsystem for Linux (WSL) environment.
 .Description
   radarr-striptracks is a Docker Mod for the Linuxserver.io Radarr/Sonarr containers.
   This installation script makes it work outside of Docker in a virtual WSL environment
   on Windows.
-  Source: https://github.com/TheCaptain989/radarr-striptracks
+.Link
+  https://github.com/TheCaptain989/radarr-striptracks
 .Example
   wsl-install-striptracks "SudoPassword"
 #>
