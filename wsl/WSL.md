@@ -12,30 +12,28 @@ Below are highly simplified installation instructions assuming defaults on a bas
     wsl --install
     ```
 
-3. Install the required Linux modules:
+3. Run the [wsl-install-striptracks.ps1](./wsl-install-striptracks.ps1)
+installation script, entering your Linux user password created in the previous step:
 
     ```powershell
-    wsl sudo bash -c "apt update && apt install mkvtoolnix jq"
+    $Password = <linux_user_password>
+    iex (iwr "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/develop/wsl/wsl-install-striptracks.ps1" -Password $Password).Content
     ```
 
-4. Download the **[striptracks.sh](../root/usr/local/bin/striptracks.sh)** mod script and the required **[wsl_striptracks.cmd](./wsl_striptracks.cmd)**
-wrapper script and save them to a new **C:\ProgramData\striptracks** directory:
+    >![notes] The password entered here is *only* used to execute sudo once to install required Linux packages.  It is not stored or saved anywhere.
 
-    ```powershell
-    $BRANCH="master"
-    $MOD_VERSION="2.9.0-wsl"
-    New-Item -ItemType Directory "$env:ProgramData\striptracks" | Set-Location
-    Invoke-WebRequest "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/$BRANCH/wsl/wsl_striptracks.cmd" -OutFile wsl_striptracks.cmd
-    wsl bash -c "wget https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/$BRANCH/root/usr/local/bin/striptracks.sh && chmod +x striptracks.sh && sed -i -e 's/{{VERSION}}/$MOD_VERSION/' striptracks.sh"
-    ```
-
-5. Continue with Installation step 3 in the previous [README](../README.md#installation).
+4. Configure a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen and type the following in the **Path** field:  
+   `C:\ProgramData\striptracks\wsl-striptracks.cmd`  
 
 ## Explanation
 WSL provides a way to run a virtual Linux machine on Windows.  The script and supporting MKVToolNix package are running in the virtual machine
-and Windows makes the magic possible to have them interoperate.
+and WSL makes the magic possible to have them interoperate.
 
 ## Requirements
-- This requires WSL v2 and has only been tested on Windows 11 23H2.
+- This requires WSL v2.
+- This has only been tested on Windows 11 23H2.
 - Only one instance each of Radarr and Sonarr are supported.
 - The Radarr/Sonarr configurations must be stored under the `%ProgramData%` directory (by default, these are C:\ProgramData\Radarr or C:\ProgramData\Sonarr).
+
+[warning]: ../.assets/warning.png "Warning"
+[notes]: ../.assets/notes.png "Note"

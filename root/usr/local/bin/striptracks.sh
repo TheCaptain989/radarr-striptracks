@@ -91,6 +91,8 @@ Options and Arguments:
                                    from Radarr or Sonarr!
   -l, --log <log_file>             Log filename
                                    [default: /config/log/striptracks.txt]
+  -c, --config <config_file>       Radarr/Sonarr XML configuration file
+                                   [default: ./config/config.xml]
   -d, --debug [<level>]            Enable debug logging
                                    level is optional, between 1-3
                                    1 is lowest, 3 is highest
