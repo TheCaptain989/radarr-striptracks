@@ -40,7 +40,7 @@ function Check-WSL {
   wsl --status
   if ($LASTEXITCODE -eq 50) {
       Write-Error -Message "WSL does not appear to be installed.  Run 'wsl --install' first."
-      if (-not $Host.Interactive) { exit 1 } else return 1
+      if (-not $Host.Interactive) { exit 1 } else { return 1 }
   }
 }
 
@@ -49,7 +49,7 @@ function Prep-WSL {
   wsl -- echo "$Password" `| sudo -S bash -c "apt update && apt install mkvtoolnix jq"
   if ($LASTEXITCODE -ne 0) {
       Write-Error -Message "There was an error when attempting to install required Linux packages."
-      if (-not $Host.Interactive) { exit 1 } else return 1
+      if (-not $Host.Interactive) { exit 1 } else { return 1 }
   }
 }
 
