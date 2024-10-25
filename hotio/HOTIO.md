@@ -24,10 +24,10 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 3. Configure your selected Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
    **[hotio/radarr](https://hotio.dev/containers/radarr/ "Radarr Docker container")**  OR  **[hotio/sonarr](https://hotio.dev/containers/sonarr/ "Sonarr Docker container")**
 
-   >![notes] Notice that no environment variables are used in this setup.  That is a specific feature of LSIO containers and is not applicable to hotio containers.  
+   >![notes] Notice that no environment variables are used in this setup.  That is a specific feature of LSIO containers and is not applicable to hotio containers.
 
    1. Add the **99-striptracks.sh** file path as a mount point in your `compose.yml` file or `docker run` command.  
-      >![notes] The `/etc/cont-init.d/99-striptracks` path below is important; don't change it!   
+      >![notes] The `/etc/cont-init.d/99-striptracks` path below is important; don't change it!
 
       *Example Docker Compose YAML Configuration*  
 
@@ -80,5 +80,4 @@ You must have the **bash** shell available in your host path.  You *might* attem
 ## Known Issues
 On at least *some* Synology hosts that use the ash shell, this script will cause the container to abort and not start.  If this happens, ***check your container logs*** for hints as to what may be wrong.
 
-[warning]: ../.assets/warning.png "Warning"
 [notes]: ../.assets/notes.png "Note"

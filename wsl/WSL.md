@@ -35,5 +35,4 @@ and WSL makes the magic possible to have them interoperate.
 - Only one instance each of Radarr and Sonarr are supported.
 - The Radarr/Sonarr configurations must be stored under the `%ProgramData%` directory (by default, these are C:\ProgramData\Radarr or C:\ProgramData\Sonarr).
 
-[warning]: ../.assets/warning.png "Warning"
 [notes]: ../.assets/notes.png "Note"
