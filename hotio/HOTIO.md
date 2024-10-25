@@ -72,7 +72,7 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 
    2. Start the container.
 
-4. After the container has fully started, continue with Installation step 2 in the main [README](../README.md#installation).
+4. After the container has fully started, continue with Installation step 2 in the main [Readme](../README.md#installation).
 
 ## Requirements
 You must have the **bash** shell available in your host path.  You *might* attempt editing the [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) in the 99-striptracks.sh script to get around this, but that is beyond the scope of this document.
