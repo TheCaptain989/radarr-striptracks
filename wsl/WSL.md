@@ -1,6 +1,5 @@
 # About
 This mod is able to run on Windows versions of Radarr and Sonarr by using the [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/).
-Limited support is available.
 
 # Installation
 Below are highly simplified installation instructions assuming defaults on a basic system.  Your specific system may require changing paths or other wrapper script alterations.
@@ -13,17 +12,18 @@ Below are highly simplified installation instructions assuming defaults on a bas
     ```
 
 3. Run the [wsl-install-striptracks.ps1](./wsl-install-striptracks.ps1)
-installation script, entering your Linux user password created in the previous step:
+installation script, entering your Linux user password when prompted:
 
     ```powershell
-    $Password = <linux_user_password>
-    iex (iwr "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/develop/wsl/wsl-install-striptracks.ps1" -Password $Password).Content
+    iex (iwr "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/master/wsl/wsl-install-striptracks.ps1").Content
     ```
 
     >![notes] The password entered here is *only* used to execute sudo once to install required Linux packages.  It is not stored or saved anywhere.
 
 4. Configure a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen and type the following in the **Path** field:  
    `C:\ProgramData\striptracks\wsl-striptracks.cmd`  
+
+   ![wsl custom script](./wsl-custom-script.png "New Custom Script")
 
 ## Explanation
 WSL provides a way to run a virtual Linux machine on Windows.  The script and supporting MKVToolNix package are running in the virtual machine

@@ -27,7 +27,7 @@ Development Container info:
       - Stable/Production release: `DOCKER_MODS=linuxserver/mods:radarr-striptracks`
       - Dev/test release: `DOCKER_MODS=thecaptain989/radarr-striptracks:latest`
 
-      *Example Docker Compose YAML Configuration*  
+      *Example Docker Compose YAML Configuration*
 
       ```yaml
       version: "2.1"
@@ -65,7 +65,7 @@ Development Container info:
          --restart unless-stopped \
          lscr.io/linuxserver/radarr
        ```  
-
+      
       *Example Synology Configuration*  
       ![striptracks](.assets/striptracks-synology.png "Synology container settings")
 
@@ -74,26 +74,37 @@ Development Container info:
 2. Configure a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen and type the following in the **Path** field:  
    `/usr/local/bin/striptracks.sh`  
 
-   *Example*  
-   ![striptracks v3](.assets/striptracks-v3-custom-script.png "Radarr/Sonarr custom script settings")
+   *Example Custom Script*  
+   ![striptracks custom script](.assets/striptracks-v3-custom-script.png "Radarr/Sonarr custom script settings")
 
    The script will detect the language(s) defined in Radarr/Sonarr for the movie or TV show and only keep the audio and subtitles selected.  
    Alternatively, a wrapper script or an environment variable may be used to more granularly define which tracks to keep.  See [Wrapper Scripts](./README.md#wrapper-scripts) or [Environment Variable](./README.md#environment-variable) for more details.
 
-   >![notes] You **must** configure language(s) in Radarr/Sonarr *or* pass command-line arguments for the script to do anything!
+   >![notes] You **must** configure language(s) in Radarr/Sonarr *or* pass command-line arguments for the script to do anything!  See the next section for an example.
 
-# Configuration Example
-The following is a simplified example and steps to configure Radarr so the script will keep Original and English languages of an imported video.
+## Radarr Configuration Example
+The following is a simplified example and steps to configure Radarr so the script will keep Original and English languages of an imported movie.
 
 1. Create a new *Custom Format* called "***My Languages***":
+
+   *New Custom Format Example*  
+   ![add custom format](.assets/add-custom-format.png "New Custom Format")
+
 2. Add two *Language Conditions* to the format, one for English, and one for Original:
-3. Edit the 'Any' Quality Profile, changing the Language to "***Any***" and the *Score* to "***1***".
 
-*Custom Format Condition Example*  
-![custom format](.assets/custom-format-condition.png "Custom Format Language setting")
+   *New Language Conditions Example*  
+   ![add language](.assets/add-language-condition.png "Add Language Condition")  
 
-*Radarr Custom Format Language Score Example*  
-![custom format score](.assets/custom-format-score.png "Custom Format Language scoring")
+   *Custom Format Conditions Example*  
+   ![custom format](.assets/custom-format-conditions.png "Multiple Language Conditions")
+
+3. Edit the 'Any' Quality Profile, changing the Language to "***Any***" and the *Score* to "***10***":
+
+   *Radarr Quality Profile Example*  
+   ![quality profile](.assets/radarr-quality-profile.png "Radarr Quality Profile Language scoring")
+
+Now, when Radarr imports a movie with the 'Any' Quality Profile, the script will keep only Original and English languages.  This is equivalent to calling the script with `--audio :org:eng --subs :org:eng` command-line arguments.
+See [Automatic Language Detection](./README.md#automatic-language-detection) for more details.
 
 # Usage Details
 The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name and the same permissions. Owner is preserved if the script is executed as root.  
@@ -108,18 +119,20 @@ If the resulting video file would contain the same tracks as the original, and i
 
 ## Automatic Language Detection
 Beginning with version 2.0 of this mod, the script may be called with no arguments.  It will detect the language(s) configured within Radarr/Sonarr on the particular movie or TV show.
-Language selection(s) may be configured in ***Custom Formats*** (in Radarr v3 and higher and Sonarr v4 and higher), ***Quality Profiles*** (only in Radarr),or ***Language Profiles*** (Sonarr v3). Example screenshots are below.
+Language selection(s) may be configured in ***Custom Formats*** (in Radarr v3 and higher and Sonarr v4 and higher), ***Quality Profiles*** (only in Radarr), or ***Language Profiles*** (Sonarr v3). Example screenshots are below.
 
 Both audio **and** subtitle tracks that match the configured language(s) are kept.
 
 The language selection **'Original'** will use the language Radarr pulled from [The Movie Database](https://www.themoviedb.org/ "TMDB") or that Sonarr pulled from [The TVDB](https://www.thetvdb.com/ "TVDB") during its last refresh.
-Selecting this language is functionally equivalent to calling the script with `--audio :org --subs :org` command-line options.  See [Original language code](./README.md#original-language-code) below for more details.
+Selecting this language is functionally equivalent to calling the script with `--audio :org --subs :org` command-line arguments.  See [Original language code](./README.md#original-language-code) below for more details.
 
-The language selection **'Unknown'** will match tracks with **no configured language** in the video file. Selecting this language is functionally equivalent to calling the script with `--audio :und --subs :und` command-line options. See [Unknown language code](./README.md#unknown-language-code) below for more details.
+The language selection **'Unknown'** will match tracks with **no configured language** in the video file. Selecting this language is functionally equivalent to calling the script with `--audio :und --subs :und` command-line arguments.
+See [Unknown language code](./README.md#unknown-language-code) below for more details.
 
 The language selection **'Any'** has two purposes (Radarr only):
    1) It will trigger a search of languages in ***Custom Formats***
-   2) If none are found, it will preserve **all languages** in the video file. This is functionally equivalent to calling the script with `--audio :any --subs :any` command-line options. See [Any language code](./README.md#any-language-code) below for more details.
+   2) If none are found, it will preserve **all languages** in the video file. This is functionally equivalent to calling the script with `--audio :any --subs :any` command-line arguments.
+   See [Any language code](./README.md#any-language-code) below for more details.
 
 >![notes] When using *Custom Format* language conditions and scoring you may not get the results you expect.
 >This can be non-intuitive configuration, especially when using negative scoring, the 'Negate' option, and the 'Except Language' option.
@@ -146,9 +159,10 @@ graph LR
 ```
 
 Descriptively, these steps are:
-1. Command-line options (or environment variable) override all automatic language selection.
-2. If there are no command-line options, the video's *Quality Profile* is examined for a language configuration (only supported in Radarr).
-3. If there is no *Quality Profile* language **or** it is set to 'Any', then examine the *Custom Formats* and scores associated with the quality profile.  All language conditions with positive scores *and* negated conditions with negative scores *and* non-negated Except Language conditions with negative scores are selected.
+1. Command-line arguments (or environment variable) override all automatic language selection.
+2. If there are no command-line arguments, the video's *Quality Profile* is examined for a language configuration (only supported in Radarr).
+3. If there is no *Quality Profile* language **or** it is set to 'Any', then examine the *Custom Formats* and scores associated with the quality profile.  
+All language conditions with positive scores *and* Negated conditions with negative scores *and* non-Negated Except Language conditions with negative scores are selected.
 4. If the *Custom Format* scores are zero (0) or there are none with configured language conditions, use the *Language Profile* (only supported in Sonarr v3)
 
 >![notes] For step 3 above, using *Custom Formats* when 'Any' is in the *Quality Profile* is consistent with the behavior described in [TRaSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/ "TraSH Guides: How to setup Language Custom Formats").
@@ -271,9 +285,9 @@ Then put `/config/striptracks-custom.sh` in the **Path** field in place of `/usr
 >![notes] If you followed the Linuxserver.io recommendations when configuring your container, the `/config` directory will be mapped to an external storage location.  It is therefore recommended to place custom scripts in the `/config` directory so they will survive container updates, but they may be placed anywhere that is accessible by Radarr or Sonarr.
 
 ## Environment Variable
-The `striptracks.sh` script can read command-line arguments in the `STRIPTRACKS_ARGS` environment variable. This allows advanced use cases without having to provide a custom script.
+The `striptracks.sh` script can read command-line arguments from the `STRIPTRACKS_ARGS` environment variable. This allows advanced use cases without having to provide a custom script.
 
-For example, the following lines in your `compose.yml` file would Keep English, Japanese, and Unknown audio and English subtitles:
+For example, the following lines in your `compose.yml` file would keep English, Japanese, and Unknown audio and English subtitles:
 
 ```yaml
 environment:
@@ -287,7 +301,7 @@ In a `docker run` command, it would be:
 ```
 
 *Example Synology Configuration*  
-![striptracks](.assets/striptracks-synology-2.png "Synology container settings")
+![synology striptracks_args](.assets/striptracks-synology-2.png "Synology container settings")
 
 >![notes] The environment variable is *only* read when **no** command-line arguments are present. **Any** command-line argument will disable the use of the environment variable.
 
@@ -318,7 +332,7 @@ find /movies/ -type f \( -name "*.mkv" -o -name "*.avi" -o -name "*.mp4" \) | wh
 Here's another example to keep English, Danish, and Unknown languages on all video files in your `./videos` directory (requires the `file` program; testable with `file -v`):
 
 ```shell
-find videos/ -type f | while read file; do if file -i "$file" | grep -q video; then /usr/local/bin/striptracks.sh -f "$file" --audio :eng:dan:und --subs :eng:dan:und; fi; done
+find ./videos/ -type f | while read filename; do if file -i "$filename" | grep -q video; then /usr/local/bin/striptracks.sh -f "$filename" --audio :eng:dan:und --subs :eng:dan:und; fi; done
 ```
 
 ## Logs

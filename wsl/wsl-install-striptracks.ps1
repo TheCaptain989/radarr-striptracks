@@ -18,8 +18,7 @@
 param (
     # WSL user password (for sudo command)
     # This is not stored and only used to pass to sudo for required package installations
-    [Parameter(Mandatory = $true, ValueFromPipeline = $true, ValueFromPipelineByPropertyName)]
-    [string]$Password,
+    [securestring]$Password,
 
     # Directory to install striptracks to
     [string]$Directory = "$env:ProgramData\striptracks",
@@ -34,8 +33,9 @@ param (
 
 # Initial parameters
 $ModVersion="2.9.0-wsl"   # Working on a better way to set this
+$CmdFiles = @("wsl-striptracks.cmd", "wsl-striptracks-debug.cmd")   # List of WSL wrapper script(s)
 
-function Check-WSL {
+function Test-WSL {
   # Check that wsl is installed
   wsl --status
   if ($LASTEXITCODE -eq 50) {
@@ -44,7 +44,12 @@ function Check-WSL {
   }
 }
 
-function Prep-WSL {
+function Install-LinuxPackages {
+  # Prompt for password if needed
+  while (-not $Password) {
+    $Password = Read-Host -AsSecureString "Enter your WSL user password (used for sudo)"
+  }
+
   # Install the required Linux packages
   wsl -- echo "$Password" `| sudo -S bash -c "apt update && apt install mkvtoolnix jq"
   if ($LASTEXITCODE -ne 0) {
@@ -53,17 +58,14 @@ function Prep-WSL {
   }
 }
 
-if ((Check-WSL) -eq 0 -and (Prep-WSL) -eq 0) {
+if ((Test-WSL) -eq 0 -and (Install-LinuxPackages) -eq 0) {
   # Create the new directory
   New-Item -ItemType Directory $Directory | Set-Location
 
-  # Get the list of WSL wrapper script(s)
-  $CmdFiles = Invoke-WebRequest -Uri "$Webroot/wsl/" -Method Head | Select-Object -ExpandProperty Links | Where-Object { $_.Href -like "wsl-striptracks*.cmd" }
-
   # Download each file
-  foreach ($file in $CmdFiles) {
-      $Url = "$Webroot/wsl/" + $file.Href
-      Invoke-WebRequest -Uri $Url -OutFile $file.Href
+  foreach ($File in $CmdFiles) {
+      $Url = "$Webroot/wsl/" + $File
+      Invoke-WebRequest -Uri $Url -OutFile $File
   }
 
   # Download the striptracks.sh script and make it executable
