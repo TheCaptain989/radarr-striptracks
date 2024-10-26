@@ -15,7 +15,9 @@ Below are highly simplified installation instructions assuming defaults on a bas
 installation script, entering your Linux user password when prompted:
 
     ```powershell
+    # Change this as needed
     $Branch="master"
+        
     iex (iwr "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/$Branch/wsl/wsl-install-striptracks.ps1").Content
     ```
 
