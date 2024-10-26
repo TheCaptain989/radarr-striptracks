@@ -15,7 +15,8 @@ Below are highly simplified installation instructions assuming defaults on a bas
 installation script, entering your Linux user password when prompted:
 
     ```powershell
-    iex (iwr "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/master/wsl/wsl-install-striptracks.ps1").Content
+    $Branch="master"
+    iex (iwr "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/$Branch/wsl/wsl-install-striptracks.ps1").Content
     ```
 
     >![notes] The password entered here is *only* used to execute sudo once to install required Linux packages.  It is not stored or saved anywhere.
@@ -31,7 +32,7 @@ installation script, entering your Linux user password when prompted:
     -Directory|\<path>|Directory to install striptracks to<br/>Default: `C:\ProgramData\striptracks`
     -Branch|\<string>|GitHub branch of source code to download<br/>Default: `master`
     -Webroot|\<url>|GitHub download URL for striptracks<br/>Default: `https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/master`
-    
+
     </details>
 
 4. Configure a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen and type the following in the **Path** field:  
