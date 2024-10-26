@@ -40,7 +40,7 @@ $CmdFiles = @("wsl-striptracks.cmd", "wsl-striptracks-debug.cmd")   # List of WS
 
 # Functions
 function Test-WSL {
-  # Check that wsl is installed
+  # Check that WSL is installed
   $local:WSLStatus = wsl --status
   if ($LASTEXITCODE -ne 0) {
     switch ($LASTEXITCODE) {
@@ -64,11 +64,14 @@ function Install-LinuxPackages {
   return $LASTEXITCODE
 }
 
+# Save working directory
 $OrgDirectory = $pwd
 
+# Check that WSL is installed
 Write-Output "Checking WSL status..."
 if ((Test-WSL) -ne 0) { return }
 
+# Install the required Linux packages
 Write-Output "Installing required Linux packages..."
 if ((Install-LinuxPackages) -ne 0) { return }
 
@@ -85,7 +88,9 @@ try {
     foreach ($File in $CmdFiles) {
         $Url = "$Webroot/wsl/" + $File
         Invoke-WebRequest -Uri $Url -OutFile $File
-    }
+        # Edit working directory in script(s)
+        (Get-Content -Path $File) -replace "set STRIPTRACKS_ROOT=%ProgramData%\striptracks", "set STRIPTRACKS_ROOT=$Directory" | Set-Content -Path $File
+      }
 } catch {
     Write-Error -Message "Unable to download wrapper scripts from $Webroot/wsl/" -Category ConnectionError
     return

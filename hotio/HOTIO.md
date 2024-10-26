@@ -49,7 +49,8 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
             - /volume1/docker/99-striptracks.sh:/etc/cont-init.d/99-striptracks
       ```  
 
-      *Example Docker Run Command*
+      <details>
+      <summary>Example Docker Run Command</summary>
 
        ```shell
        docker run --rm \
@@ -65,19 +66,26 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
             ghcr.io/hotio/sonarr
        ```  
 
+      </details>
+      <details>
+      <summary>Synology Screenshot</summary>
+
       *Example Synology Configuration*  
       ![striptracks hotio](../.assets/hotio-striptracks-synology.png "Synology container settings")
 
       >![notes] Please be sure that your mount points for `/config` and `/data` above do not overlap with the newly added mount point!
 
+      </details>
+
+
    2. Start the container.
 
 4. After the container has fully started, continue with Installation step 2 in the main [Readme](../README.md#installation).
 
-## Requirements
+# Requirements
 You must have the **bash** shell available in your host path.  You *might* attempt editing the [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) in the 99-striptracks.sh script to get around this, but that is beyond the scope of this document.
 
-## Known Issues
+# Known Issues
 On at least *some* Synology hosts that use the ash shell, this script will cause the container to abort and not start.  If this happens, ***check your container logs*** for hints as to what may be wrong.
 
 [notes]: ../.assets/notes.png "Note"
