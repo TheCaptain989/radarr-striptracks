@@ -51,7 +51,7 @@ installation script, entering your Linux user password when prompted:
    <summary>Screenshot</summary>
 
    *New Custom Script Example*
-   ![wsl custom script](./wsl-custom-script.png "New Custom Script")
+   ![wsl custom script](wsl-custom-script.png "New Custom Script")
 
    <detials>
 
