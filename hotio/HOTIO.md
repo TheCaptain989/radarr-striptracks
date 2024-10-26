@@ -77,7 +77,6 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 
       </details>
 
-
    2. Start the container.
 
 4. After the container has fully started, continue with Installation step 2 in the main [Readme](../README.md#installation).

@@ -87,7 +87,7 @@ Write-Output "Downloading wrapper scripts $($CmdFiles -join ", ")"
 try {
     foreach ($File in $CmdFiles) {
         $Url = "$Webroot/wsl/" + $File
-        (Invoke-WebRequest -Uri $Url).Content -replace "^set STRIPTRACKS_ROOT=%ProgramData%\\striptracks$", "set STRIPTRACKS_ROOT=$Directory" | Set-Content -Path $File
+        (Invoke-WebRequest -Uri $Url).Content -replace "set STRIPTRACKS_ROOT=%ProgramData%\\striptracks", "set STRIPTRACKS_ROOT=$Directory" | Set-Content -Path $File
       }
 } catch {
     Write-Error -Message "Unable to download wrapper scripts from $Webroot/wsl/" -Category ConnectionError
