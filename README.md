@@ -49,7 +49,8 @@ Development Container info:
           restart: unless-stopped
       ```  
 
-      *Example Docker Run Command*
+      <details>
+      <summary>Example Docker Run Command</summary>
 
        ```shell
        docker run -d \
@@ -66,16 +67,27 @@ Development Container info:
          lscr.io/linuxserver/radarr
        ```  
 
-      *Example Synology Configuration*  
+      </details>
+      <details>
+      <summary>Synology Screenshot</summary>
+
+      *Example Synology Configuration*
       ![striptracks](.assets/striptracks-synology.png "Synology container settings")
+
+      </details>
 
    2. Start the container.
 
 2. Configure a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen and type the following in the **Path** field:  
    `/usr/local/bin/striptracks.sh`  
 
-   *Example Custom Script*  
+   <details>
+   <summary>Screenshot</summary>
+
+   *Example Custom Script*
    ![striptracks custom script](.assets/striptracks-v3-custom-script.png "Radarr/Sonarr custom script settings")
+
+   </details>
 
    The script will detect the language(s) defined in Radarr/Sonarr for the movie or TV show and only keep the audio and subtitles selected.  
    Alternatively, a wrapper script or an environment variable may be used to more granularly define which tracks to keep.  See [Wrapper Scripts](./README.md#wrapper-scripts) or [Environment Variable](./README.md#environment-variable) for more details.
@@ -87,10 +99,18 @@ The following is a simplified example and steps to configure Radarr so the scrip
 
 1. Create a new *Custom Format* called "***My Languages***":
 
-   *New Custom Format Example*  
+   <details>
+   <summary>Screenshot</summary>
+
+   *New Custom Format Example*
    ![add custom format](.assets/add-custom-format.png "New Custom Format")
 
+   </details>
+
 2. Add two *Language Conditions* to the format, one for English, and one for Original:
+
+   <details>
+   <summary>Screenshots</summary>
 
    *New Language Conditions Example*  
    ![add language](.assets/add-language-condition.png "Add Language Condition")  
@@ -98,10 +118,17 @@ The following is a simplified example and steps to configure Radarr so the scrip
    *Custom Format Conditions Example*  
    ![custom format](.assets/custom-format-conditions.png "Multiple Language Conditions")
 
+  </details>
+
 3. Edit the 'Any' Quality Profile, changing the Language to "***Any***" and the *Score* to "***10***":
 
-   *Radarr Quality Profile Example*  
+   <details>
+   <summary>Screenshot</summary>
+
+   *Radarr Quality Profile Example*
    ![quality profile](.assets/radarr-quality-profile.png "Radarr Quality Profile Language scoring")
+
+   </details>
 
 Now, when Radarr imports a movie with the 'Any' Quality Profile, the script will keep only Original and English languages.  This is equivalent to calling the script with `--audio :org:eng --subs :org:eng` command-line arguments.
 See [Automatic Language Detection](./README.md#automatic-language-detection) for more details.
@@ -175,7 +202,8 @@ The script also supports command-line arguments that will override the automatic
 The syntax for the command-line is:  
 `striptracks.sh [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [{-l,--log} <log_file>] [{-c,--config} <config_file>] [{-d|--debug} [<level>]]`  
 
-Where:
+<details>
+<summary>Table of Command-Line Arguments</summary>
 
 Option|Argument|Description
 ---|---|---
@@ -187,6 +215,8 @@ Option|Argument|Description
 -d, --debug|\[\<level\>\]|Enables debug logging. Level is optional.<br/>Default is 1 (low)<br/>2 includes JSON output<br/>3 contains even more JSON output
 --help| |Display help and exit.
 --version| |Display version and exit.
+
+</details>
 
 The `<audio_languages>` and `<subtitle_languages>` are optional arguments that are colon (`:`) prepended language codes in [ISO 639-2](https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes "List of ISO 639-2 codes") format.  
 For example:
@@ -225,6 +255,9 @@ There is no way to force the script to remove audio tracks with these codes.
 
 ## Examples
 
+<details>
+<summary>Command-line Examples</summary>
+
 ```shell
 -d 2                              # Enable debugging level 2, audio and subtitles
                                   # languages detected from Radarr/Sonarr
@@ -240,12 +273,17 @@ There is no way to force the script to remove audio tracks with these codes.
 -a :any -s ""                     # Keep all audio and remove all subtitles
 ```
 
+</details>
+
 ## Wrapper Scripts
 To supply arguments to the script, you must either use one of the included wrapper scripts, create a custom wrapper script, or set the `STRIPTRACKS_ARGS` [environment variable](./README.md#environment-variable).
 
 ### Included Wrapper Scripts
 For your convenience, several wrapper scripts are included in the `/usr/local/bin/` directory.  
 You may use any of these in place of `striptracks.sh` mentioned in the [Installation](./README.md#installation) section above.
+
+<details>
+<summary>List of scripts</summary>
 
 ```shell
 striptracks-debug.sh       # Use detected languages, but enable debug logging
@@ -264,6 +302,8 @@ striptracks-org-eng.sh     # Keep Original, English, and Unknown audio, and Orig
 striptracks-org-ger.sh     # Keep Original, German, and Unknown audio, and Original and German subtitles
 striptracks-org-spa.sh     # Keep Original, Spanish, and Unknown audio, and Original and Spanish subtitles
 ```
+
+</details>
 
 ### Example Wrapper Script
 To configure an entry from the [Examples](./README.md#examples) section above, create and save a file called `striptracks-custom.sh` to `/config` containing the following text:
@@ -300,8 +340,13 @@ In a `docker run` command, it would be:
 -e STRIPTRACKS_ARGS='--audio :eng:jpn:und --subs :eng'
 ```
 
+<details>
+<summary>Synology Screenshot</summary>
+
 *Example Synology Configuration*  
 ![synology striptracks_args](.assets/striptracks-synology-2.png "Synology container settings")
+
+</details>
 
 >![notes] The environment variable is *only* read when **no** command-line arguments are present. **Any** command-line argument will disable the use of the environment variable.
 

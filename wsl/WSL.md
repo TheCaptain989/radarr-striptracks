@@ -15,10 +15,7 @@ Below are highly simplified installation instructions assuming defaults on a bas
 installation script, entering your Linux user password when prompted:
 
     ```powershell
-    # Change this as needed
-    $Branch="master"
-        
-    iex (iwr "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/$Branch/wsl/wsl-install-striptracks.ps1").Content
+    iex (iwr "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/master/wsl/wsl-install-striptracks.ps1").Content
     ```
 
     >![notes] The password entered here is *only* used to execute sudo once to install required Linux packages.  It is not stored or saved anywhere.
@@ -40,7 +37,13 @@ installation script, entering your Linux user password when prompted:
 4. Configure a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen and type the following in the **Path** field:  
    `C:\ProgramData\striptracks\wsl-striptracks.cmd`  
 
+   <details>
+   <summary>Screenshot</summary>
+
+   *New Custom Script Example*
    ![wsl custom script](./wsl-custom-script.png "New Custom Script")
+
+   <detials>
 
 ## Explanation
 WSL provides a way to run a virtual Linux machine on Windows.  The script and supporting MKVToolNix package are running in the virtual machine
