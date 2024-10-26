@@ -65,7 +65,7 @@ Development Container info:
          --restart unless-stopped \
          lscr.io/linuxserver/radarr
        ```  
-      
+
       *Example Synology Configuration*  
       ![striptracks](.assets/striptracks-synology.png "Synology container settings")
 

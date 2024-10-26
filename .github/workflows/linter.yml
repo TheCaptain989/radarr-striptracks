@@ -37,10 +37,3 @@ jobs:
           SUPPRESS_POSSUM: false          
           VALIDATE_ALL_CODEBASE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Upload test results
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: Super-Linter results
-          path: super-linter.log
