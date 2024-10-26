@@ -21,7 +21,6 @@ param (
     # WSL user password (for sudo command)
     # This is not stored and only used to pass to sudo for required package installations
     [Parameter(Mandatory = $true, HelpMessage = "Enter your WSL user password (this will not be stored)")]
-    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '', Justification='Linter erroneously says this is not used')]
     [securestring]$Password = (Read-Host -AsSecureString "Enter your WSL user password (this will not be stored)"),
 
     # Directory to install striptracks to

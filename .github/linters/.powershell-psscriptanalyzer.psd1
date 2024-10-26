@@ -8,7 +8,8 @@
     #)
     IncludeDefaultRules=${true}
     ExcludeRules = @(
-        'PSUseSingularNouns'
+        'PSUseSingularNouns',
+        'PSReviewUnusedParameter'
     )
     #IncludeRules = @(
     #    'PSAvoidUsingWriteHost',
