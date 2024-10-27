@@ -6,6 +6,7 @@
 .vscode
 .assets
 hotio
+wsl
 READMETEMPLATE.md
 README.md
 SECURITY.md
