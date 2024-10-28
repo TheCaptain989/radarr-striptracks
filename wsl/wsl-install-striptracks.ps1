@@ -27,6 +27,7 @@ param (
     [string]$Directory = "$env:ProgramData\striptracks",
 
     # GitHub branch of source code to download
+    # TODO: Change $Branch to $Release
     [string]$Branch = "master",
 
     # GitHub download URL for striptracks
@@ -38,6 +39,8 @@ param (
 $ModVersion = ((Invoke-WebRequest -Headers @{"Accept"="application/vnd.github+json"; "X-GitHub-Api-Version"="2022-11-28"} "https://api.github.com/repos/thecaptain989/radarr-striptracks/releases/latest").Content | ConvertFrom-Json).tag_name
 $CmdFiles = @("wsl-striptracks.cmd", "wsl-striptracks-debug.cmd")   # List of WSL wrapper script(s)
 
+# TODO: Use this instead of $CmdFiles
+#
 #Add-Type -AssemblyName System.IO.Compression.FileSystem
 #
 #$zipPath = "C:\path\to\your\archive.zip"
@@ -52,9 +55,7 @@ $CmdFiles = @("wsl-striptracks.cmd", "wsl-striptracks-debug.cmd")   # List of WS
 #$entry.ExtractToFile("$extractPath\$($entry.Name)", $true)
 #
 ## Close the ZIP archive
-#$zip
-
-# Get latest release version
+#$zip.Dispose()
 
 # Functions
 function Test-WSL {
@@ -104,7 +105,7 @@ Set-Location $Directory
 Write-Output "Downloading wrapper scripts $($CmdFiles -join ", ")"
 try {
     foreach ($File in $CmdFiles) {
-        $Url = "$https://avatars.githubusercontent.com/u/11523885?v=4/wsl/" + $File
+        $Url = "$Webroot/wsl/" + $File
         (Invoke-WebRequest -Uri $Url).Content -replace "set STRIPTRACKS_ROOT=%ProgramData%\\striptracks", "set STRIPTRACKS_ROOT=$Directory" | Set-Content -Path $File
       }
 } catch {
