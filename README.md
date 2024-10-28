@@ -17,7 +17,7 @@ Production Container info: [![Docker Image Size](https://img.shields.io/docker/i
 Development Container info:
 [![Docker Image Size](https://img.shields.io/docker/image-size/thecaptain989/radarr-striptracks)](https://hub.docker.com/r/thecaptain989/radarr-striptracks "Docker image size")
 [![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/radarr-striptracks?logo=docker)](https://hub.docker.com/r/thecaptain989/radarr-striptracks "Docker container pulls")
-[![GitHub Super-Linter](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/linter.yml/badge.svg)](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/linter.yml "Linter job")  
+[![Build Image](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/BuildImage.yml/badge.svg)](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/BuildImage.yml "BuildImage job")  
 <!-- markdownlint-restore -->  
 
 # Installation

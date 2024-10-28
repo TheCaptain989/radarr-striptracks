@@ -8,9 +8,9 @@
 .Link
   https://github.com/TheCaptain989/radarr-striptracks
 .Example
-  wsl-install-striptracks -Branch "develop"
+  wsl-install-striptracks -Release "v2.9.0"
 
-  This changes the default branch.
+  This changes the default release.
 #>
 
 #requires -Version 3
@@ -26,18 +26,17 @@ param (
     # Directory to install striptracks to
     [string]$Directory = "$env:ProgramData\striptracks",
 
-    # GitHub repository
-    [string]$Owner = "TheCaptain989"
+    # GitHub repository owner
+    [string]$Owner = "TheCaptain989",
 
-    # GitHub repository
-    [string]$Repository = "radarr-striptracks"
+    # GitHub repository name
+    [string]$Repository = "radarr-striptracks",
 
     # GitHub respository release tag
-    [string]$Release = "latest"
+    [string]$Release = "latest",
 
     # GitHub API root URL
-    $GhApiRoot = "https://api.github.com"
-    #[string]$Webroot = "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/$Branch"
+    [string]$GhApiRoot = "https://api.github.com"
 )
 #endregion
 
@@ -90,23 +89,25 @@ if (-not (Test-Path $Directory)) {
 Set-Location $Directory
 
 # Query GitHub for release version
+Write-Output "Getting striptracks release info..."
 $ApiResponse = (Invoke-WebRequest -Headers $GhApiHeaders -Uri "$GhApiRoot/repos/$Owner/$Repository/releases/$Release").Content | ConvertFrom-Json
 $ModVersion = $ApiResponse.tag_name
 
 # Download striptracks ZIP archive
 Write-Output "Downloading striptracks ZIP archive..."
-Invoke-WebRequest -Headers $Headers -Uri $ApiResponse.zipball_url -OutFile $ZipFile
+Invoke-WebRequest -Headers $GhApiHeaders -Uri $ApiResponse.zipball_url -OutFile $ZipFile
 
 # Unzip files
-Write-Output "Exctracting files from ZIP archive..."
+Write-Output "Extracting files from ZIP archive..."
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $ZipObj = [System.IO.Compression.ZipFile]::OpenRead($ZipFile)
 $ZipEntries = $ZipObj.Entries | Where-Object { $_.FullName -like "*/wsl/wsl-*.cmd" -or $_.Name -eq "striptracks.sh" }
 foreach ($Entry in $ZipEntries) {
   [IO.Compression.ZipFileExtensions]::ExtractToFile($Entry, $Entry.Name, $true)
+  # Some file specific edits are required
   switch ($Entry.Name) {
     "wsl-striptracks.cmd" {
-      (Get-Content -Path $Entry.Name) -replace "set STRIPTRACKS_ROOT=%ProgramData%\\striptracks", "set STRIPTRACKS_ROOT=$Directory" | Set-Content -Path $Entry.Name 
+      (Get-Content -Path $Entry.Name) -replace "set STRIPTRACKS_ROOT=%ProgramData%\\striptracks", "set STRIPTRACKS_ROOT=$Directory" | Set-Content -Path $Entry.Name
     }
     "striptracks.sh" {
       Set-Content $Entry.Name -NoNewline -Value (((Get-Content -Path $Entry.Name) -replace "{{VERSION}}", $ModVersion -join "`n") + "`n")
@@ -115,11 +116,12 @@ foreach ($Entry in $ZipEntries) {
 }
 
 # Close and remove the ZIP archive
+Write-Output "Deleting ZIP archive"
 $ZipObj.Dispose()
 Remove-Item $ZipFile
 
 # Make the striptracks.sh script executable
-Write-Output "Downloading striptracks.sh"
+Write-Output "Making striptracks.sh executable"
 wsl chmod +x striptracks.sh
 
 # Exit
