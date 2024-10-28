@@ -26,36 +26,24 @@ param (
     # Directory to install striptracks to
     [string]$Directory = "$env:ProgramData\striptracks",
 
-    # GitHub branch of source code to download
-    # TODO: Change $Branch to $Release
-    [string]$Branch = "master",
+    # GitHub repository
+    [string]$Owner = "TheCaptain989"
 
-    # GitHub download URL for striptracks
-    [string]$Webroot = "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/$Branch"
+    # GitHub repository
+    [string]$Repository = "radarr-striptracks"
+
+    # GitHub respository release tag
+    [string]$Release = "latest"
+
+    # GitHub API root URL
+    $GhApiRoot = "https://api.github.com"
+    #[string]$Webroot = "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/$Branch"
 )
 #endregion
 
-# Initial parameters
-$ModVersion = ((Invoke-WebRequest -Headers @{"Accept"="application/vnd.github+json"; "X-GitHub-Api-Version"="2022-11-28"} "https://api.github.com/repos/thecaptain989/radarr-striptracks/releases/latest").Content | ConvertFrom-Json).tag_name
-$CmdFiles = @("wsl-striptracks.cmd", "wsl-striptracks-debug.cmd")   # List of WSL wrapper script(s)
-
-# TODO: Use this instead of $CmdFiles
-#
-#Add-Type -AssemblyName System.IO.Compression.FileSystem
-#
-#$zipPath = "C:\path\to\your\archive.zip"
-#$fileToExtract = "fileToExtract.txt"
-#$extractPath = "C:\path\to\destination\folder"
-#
-## Open the ZIP archive
-#$zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
-#
-## Find the file in the archive and extract it
-#$entry = $zip.Entries | Where-Object { $_.FullName -eq $fileToExtract }
-#$entry.ExtractToFile("$extractPath\$($entry.Name)", $true)
-#
-## Close the ZIP archive
-#$zip.Dispose()
+# Uneditable initial parameters
+$GhApiHeaders = @{"Accept"="application/vnd.github+json"; "X-GitHub-Api-Version"="2022-11-28"}
+$ZipFile = "striptracks-$Release.zip"
 
 # Functions
 function Test-WSL {
@@ -94,32 +82,46 @@ if ((Test-WSL) -ne 0) { return }
 Write-Output "Installing required Linux packages..."
 if ((Install-LinuxPackages) -ne 0) { return }
 
-# Create the new directory if it doesn't already exist
+# Create the new directory if it doesn't already exist and change to it
 if (-not (Test-Path $Directory)) {
     Write-Output "Creating $Directory"
     New-Item -ItemType Directory $Directory | Out-Null
 }
 Set-Location $Directory
 
-# Download WSL wrapper scripts
-Write-Output "Downloading wrapper scripts $($CmdFiles -join ", ")"
-try {
-    foreach ($File in $CmdFiles) {
-        $Url = "$Webroot/wsl/" + $File
-        (Invoke-WebRequest -Uri $Url).Content -replace "set STRIPTRACKS_ROOT=%ProgramData%\\striptracks", "set STRIPTRACKS_ROOT=$Directory" | Set-Content -Path $File
-      }
-} catch {
-    Write-Error -Message "Unable to download wrapper scripts from $Webroot/wsl/" -Category ConnectionError
-    return
+# Query GitHub for release version
+$ApiResponse = (Invoke-WebRequest -Headers $GhApiHeaders -Uri "$GhApiRoot/repos/$Owner/$Repository/releases/$Release").Content | ConvertFrom-Json
+$ModVersion = $ApiResponse.tag_name
+
+# Download striptracks ZIP archive
+Write-Output "Downloading striptracks ZIP archive..."
+Invoke-WebRequest -Headers $Headers -Uri $ApiResponse.zipball_url -OutFile $ZipFile
+
+# Unzip files
+Write-Output "Exctracting files from ZIP archive..."
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$ZipObj = [System.IO.Compression.ZipFile]::OpenRead($ZipFile)
+$ZipEntries = $ZipObj.Entries | Where-Object { $_.FullName -like "*/wsl/wsl-*.cmd" -or $_.Name -eq "striptracks.sh" }
+foreach ($Entry in $ZipEntries) {
+  [IO.Compression.ZipFileExtensions]::ExtractToFile($Entry, $Entry.Name, $true)
+  switch ($Entry.Name) {
+    "wsl-striptracks.cmd" {
+      (Get-Content -Path $Entry.Name) -replace "set STRIPTRACKS_ROOT=%ProgramData%\\striptracks", "set STRIPTRACKS_ROOT=$Directory" | Set-Content -Path $Entry.Name 
+    }
+    "striptracks.sh" {
+      Set-Content $Entry.Name -NoNewline -Value (((Get-Content -Path $Entry.Name) -replace "{{VERSION}}", $ModVersion -join "`n") + "`n")
+    }
+  }
 }
 
-# Download the striptracks.sh script and make it executable
+# Close and remove the ZIP archive
+$ZipObj.Dispose()
+Remove-Item $ZipFile
+
+# Make the striptracks.sh script executable
 Write-Output "Downloading striptracks.sh"
-wsl bash -c "wget -qO striptracks.sh $Webroot/root/usr/local/bin/striptracks.sh && chmod +x striptracks.sh && sed -i -e 's/{{VERSION}}/$ModVersion/' striptracks.sh"
-if ($LASTEXITCODE -ne 0) {
-    Write-Error -Message "Unable to download and configure striptracks.sh from $Webroot/root/usr/local/bin" -Category ConnectionError
-    return
-}
+wsl chmod +x striptracks.sh
 
+# Exit
 Set-Location -Path $OrgDirectory.Path
 Write-Output "striptracks has been installed to $Directory"
