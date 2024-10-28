@@ -95,12 +95,12 @@ $ModVersion = $ApiResponse.tag_name
 
 # Download striptracks ZIP archive
 Write-Output "Downloading striptracks ZIP archive..."
-Invoke-WebRequest -Headers $GhApiHeaders -Uri $ApiResponse.zipball_url -OutFile $ZipFile
+Invoke-WebRequest -Headers $GhApiHeaders -Uri $ApiResponse.zipball_url -OutFile "$Directory\$ZipFile"
 
 # Unzip files
 Write-Output "Extracting files from ZIP archive..."
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-$ZipObj = [System.IO.Compression.ZipFile]::OpenRead($ZipFile)
+$ZipObj = [System.IO.Compression.ZipFile]::OpenRead("$Directory\$ZipFile")
 $ZipEntries = $ZipObj.Entries | Where-Object { $_.FullName -like "*/wsl/wsl-*.cmd" -or $_.Name -eq "striptracks.sh" }
 foreach ($Entry in $ZipEntries) {
   [IO.Compression.ZipFileExtensions]::ExtractToFile($Entry, $Entry.Name, $true)
@@ -118,7 +118,7 @@ foreach ($Entry in $ZipEntries) {
 # Close and remove the ZIP archive
 Write-Output "Deleting ZIP archive"
 $ZipObj.Dispose()
-Remove-Item $ZipFile
+Remove-Item -Path "$Directory\$ZipFile"
 
 # Make the striptracks.sh script executable
 Write-Output "Making striptracks.sh executable"
