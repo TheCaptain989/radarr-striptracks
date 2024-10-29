@@ -42,7 +42,7 @@ param (
 
 # Uneditable initial parameters
 $GhApiHeaders = @{"Accept"="application/vnd.github+json"; "X-GitHub-Api-Version"="2022-11-28"}
-$ZipFile = "striptracks-$Release.zip"
+$ZipFile = "$Directory\striptracks-$Release.zip"
 
 # Functions
 function Test-WSL {
@@ -86,7 +86,7 @@ if (-not (Test-Path $Directory)) {
     Write-Output "Creating $Directory"
     New-Item -ItemType Directory $Directory | Out-Null
 }
-Set-Location $Directory
+Set-Location -Path $Directory
 
 # Query GitHub for release version
 Write-Output "Getting striptracks release info..."
@@ -95,22 +95,22 @@ $ModVersion = $ApiResponse.tag_name
 
 # Download striptracks ZIP archive
 Write-Output "Downloading striptracks ZIP archive..."
-Invoke-WebRequest -Headers $GhApiHeaders -Uri $ApiResponse.zipball_url -OutFile "$Directory\$ZipFile"
+Invoke-WebRequest -Headers $GhApiHeaders -Uri $ApiResponse.zipball_url -OutFile $ZipFile
 
 # Unzip files
 Write-Output "Extracting files from ZIP archive..."
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-$ZipObj = [System.IO.Compression.ZipFile]::OpenRead("$Directory\$ZipFile")
+$ZipObj = [System.IO.Compression.ZipFile]::OpenRead($ZipFile)
 $ZipEntries = $ZipObj.Entries | Where-Object { $_.FullName -like "*/wsl/wsl-*.cmd" -or $_.Name -eq "striptracks.sh" }
 foreach ($Entry in $ZipEntries) {
-  [IO.Compression.ZipFileExtensions]::ExtractToFile($Entry, $Entry.Name, $true)
+  [IO.Compression.ZipFileExtensions]::ExtractToFile($Entry, "$Directory\$($Entry.Name)", $true)
   # Some file specific edits are required
   switch ($Entry.Name) {
     "wsl-striptracks.cmd" {
-      (Get-Content -Path $Entry.Name) -replace "set STRIPTRACKS_ROOT=%ProgramData%\\striptracks", "set STRIPTRACKS_ROOT=$Directory" | Set-Content -Path $Entry.Name
+      (Get-Content -Path "$Directory\$($Entry.Name)") -replace "set STRIPTRACKS_ROOT=%ProgramData%\\striptracks", "set STRIPTRACKS_ROOT=$Directory" | Set-Content -Path "$Directory\$($Entry.Name)"
     }
     "striptracks.sh" {
-      Set-Content $Entry.Name -NoNewline -Value (((Get-Content -Path $Entry.Name) -replace "{{VERSION}}", $ModVersion -join "`n") + "`n")
+      Set-Content -Path "$Directory\$($Entry.Name)" -NoNewline -Value (((Get-Content -Path "$Directory\$($Entry.Name)") -replace "{{VERSION}}", $ModVersion -join "`n") + "`n")
     }
   }
 }
@@ -118,7 +118,7 @@ foreach ($Entry in $ZipEntries) {
 # Close and remove the ZIP archive
 Write-Output "Deleting ZIP archive"
 $ZipObj.Dispose()
-Remove-Item -Path "$Directory\$ZipFile"
+Remove-Item -Path $ZipFile
 
 # Make the striptracks.sh script executable
 Write-Output "Making striptracks.sh executable"
