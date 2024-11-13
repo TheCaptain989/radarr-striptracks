@@ -146,7 +146,7 @@ If the resulting video file would contain the same tracks as the original, and i
 
 ## Automatic Language Detection
 Beginning with version 2.0 of this mod, the script may be called with no arguments.  It will detect the language(s) configured within Radarr/Sonarr on the particular movie or TV show.
-Language selection(s) may be configured in ***Custom Formats*** (in Radarr v3 and higher and Sonarr v4 and higher), ***Quality Profiles*** (only in Radarr), or ***Language Profiles*** (Sonarr v3). Example screenshots are below.
+Language selection(s) may be configured in ***Custom Formats*** (in Radarr v3 and higher and Sonarr v4 and higher), ***Quality Profiles*** (only in Radarr), or ***Language Profiles*** (Sonarr v3).
 
 Both audio **and** subtitle tracks that match the configured language(s) are kept.
 
@@ -174,23 +174,27 @@ The following chart represents the order of precedence that the script uses to d
 ```mermaid
 graph LR
   A[Command-Line]
-  B["Quality
+  B["Environment
+  Variable"]
+  C["Quality
   Profile"] 
-  C["Custom
+  D["Custom
   Formats"]
-  D["Language Profile
+  E["Language Profile
   (Sonarr only)"]
   A-->B
-  B-- 'Any' -->C
-  C-->D
+  B-->C
+  C-- 'Any' -->D
+  D-->E
 ```
 
 Descriptively, these steps are:
-1. Command-line arguments (or environment variable) override all automatic language selection.
-2. If there are no command-line arguments, the video's *Quality Profile* is examined for a language configuration (only supported in Radarr).
-3. If there is no *Quality Profile* language **or** it is set to 'Any', then examine the *Custom Formats* and scores associated with the quality profile.  
+1. Command-line arguments override all automatic language selection.
+2. Environment variable is checked for arguments.
+3. If there are no command-line or environment variable arguments, the video's *Quality Profile* is examined for a language configuration (only supported in Radarr).
+4. If there is no *Quality Profile* language **or** it is set to 'Any', then examine the *Custom Formats* and scores associated with the quality profile.  
 All language conditions with positive scores *and* Negated conditions with negative scores *and* non-Negated Except Language conditions with negative scores are selected.
-4. If the *Custom Format* scores are zero (0) or there are none with configured language conditions, use the *Language Profile* (only supported in Sonarr v3)
+5. If the *Custom Format* scores are zero (0) or there are none with configured language conditions, use the *Language Profile* (only supported in Sonarr v3)
 
 >![notes] For step 3 above, using *Custom Formats* when 'Any' is in the *Quality Profile* is consistent with the behavior described in [TRaSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/ "TraSH Guides: How to setup Language Custom Formats").
 
@@ -200,7 +204,7 @@ All language conditions with positive scores *and* Negated conditions with negat
 The script also supports command-line arguments that will override the automatic language detection.  More granular control can therefore be exerted or extended using tagging and defining multiple *Connect* scripts (this is native Radarr/Sonarr functionality outside the scope of this documentation).
 
 The syntax for the command-line is:  
-`striptracks.sh [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [{-l,--log} <log_file>] [{-c,--config} <config_file>] [{-d|--debug} [<level>]]`  
+`striptracks.sh [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [{-l,--log} <log_file>] [{-c|--config} <config_file>] [{-d|--debug} [<level>]]`  
 
 <details>
 <summary>Table of Command-Line Arguments</summary>
