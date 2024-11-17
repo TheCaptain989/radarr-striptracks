@@ -21,7 +21,7 @@ param (
     # WSL user password (for sudo command)
     # This is not stored and only used to pass to sudo for required package installations
     [Parameter(Mandatory = $true, HelpMessage = "Enter your WSL user password (this will not be stored)")]
-    [securestring]$Password = (Read-Host -AsSecureString "Enter your WSL user password (this will not be stored)"),
+    [SecureString]$Password = (Read-Host -AsSecureString "Enter your WSL user password (this will not be stored)"),
 
     # Directory to install striptracks to
     [string]$Directory = "$env:ProgramData\striptracks",
@@ -70,6 +70,18 @@ function Install-LinuxPackages {
   return $LASTEXITCODE
 }
 
+function Expand-ZipFile {
+  # Unzip the necessary script files from the archive
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $ZipObj = [System.IO.Compression.ZipFile]::OpenRead($ZipFile)
+  $ZipEntries = $ZipObj.Entries | Where-Object { $_.FullName -like "*/wsl/wsl-*.cmd" -or $_.Name -eq "striptracks.sh" }
+  foreach ($Entry in $ZipEntries) {
+    [IO.Compression.ZipFileExtensions]::ExtractToFile($Entry, "$Directory\$($Entry.Name)", $true)
+  }
+  $ZipObj.Dispose()
+  return $LASTEXITCODE
+}
+
 # Save working directory
 $OrgDirectory = $pwd
 
@@ -99,25 +111,15 @@ Invoke-WebRequest -Headers $GhApiHeaders -Uri $ApiResponse.zipball_url -OutFile 
 
 # Unzip files
 Write-Output "Extracting files from ZIP archive..."
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-$ZipObj = [System.IO.Compression.ZipFile]::OpenRead($ZipFile)
-$ZipEntries = $ZipObj.Entries | Where-Object { $_.FullName -like "*/wsl/wsl-*.cmd" -or $_.Name -eq "striptracks.sh" }
-foreach ($Entry in $ZipEntries) {
-  [IO.Compression.ZipFileExtensions]::ExtractToFile($Entry, "$Directory\$($Entry.Name)", $true)
-  # Some file specific edits are required
-  switch ($Entry.Name) {
-    "wsl-striptracks.cmd" {
-      (Get-Content -Path "$Directory\$($Entry.Name)") -replace "set STRIPTRACKS_ROOT=%ProgramData%\\striptracks", "set STRIPTRACKS_ROOT=$Directory" | Set-Content -Path "$Directory\$($Entry.Name)"
-    }
-    "striptracks.sh" {
-      Set-Content -Path "$Directory\$($Entry.Name)" -NoNewline -Value (((Get-Content -Path "$Directory\$($Entry.Name)") -replace "{{VERSION}}", $ModVersion -join "`n") + "`n")
-    }
-  }
-}
+if ((Expand-ZipFile) -ne 0) { return }
+
+# Edit some script files
+(Get-Content -Path "$Directory\wsl-striptracks.cmd") -replace "set STRIPTRACKS_ROOT=%ProgramData%\\striptracks", "set STRIPTRACKS_ROOT=$Directory" | Set-Content -Path "$Directory\wsl-striptracks.cmd"
+# This method preserves Linux newline endings
+Set-Content -Path "$Directory\striptracks.sh" -NoNewline -Value (((Get-Content -Path "$Directory\striptracks.sh") -replace "{{VERSION}}", $ModVersion -join "`n") + "`n")
 
 # Close and remove the ZIP archive
 Write-Output "Deleting ZIP archive"
-$ZipObj.Dispose()
 Remove-Item -Path $ZipFile
 
 # Make the striptracks.sh script executable
