@@ -1271,8 +1271,8 @@ fi
 if [[ "$striptracks_subskeep" =~ :org ]]; then
   [ $striptracks_debug -ge 1 ] && echo "Debug|Command line ':org' specified for subtitles. Changing '${striptracks_subskeep}' to '${striptracks_subskeep//:org/${striptracks_originalLangCode}}'" | log
   striptracks_subskeep="${striptracks_subskeep//:org/${striptracks_originalLangCode}}"
-  if [ "${striptracks_type,,}" = "batch" ]; then
-    striptracks_message="Warn|:org code specified for subtitles, but this is undefined for Batch mode! Unexpected behavior may result."
+  if ! check_compat originallanguage; then
+    striptracks_message="Warn|:org code specified for subtitles, but this is undefined and not compatible with this mode/version! Unexpected behavior may result."
     echo "$striptracks_message" | log
     echo "$striptracks_message" >&2
   fi
@@ -1295,7 +1295,7 @@ else
   [ $striptracks_debug -ge 1 ] && echo "Debug|Using command line audio languages '$striptracks_audiokeep'" | log
 fi
 
-## Guard clause
+## Log configuration that removes all subtitles
 if [ -z "$striptracks_subskeep" -a -z "$striptracks_profileLangCodes" ]; then
   striptracks_message="Info|No subtitles languages specified or detected. Removing all subtitles found."
   echo "$striptracks_message" | log
@@ -1315,25 +1315,8 @@ echo "$striptracks_message" | log
 
 #### BEGIN MAIN
 # Read in the output of mkvmerge info extraction
-if get_mediainfo "$striptracks_video"; then
-  # This and the modified AWK script are a hack, and I know it.  JQ is crazy hard to learn, BTW.
-  # Mimic the mkvmerge --identify-verbose option that has been deprecated
-  striptracks_json_processed=$(echo $striptracks_json | jq -jcrM '
-  ( if (.chapters[] | .num_entries) then
-      "Chapters: \(.chapters[] | .num_entries) entries\n"
-    else
-      empty
-    end
-  ),
-  ( .tracks[] |
-    ( "Track ID \(.id): \(.type) (\(.codec)) [",
-      ( [.properties | to_entries[] | "\(.key):\(.value | tostring | gsub(" "; "\\s"))"] | join(" ")),
-      "]\n"
-    )
-  )
-  ')
-  [ $striptracks_debug -ge 1 ] && echo "$striptracks_json_processed" | awk '{print "Debug|"$0}' | log
-else
+get_mediainfo "$striptracks_video"
+striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
   # Get media info failed
   if [ "$(echo $striptracks_json | jq -crM '.container.supported')" = "false" ]; then
     striptracks_message="Error|Container format '$(echo $striptracks_json | jq -crM .container.type)' is unsupported by mkvmerge. Unable to continue."
@@ -1343,7 +1326,33 @@ else
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
   end_script 9
-fi
+}
+
+# wget https://raw.githubusercontent.com/ietf-wg-cellar/matroska-test-files/refs/heads/master/test_files/test5.mkv
+# wget https://download.samplelib.com/mp4/sample-5s.mp4 -O sample.mp4
+
+# mkvmerge -J test5.mkv | jq ".chapters[].num_entries, (.tracks|map(select(.type==\"audio\" and (.properties.language | inside(\"$striptracks_audiokeep\")))))"
+# mkvmerge -J test5.mkv | jq ".tracks|map(select(.type==\"subtitles\" and (.properties.language | inside(\"$striptracks_subskeep\"))))"
+
+# mkvmerge -J sample.mp4 | jq ".chapters[].num_entries, (.tracks|map(select(.type==\"audio\" and ((.properties.language | inside(\"$striptracks_audiokeep\")) or .properties.forced_track) )))"
+
+# This and the modified AWK script are a hack, and I know it.  JQ is crazy hard to learn, BTW.
+# Mimic the mkvmerge --identify-verbose option that has been deprecated
+striptracks_json_processed=$(echo $striptracks_json | jq -jcrM '
+( if (.chapters[] | .num_entries) then
+    "Chapters: \(.chapters[] | .num_entries) entries\n"
+  else
+    empty
+  end
+),
+( .tracks[] |
+  ( "Track ID \(.id): \(.type) (\(.codec)) [",
+    ( [.properties | to_entries[] | "\(.key):\(.value | tostring | gsub(" "; "\\s"))"] | join(" ")),
+    "]\n"
+  )
+)
+')
+[ $striptracks_debug -ge 1 ] && echo "$striptracks_json_processed" | awk '{print "Debug|"$0}' | log
 
 # Process video file
 echo "$striptracks_json_processed" | awk -v Debug=$striptracks_debug \
@@ -1366,6 +1375,7 @@ BEGIN {
   MKVMerge = "/usr/bin/mkvmerge"
   FS = "[\t\n: ]"
   IGNORECASE = 1
+  # Define empty arrays
   split("", AudioCommand)
   split("", SubsCommand)
   split("", AudRmvLog)
