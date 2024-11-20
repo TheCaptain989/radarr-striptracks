@@ -1337,7 +1337,7 @@ striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
 # function log { while read -r line; do echo "$line"; done }
 
 # Check for no tracks
-if [ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio"))')" = "" ]; then striptracks_return=1
+[ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio"))')" = "" ] && striptracks_return=1
 # Log chapters and debug track info
 echo "$striptracks_json" | jq -crM --argjson Debug $striptracks_debug '
 ( if (.chapters[].num_entries) then
