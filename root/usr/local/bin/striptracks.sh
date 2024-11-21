@@ -1332,35 +1332,46 @@ striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
 # wget https://raw.githubusercontent.com/ietf-wg-cellar/matroska-test-files/refs/heads/master/test_files/test5.mkv
 # wget https://download.samplelib.com/mp4/sample-5s.mp4 -O sample.mp4
 
-# striptracks_audiokeep=":eng:und"; striptracks_subskeeps=":eng"; striptracks_debug=3
+# striptracks_audiokeep=":eng:und"; striptracks_subskeep=":eng"; striptracks_debug=3
 # striptracks_json=$(mkvmerge -J test5.mkv | jq '.chapters=[{"num_entries":5}]')
 # function log { while read -r line; do echo "$line"; done }
 
 # Check for no tracks
 [ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio"))')" = "" ] && striptracks_return=1
-# Log chapters and debug track info
-echo "$striptracks_json" | jq -crM --argjson Debug $striptracks_debug '
-( if (.chapters[].num_entries) then
+# Generate log entries
+echo "$striptracks_json" | jq -crM --argjson Debug $striptracks_debug \
+--arg AudioKeep "$striptracks_audiokeep" \
+--arg SubsKeep "$striptracks_subskeep" '
+( # Log chapters
+  if (.chapters[].num_entries) then
     "Info|Chapters: \(.chapters[].num_entries)"
   else empty end
 ),
-( if ($Debug>2) then
-    ( .tracks[] |
-      "Debug|Parsed: Track ID:\(.id) Type:\(.type) Lang:\(.properties.language) Codec:\(.codec)"
-    )
-  else empty end
+( .tracks[] |
+  # Log track debug info
+  if ($Debug>2) then
+    "Debug|Parsing: Track ID:\(.id) Type:\(.type) Lang:\(.properties.language) Codec:\(.codec)"
+  else
+    empty
+  end,
+  ( select(
+      # Log kept tracks
+      (.type=="audio" and (($AudioKeep | inside(":any")) or (.properties.language | inside($AudioKeep)))) or
+      (.type=="subtitles" and (($SubsKeep | inside(":any")) or (.properties.language | inside($SubsKeep))))
+    ) |
+    # "Info|Keeping \(.type) track \(.id): \(.properties.language) (\(.codec))"
+    .striptracks="keep"
+  ),
+  ( select(
+      # Log kept special audio
+      .type=="audio" and (.properties.language | inside(":mis:zxx"))
+    ) |
+    # "Info|Keeping special audio track \(.type) track \(.id): \(.properties.language) (\(.codec))"
+    .striptracks="keep"
+  )
 )
 ' | log
-# Log kept tracks
-echo "$striptracks_json" | jq -crM --arg AudioKeep "$striptracks_audiokeep" \
---arg SubsKeep "$striptracks_subskeep" '
-.tracks[] | 
-select(
-  (.type=="audio" and (.properties.language | inside($AudioKeep + ":any"))) or
-  (.type=="subtitles" and (.properties.language | inside($SubsKeep + ":any")))
-) |
-  "Info|Keeping \(.type) track \(.id): \(.properties.language) (\(.codec))"
-' | log
+
 
 # mkvmerge -J sample.mp4 | jq -crM --arg SubsKeep "$striptracks_subskeep" '.chapters[].num_entries, (.tracks|map(select(.type=="audio" and ((.properties.language | inside($SubsKeep)) or .properties.forced_track) )))'
 
