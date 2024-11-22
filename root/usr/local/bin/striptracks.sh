@@ -1336,42 +1336,65 @@ striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
 # striptracks_json=$(mkvmerge -J test5.mkv | jq '.chapters=[{"num_entries":5}]')
 # function log { while read -r line; do echo "$line"; done }
 
-# Check for no tracks
-[ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio"))')" = "" ] && striptracks_return=1
-# Generate log entries
-echo "$striptracks_json" | jq -crM --argjson Debug $striptracks_debug \
---arg AudioKeep "$striptracks_audiokeep" \
+# Process JSON data from MKVmerge
+striptracks_json_processed=$(echo "$striptracks_json" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
 --arg SubsKeep "$striptracks_subskeep" '
-( # Log chapters
+  # Log chapters
   if (.chapters[].num_entries) then
-    "Info|Chapters: \(.chapters[].num_entries)"
-  else empty end
-),
-( .tracks[] |
-  # Log track debug info
-  if ($Debug>2) then
-    "Debug|Parsing: Track ID:\(.id) Type:\(.type) Lang:\(.properties.language) Codec:\(.codec)"
-  else
-    empty
-  end,
-  ( select(
+    .striptracks_log = "Info|Chapters: \(.chapters[].num_entries)"
+  else empty end |
+  .tracks |=
+  map (
+    # Log track debug info
+    .striptracks_debug = "Debug|Parsing: Track ID:\(.id) Type:\(.type) Lang:\(.properties.language) Codec:\(.codec)" |
+    if ( (.type == "audio" and (($AudioKeep | contains(":any")) or (.properties.language | inside($AudioKeep)))) or
+        (.type == "subtitles" and (($SubsKeep | contains(":any")) or (.properties.language | inside($SubsKeep)))) ) then
       # Log kept tracks
-      (.type=="audio" and (($AudioKeep | inside(":any")) or (.properties.language | inside($AudioKeep)))) or
-      (.type=="subtitles" and (($SubsKeep | inside(":any")) or (.properties.language | inside($SubsKeep))))
-    ) |
-    # "Info|Keeping \(.type) track \(.id): \(.properties.language) (\(.codec))"
-    .striptracks="keep"
-  ),
-  ( select(
+      .striptracks_log = "Info|Keeping \(.type) track \(.id): \(.properties.language) (\(.codec))" |
+      .striptracks_decision = "keep"
+    elif (.type == "audio" and (.properties.language | inside(":mis:zxx"))) then
       # Log kept special audio
-      .type=="audio" and (.properties.language | inside(":mis:zxx"))
-    ) |
-    # "Info|Keeping special audio track \(.type) track \(.id): \(.properties.language) (\(.codec))"
-    .striptracks="keep"
-  )
-)
-' | log
+      .striptracks_log = "Info|Keeping special audio track \(.type) track \(.id): \(.properties.language) (\(.codec))" |
+      .striptracks_decision = "keep"
+    elif (.type == "audio" or .type == "subtitles") then
+      # Log removed tracks
+      .striptracks_log = "\(.id): \(.properties.language) (\(.codec))" |
+      .striptracks_decision = "remove"
+    else empty end
+  ) |
+  # Build new simplified dataset
+  { chapters:.chapters[].num_entries, striptracks_log, tracks:[ .tracks[] | { id, type, forced:.properties.forced_track, default:.properties.default_track, striptracks_debug, striptracks_log, striptracks_decision } ] }
+')
+# Check for no tracks
+[ "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio"))')" = "" ] && striptracks_return=1
 
+# Write messages to log
+echo "$striptracks_json_processed" | jq --argjson Debug $striptracks_debug '
+.striptracks_log,
+( .tracks[] |
+  if ($Debug>2) then
+    .striptracks_debug
+  else empty end,
+  ( select(.striptracks_decision == "keep") | .striptracks_log )
+),
+( [if (.tracks[] | select(.type == "audio" and .striptracks_decision == "remove")) then
+    "Info|Removed audio tracks " + ( .tracks |
+      map( select(.type == "audio" and .striptracks_decision == "remove") | .striptracks_log ) |
+      join(",")
+    )
+  else empty end] |
+  unique |
+  .[]
+),
+( [if (.tracks[] | select(.type == "subtitles" and .striptracks_decision == "remove")) then
+    "Info|Removed subtitles tracks " + ( .tracks |
+      map( select(.type == "subtitles" and .striptracks_decision == "remove") | .striptracks_log ) |
+      join(",")
+    )
+  else empty end] |
+  unique |
+  .[]
+)'
 
 # mkvmerge -J sample.mp4 | jq -crM --arg SubsKeep "$striptracks_subskeep" '.chapters[].num_entries, (.tracks|map(select(.type=="audio" and ((.properties.language | inside($SubsKeep)) or .properties.forced_track) )))'
 
