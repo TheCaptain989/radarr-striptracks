@@ -43,7 +43,7 @@
 # 10 - remuxing completed, but no output file found
 # 11 - source video had no audio or subtitle tracks
 # 12 - log file is not writable
-# 13 - awk script exited abnormally
+# 13 - mkvmerge exited abnormally
 # 15 - could not set permissions and/or owner on new file
 # 16 - could not delete the original file
 # 17 - Radarr/Sonarr API error
@@ -1330,14 +1330,7 @@ striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
   end_script 9
 }
 
-# wget https://raw.githubusercontent.com/ietf-wg-cellar/matroska-test-files/refs/heads/master/test_files/test5.mkv
-# wget https://download.samplelib.com/mp4/sample-5s.mp4 -O sample.mp4
-
-# striptracks_audiokeep=":eng:any+df"; striptracks_subskeep=":eng:any+f"; striptracks_debug=3
-# striptracks_json=$(mkvmerge -J test5.mkv | jq '.tracks[5].properties.forced_track=true')
-# function log { while read -r line; do echo "$line"; done }
-
-# Process JSON data from MKVmerge
+# Process JSON data from MKVmerge; track selection logic
 striptracks_json_processed=$(echo "$striptracks_json" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
 --arg SubsKeep "$striptracks_subskeep" '
 # Parse input string into language rules
@@ -1405,8 +1398,6 @@ else . end |
 # Output simplified dataset
 { striptracks_log, tracks: [ .tracks[] | { id, type, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug, striptracks_log, striptracks_keep } ] }
 ')
-# Check for no tracks
-[ "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio"))')" = "" ] && striptracks_return=1
 
 # Write messages to log
 echo "$striptracks_json_processed" | jq -crM --argjson Debug $striptracks_debug '
@@ -1414,9 +1405,10 @@ echo "$striptracks_json_processed" | jq -crM --argjson Debug $striptracks_debug 
 .striptracks_log // empty,
 
 # Log debug messages if Debug level is greater than 2
-(.tracks[] | (if $Debug > 2 then .striptracks_debug else empty end),
-  # Log messages for kept tracks
-  (select(.striptracks_keep) | .striptracks_log // empty)
+( .tracks[] | (if $Debug > 2 then .striptracks_debug else empty end),
+
+ # Log messages for kept tracks
+ (select(.striptracks_keep) | .striptracks_log // empty)
 ),
 
 # Log removed audio tracks
@@ -1437,175 +1429,50 @@ else empty end,
 "subtitles: \(.tracks | map(select(.type == "subtitles" and .striptracks_keep)) | length))"
 ' | log
 
-# mkvmerge -J sample.mp4 | jq -crM --arg SubsKeep "$striptracks_subskeep" '.chapters[].num_entries, (.tracks|map(select(.type=="audio" and ((.properties.language | inside($SubsKeep)) or .properties.forced_track) )))'
+# Check for no audio or subtitle tracks
+[ "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio"))')" = "" ] && {
+  striptracks_message="Warn|Script encountered an error when determining audio tracks to keep and must close."
+  echo "$striptracks_message" | log
+  echo "$striptracks_message" >&2
+  end_script 11
+}
 
-# This and the modified AWK script are a hack, and I know it.  JQ is crazy hard to learn, BTW.
-# Mimic the mkvmerge --identify-verbose option that has been deprecated
-striptracks_json_processed=$(echo $striptracks_json | jq -jcM '
-( if (.chapters[] | .num_entries) then
-    "Chapters: \(.chapters[] | .num_entries) entries\n"
+# All tracks matched/no tracks removed
+[ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles"))')" = "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles"))')" ] && {
+  [ $striptracks_debug -ge 1 ] && echo "Debug|No tracks will be removed from video \"$striptracks_video\"" | log
+  # Check if already MKV.  Remuxing not performed.
+  if [[ $striptracks_video == *.mkv ]]; then
+    striptracks_message="Info|No tracks would be removed from video. Setting Title only and exiting."
+    echo "$striptracks_message" | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: /usr/bin/mkvpropedit -q --edit info --set \"title=$striptracks_title\" \"$striptracks_video\"" | log
+    /usr/bin/mkvpropedit -q --edit info --set "title=$striptracks_title" "$striptracks_video" 2>&1 | log
+    end_script 0
   else
-    empty
-  end
-),
-( .tracks[] |
-  ( "Track ID \(.id): \(.type) (\(.codec)) [",
-    ( [.properties | to_entries[] | "\(.key):\(.value | tostring | gsub(" "; "\\s"))"] | join(" ")),
-    "]\n"
-  )
-)
-')
-[ $striptracks_debug -ge 1 ] && echo "$striptracks_json_processed" | awk '{print "Debug|"$0}' | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Source video is not MKV. Remuxing anyway." | log
+  fi
+}
 
-# Process video file
-echo "$striptracks_json_processed" | awk -v Debug=$striptracks_debug \
--v Video="$striptracks_video" \
--v TempVideo="$striptracks_tempvideo" \
--v Title="$striptracks_title" \
--v AudioKeep="$striptracks_audiokeep" \
--v SubsKeep="$striptracks_subskeep" '
-# Exit codes: 0 success; 1 No tracks in source file; 2 No tracks removed; 3 How did we get here?
-# Array join function, based on GNU docs
-function join(array, sep,    i, ret) {
-  for (i in array)
-    if (ret == "")
-      ret = array[i]
-    else
-      ret = ret sep array[i]
-  return ret
-}
-BEGIN {
-  MKVMerge = "/usr/bin/mkvmerge"
-  FS = "[\t\n: ]"
-  IGNORECASE = 1
-  # Define empty arrays
-  split("", AudioCommand)
-  split("", SubsCommand)
-  split("", AudRmvLog)
-  split("", SubsRmvLog)
-}
-/^Track ID/ {
-  FieldCount = split($0, Fields)
-  if (Fields[1] == "Track") {
-    NoTr++
-    Track[NoTr, "id"] = Fields[3]
-    Track[NoTr, "typ"] = Fields[5]
-    # This is inelegant and I know it
-    # Finds the codec in parenthesis
-    if (Fields[6] ~ /^\(/) {
-      for (i = 6; i <= FieldCount; i++) {
-        Track[NoTr, "codec"] = Track[NoTr, "codec"]" "Fields[i]
-        if (match(Fields[i], /\)$/))
-          break
-      }
-      sub(/^ /, "", Track[NoTr, "codec"])
-    }
-    if (Track[NoTr, "typ"] == "video") VidCnt++
-    if (Track[NoTr, "typ"] == "audio") AudCnt++
-    if (Track[NoTr, "typ"] == "subtitles") SubsCnt++
-    for (i = 6; i <= FieldCount; i++) {
-      if (Fields[i] == "language")
-        Track[NoTr, "lang"] = Fields[++i]
-    }
-    if (Track[NoTr, "lang"] == "")
-      Track[NoTr, "lang"] = "und"
-  }
-}
-/^Chapters/ {
-  Chapters = $3
-}
-END {
-  # Source video had no tracks
-  if (!NoTr) {
-    exit 1
-  }
-  if (!AudCnt) AudCnt=0; if (!SubsCnt) SubsCnt=0
-  print "Info|Original tracks: "NoTr" (audio: "AudCnt", subtitles: "SubsCnt")"
-  if (Chapters) print "Info|Chapters: "Chapters
-  for (i = 1; i <= NoTr; i++) {
-    if (Debug >= 2) print "Debug|Parsed: Track ID:"Track[i,"id"],"Type:"Track[i,"typ"],"Lang:"Track[i, "lang"],"Codec:"Track[i, "codec"]
-    if (Track[i, "typ"] == "audio") {
-      # Keep track if it matches command line selection, or if it is matches pseudo code ":any"
-      if (AudioKeep ~ Track[i, "lang"] || AudioKeep ~ ":any") {
-        print "Info|Keeping audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
-        AudioCommand[i] = Track[i, "id"]
-      # Special case if there is only one audio track, even if it was not selected
-      } else if (AudCnt == 1) {
-        print "Warn|No audio tracks matched! Keeping only audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
-        AudioCommand[i] = Track[i, "id"]
-      # Special case if there were multiple tracks, none were selected, and this is the last one.
-      } else if (length(AudioCommand) == 0 && Track[i, "id"] == AudCnt) {
-        print "Warn|No audio tracks matched! Keeping last audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
-        AudioCommand[i] = Track[i, "id"]
-      # Special case for mis and zxx
-      } else if (":mis:zxx" ~ Track[i, "lang"]) {
-        print "Info|Keeping special audio track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
-        AudioCommand[i] = Track[i, "id"]
-      } else
-        AudRmvLog[i] = Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
-    } else {
-      if (Track[i, "typ"] == "subtitles") {
-        if (SubsKeep ~ Track[i, "lang"] || SubsKeep ~ ":any") {
-          print "Info|Keeping subtitles track "Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
-          SubsCommand[i] = Track[i, "id"]
-        } else
-          SubsRmvLog[i] = Track[i, "id"]": "Track[i, "lang"]" "Track[i, "codec"]
-      }
-    }
-  }
-  if (length(AudRmvLog) != 0) print "Info|Removed audio tracks: " join(AudRmvLog, ",")
-  if (length(SubsRmvLog) != 0) print "Info|Removed subtitles tracks: " join(SubsRmvLog, ",")
-  print "Info|Kept tracks: "length(AudioCommand)+length(SubsCommand)+VidCnt" (audio: "length(AudioCommand)", subtitles: "length(SubsCommand)")"
-  # All tracks matched/no tracks removed.
-  if (length(AudioCommand)+length(SubsCommand)+VidCnt == NoTr) {
-    if (Debug >= 1) print "Debug|No tracks will be removed from video \""Video"\""
-    # Only skip remux if already MKV.
-    if (match(Video, /\.mkv$/)) {
-      exit 2
-    }
-    if (Debug >= 1) print "Debug|Source video is not MKV. Remuxing anyway."
-  }
-  # This should never happen, but belt and suspenders
-  if (length(AudioCommand) == 0) {
-    print "Warn|Script encountered an error when determining audio tracks to keep and must close."
-    exit 3
-  }
-  CommandLine = "-a " join(AudioCommand, ",")
-  if (length(SubsCommand) == 0)
-    CommandLine = CommandLine" -S"
-  else
-    CommandLine = CommandLine" -s " join(SubsCommand, ",")
-  if (Debug >= 1) print "Debug|Executing: nice "MKVMerge" --title \""Title"\" -q -o \""TempVideo"\" "CommandLine" \""Video"\""
-  Result = system("nice "MKVMerge" --title \""Title"\" -q -o \""TempVideo"\" "CommandLine" \""Video"\"")
-  if (Result > 1) print "Error|["Result"] remuxing \""Video"\"" > "/dev/stderr"
-}' | log
-#### END MAIN
+# Build argument with kept audio tracks for MKVmerge
+striptracks_audioarg=$(echo "$striptracks_json_processed" | jq -crM '.tracks | map(select(.type == "audio" and .striptracks_keep) | .id) | join(",")')
+striptracks_audioarg="-a $striptracks_audioarg"
 
-# Check awk exit code
-striptracks_return="${PIPESTATUS[1]}"
-[ $striptracks_debug -ge 2 ] && echo "Debug|awk exited with code: $striptracks_return" | log
+# Build argument with kept subtitles tracks for MKVmerge
+striptracks_subsarg=$(echo "$striptracks_json_processed" | jq -crM '.tracks | map(select(.type == "subtitles" and .striptracks_keep) | .id) | join(",")')
+[ ${#striptracks_subsarg} -ne 0 ] && striptracks_subsarg="-s $striptracks_subsarg" || striptracks_subsarg="-S"
+
+# Execute MKVmerge
+striptracks_mkvcommand="nice /usr/bin/mkvmerge --title \"$striptracks_title\" -q -o \"$striptracks_tempvideo\" $striptracks_audioarg $striptracks_subsarg \"$striptracks_video\""
+[ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $striptracks_mkvcommand" | log
+eval $striptracks_mkvcommand
+striptracks_return=$?
+[ $striptracks_debug -ge 2 ] && echo "Debug|mkvmerge exited with code: $striptracks_return" | log
 [ $striptracks_return -ne 0 ] && {
-  case "$striptracks_return" in
-    1) # Source video had no tracks
-       striptracks_message="Error|The original video \"$striptracks_video\" had no audio or subtitle tracks!"
-       echo "$striptracks_message" | log
-       echo "$striptracks_message" >&2
-       end_script 11
-    ;;
-    2) # All tracks matched/no tracks removed and already MKV.  Remuxing not performed.
-       striptracks_message="Info|No tracks would be removed from video. Setting Title only and exiting."
-       echo "$striptracks_message" | log
-       [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: /usr/bin/mkvpropedit -q --edit info --set \"title=$striptracks_title\" \"$striptracks_video\"" | log
-       /usr/bin/mkvpropedit -q --edit info --set "title=$striptracks_title" "$striptracks_video" 2>&1 | log
-       end_script 0
-    ;;
-    *) striptracks_message="Error|[$striptracks_return] Script exited abnormally."
-       echo "$striptracks_message" | log
-       echo "$striptracks_message" >&2
-       end_script 13
-    ;;
-  esac
+  striptracks_message="Error|[$striptracks_return] mkvmerge error while remuxing \"$striptracks_video\""
+  echo "$striptracks_message" | log
+  echo "$striptracks_message" >&2
+  end_script 13
 }
+#### END MAIN
 
 # Check for non-empty file
 if [ ! -s "$striptracks_tempvideo" ]; then

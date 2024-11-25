@@ -1,14 +1,18 @@
 #!/bin/bash
 
-striptracks_audiokeep=":eng:und"; striptracks_subskeep=":any+d"; striptracks_debug=3
+# wget https://raw.githubusercontent.com/ietf-wg-cellar/matroska-test-files/refs/heads/master/test_files/test5.mkv
+# wget https://download.samplelib.com/mp4/sample-5s.mp4 -O sample.mp4
+
+# striptracks_audiokeep=":eng:any+df"; striptracks_subskeep=":eng:any+f"; striptracks_debug=3
+# striptracks_json=$(mkvmerge -J test5.mkv | jq '.tracks[5].properties.forced_track=true')
+# function log { while read -r line; do echo "$line"; done }
+
+striptracks_audiokeep=":eng:any+d"; striptracks_subskeep=":any+f"; striptracks_debug=3
 striptracks_json='{"attachments":[],"chapters":[],"container":{"properties":{"container_type":17,"date_local":"2010-08-21T18:06:43+00:00","date_utc":"2010-08-21T18:06:43Z","duration":46665000000,"is_providing_timestamps":true,"muxing_application":"libebml v1.0.0 + libmatroska v1.0.0","segment_uid":"9d516a0f927a12d286e1502d23d0fdb0","writing_application":"mkvmerge v4.0.0 (\"The Stars were mine\") built on Jun  6 2010 16:18:42"},"recognized":true,"supported":true,"type":"Matroska"},"errors":[],"file_name":"test5.mkv","global_tags":[{"num_entries":3}],"identification_format_version":12,"track_tags":[],"tracks":[{"codec":"MPEG-4p10/AVC/H.264","id":0,"properties":{"codec_id":"V_MPEG4/ISO/AVC","codec_private_data":"014d401fffe10014274d401fa918080093600d418041adb0ad7bdf0101000428ce09c8","codec_private_length":35,"default_duration":41666665,"default_track":true,"display_dimensions":"1024x576","display_unit":0,"enabled_track":true,"forced_track":false,"language":"und","minimum_timestamp":0,"number":1,"packetizer":"mpeg4_p10_video","pixel_dimensions":"1024x576","uid":1258329745},"type":"video"},{"codec":"AAC","id":1,"properties":{"audio_channels":2,"audio_sampling_frequency":48000,"codec_id":"A_AAC","codec_private_data":"1190","codec_private_length":2,"default_duration":21333333,"default_track":true,"enabled_track":true,"forced_track":false,"language":"und","minimum_timestamp":12000000,"number":2,"uid":3452711582},"type":"audio"},{"codec":"SubRip/SRT","id":2,"properties":{"codec_id":"S_TEXT/UTF8","codec_private_length":0,"default_track":true,"enabled_track":true,"encoding":"UTF-8","forced_track":false,"language":"eng","minimum_timestamp":3549000000,"number":3,"text_subtitles":true,"uid":368310685},"type":"subtitles"},{"codec":"SubRip/SRT","id":3,"properties":{"codec_id":"S_TEXT/UTF8","codec_private_length":0,"default_track":false,"enabled_track":true,"encoding":"UTF-8","forced_track":false,"language":"hun","minimum_timestamp":42000000,"number":4,"text_subtitles":true,"uid":77489046},"type":"subtitles"},{"codec":"SubRip/SRT","id":4,"properties":{"codec_id":"S_TEXT/UTF8","codec_private_length":0,"default_track":false,"enabled_track":true,"encoding":"UTF-8","forced_track":false,"language":"ger","minimum_timestamp":42000000,"number":5,"text_subtitles":true,"uid":3554194305},"type":"subtitles"},{"codec":"SubRip/SRT","id":5,"properties":{"codec_id":"S_TEXT/UTF8","codec_private_length":0,"default_track":false,"enabled_track":true,"encoding":"UTF-8","forced_track":true,"language":"fre","minimum_timestamp":42000000,"number":6,"text_subtitles":true,"uid":3601783439},"type":"subtitles"},{"codec":"SubRip/SRT","id":6,"properties":{"codec_id":"S_TEXT/UTF8","codec_private_length":0,"default_track":false,"enabled_track":true,"encoding":"UTF-8","forced_track":false,"language":"spa","minimum_timestamp":42000000,"number":8,"text_subtitles":true,"uid":637820071},"type":"subtitles"},{"codec":"SubRip/SRT","id":7,"properties":{"codec_id":"S_TEXT/UTF8","codec_private_length":0,"default_track":false,"enabled_track":true,"encoding":"UTF-8","forced_track":false,"language":"ita","minimum_timestamp":42000000,"number":9,"text_subtitles":true,"uid":2328328329},"type":"subtitles"},{"codec":"AAC","id":8,"properties":{"audio_channels":1,"audio_sampling_frequency":22050,"codec_id":"A_AAC","codec_private_data":"1388","codec_private_length":2,"default_duration":46439909,"default_track":false,"enabled_track":true,"forced_track":false,"language":"eng","minimum_timestamp":9000000,"number":10,"track_name":"Commentary","uid":215750297},"type":"audio"},{"codec":"SubRip/SRT","id":9,"properties":{"codec_id":"S_TEXT/UTF8","codec_private_length":0,"default_track":false,"enabled_track":true,"encoding":"UTF-8","forced_track":false,"language":"jpn","minimum_timestamp":42000000,"number":11,"text_subtitles":true,"uid":652628868},"type":"subtitles"},{"codec":"SubRip/SRT","id":10,"properties":{"codec_id":"S_TEXT/UTF8","codec_private_length":0,"default_track":false,"enabled_track":true,"encoding":"UTF-8","forced_track":false,"language":"und","minimum_timestamp":42000000,"number":7,"text_subtitles":true,"uid":131186099},"type":"subtitles"}],"warnings":[]}'
 
 # striptracks_json=$(mkvmerge -J test5.mkv | jq '.tracks[5].properties.forced_track=true')
 # striptracks_json=$(mkvmerge -J sample.mp4)
-# striptracks_json='{ "attachments": [], "chapters": [], "container": { "properties": { "container_type": 25, "is_providing_timestamps": true }, "recognized": true, "supported": true, "type": "QuickTime/MP4" }, "errors": [], "file_name": "sample.mp4", "global_tags": [], "identification_format_version": 12, "track_tags": [],
-# "tracks": [ { "codec": "MPEG-4p10/AVC/H.264", "id": 0, "properties": { "language": "und", "number": 1, "packetizer": "mpeg4_p10_video", "pixel_dimensions": "1920x1080" }, "type": "video" }, { "codec": "AAC", "id": 1, "properties": { "audio_bits_per_sample": 16, "audio_channels": 2, "audio_sampling_frequency": 44100, "language": "eng", "number": 2 }, "type": "audio" },
-# { "codec": "AAC", "id": 2, "properties": { "audio_bits_per_sample": 16, "audio_channels": 2, "audio_sampling_frequency": 44100, "language": "eng", "number": 3 }, "type": "audio" }
-#  ], "warnings": [] }'
+# striptracks_json='{ "attachments": [], "chapters": [], "container": { "properties": { "container_type": 25, "is_providing_timestamps": true }, "recognized": true, "supported": true, "type": "QuickTime/MP4" }, "errors": [], "file_name": "sample.mp4", "global_tags": [], "identification_format_version": 12, "track_tags": [], "tracks": [ { "codec": "MPEG-4p10/AVC/H.264", "id": 0, "properties": { "language": "und", "number": 1, "packetizer": "mpeg4_p10_video", "pixel_dimensions": "1920x1080" }, "type": "video" }, { "codec": "AAC", "id": 1, "properties": { "audio_bits_per_sample": 16, "audio_channels": 2, "audio_sampling_frequency": 44100, "language": "eng", "number": 2 }, "type": "audio" }, { "codec": "AAC", "id": 2, "properties": { "audio_bits_per_sample": 16, "audio_channels": 2, "audio_sampling_frequency": 44100, "language": "eng", "number": 3 }, "type": "audio" }  ], "warnings": [] }'
 
 striptracks_json_processed=$(echo "$striptracks_json" | jq -c --arg AudioKeep "$striptracks_audiokeep" \
 --arg SubsKeep "$striptracks_subskeep" '
@@ -83,9 +87,10 @@ echo "$striptracks_json_processed" | jq -crM --argjson Debug $striptracks_debug 
 .striptracks_log // empty,
 
 # Log debug messages if Debug level is greater than 2
-(.tracks[] | (if $Debug > 2 then .striptracks_debug else empty end),
-  # Log messages for kept tracks
-  (select(.striptracks_keep) | .striptracks_log // empty)
+( .tracks[] | (if $Debug > 2 then .striptracks_debug else empty end),
+
+ # Log messages for kept tracks
+ (select(.striptracks_keep) | .striptracks_log // empty)
 ),
 
 # Log removed audio tracks
@@ -105,3 +110,14 @@ else empty end,
 "(audio: \(.tracks | map(select(.type == "audio" and .striptracks_keep)) | length), " +
 "subtitles: \(.tracks | map(select(.type == "subtitles" and .striptracks_keep)) | length))"
 '
+
+# Build kept audio tracks MKVmerge argument
+striptracks_audioarg=$(echo "$striptracks_json_processed" | jq -crM '.tracks | map(select(.type == "audio" and .striptracks_keep) | .id) | join(",")')
+striptracks_audioarg="-a $striptracks_audioarg"
+
+# Build kept subtitles tracks MKVmerge argument
+striptracks_subsarg=$(echo "$striptracks_json_processed" | jq -crM '.tracks | map(select(.type == "subtitles" and .striptracks_keep) | .id) | join(",")')
+[ ${#striptracks_subsarg} -ne 0 ] && striptracks_subsarg="-s $striptracks_subsarg" || striptracks_subsarg="-S"
+
+echo $striptracks_audioarg
+echo $striptracks_subsarg
