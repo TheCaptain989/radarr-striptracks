@@ -1372,7 +1372,7 @@ else . end |
         .rule = "default"
       else . end |
     if .striptracks_keep then
-      .striptracks_log = "Info|Keeping \(if .rule then .rule + " " else "" end)\(.type) track" + .striptracks_log
+      .striptracks_log = "Info|Keeping \(if .rule then .rule + " " else "" end)\(.type) track " + .striptracks_log
     else
       .striptracks_keep = false
     end
@@ -1383,19 +1383,19 @@ else . end |
 if ((.tracks | map(select(.type == "audio")) | length == 1) and (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0)) then
   # If there is only one audio track and none are kept, keep the only audio track
   .tracks |= map(if .type == "audio" then
-      .striptracks_log = "Warn|No audio tracks matched! Keeping only audio track" + .striptracks_log |
+      .striptracks_log = "Warn|No audio tracks matched! Keeping only audio track " + .striptracks_log |
       .striptracks_keep = true
     else . end)
 elif (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0) then
   # If no audio tracks are kept, first try to keep the default audio track
   .tracks |= map(if .type == "audio" and .properties.default_track then
-      .striptracks_log = "Warn|No audio tracks matched! Keeping default audio track" + .striptracks_log |
+      .striptracks_log = "Warn|No audio tracks matched! Keeping default audio track " + .striptracks_log |
       .striptracks_keep = true
     else . end) |
   # If still no audio tracks are kept, keep the first audio track
   if (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0) then
     (first(.tracks[] | select(.type == "audio"))) |= . +
-    {striptracks_log: ("Warn|No audio tracks matched! Keeping first audio track" + .striptracks_log),
+    {striptracks_log: ("Warn|No audio tracks matched! Keeping first audio track " + .striptracks_log),
      striptracks_keep: true}
   else . end
 else . end |
