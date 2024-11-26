@@ -1354,13 +1354,14 @@ else . end |
 .tracks |= map(
   # Set $lang to "und" if null or empty
   (if (.properties.language == "" or .properties.language == null) then "und" else .properties.language end) as $lang |
-  .striptracks_debug = "Debug|Parsing: Track ID:\(.id) Type:\(.type) Lang:\($lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
+  .striptracks_debug = "Debug|Parsing: Track ID:\(.id) Type:\(.type) Name:\(.properties.track_name) Lang:\($lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
   
   # Determine keep logic based on type and rules
   if .type == "video" then
     .striptracks_keep = true
   elif .type == "audio" or .type == "subtitles" then
-      if .type == "audio" then $AudioRules else $SubsRules end) as $currentRules |
+      .striptracks_log = "\(.id): \($lang) (\(.codec))\(if .properties.track_name then " \"" + .properties.track_name + "\"" else "" end)" |
+      (if .type == "audio" then $AudioRules else $SubsRules end) as $currentRules |
       if (($currentRules.languages | index("any")) or ($currentRules.languages | index($lang))) then
         .striptracks_keep = true
       elif (.properties.forced_track and (($currentRules.forced_languages | index("any")) or ($currentRules.forced_languages | index($lang)))) then
@@ -1371,9 +1372,9 @@ else . end |
         .rule = "default"
       else . end |
     if .striptracks_keep then
-      .striptracks_log = "Info|Keeping \(if .rule then .rule + " " else "" end)\(.type) track \(.id): \($lang) (\(.codec))"
+      .striptracks_log = "Info|Keeping \(if .rule then .rule + " " else "" end)\(.type) track" + .striptracks_log
     else
-      .striptracks_log = "\(.id): \($lang) (\(.codec))"
+      .striptracks_keep = false
     end
   else . end
 ) |
@@ -1382,19 +1383,19 @@ else . end |
 if ((.tracks | map(select(.type == "audio")) | length == 1) and (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0)) then
   # If there is only one audio track and none are kept, keep the only audio track
   .tracks |= map(if .type == "audio" then
-      .striptracks_log = "Warn|No audio tracks matched! Keeping only audio track \(.id): \(.properties.language) (\(.codec))" |
+      .striptracks_log = "Warn|No audio tracks matched! Keeping only audio track" + .striptracks_log |
       .striptracks_keep = true
     else . end)
 elif (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0) then
   # If no audio tracks are kept, first try to keep the default audio track
   .tracks |= map(if .type == "audio" and .properties.default_track then
-      .striptracks_log = "Warn|No audio tracks matched! Keeping default audio track \(.id): \(.properties.language) (\(.codec))" |
+      .striptracks_log = "Warn|No audio tracks matched! Keeping default audio track" + .striptracks_log |
       .striptracks_keep = true
     else . end) |
   # If still no audio tracks are kept, keep the first audio track
   if (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0) then
     (first(.tracks[] | select(.type == "audio"))) |= . +
-    {striptracks_log: "Warn|No audio tracks matched! Keeping first audio track \(.id): \(.properties.language) (\(.codec))",
+    {striptracks_log: ("Warn|No audio tracks matched! Keeping first audio track" + .striptracks_log),
      striptracks_keep: true}
   else . end
 else . end |
@@ -1402,15 +1403,16 @@ else . end |
 # Output simplified dataset
 { striptracks_log, tracks: [ .tracks[] | { id, type, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug, striptracks_log, striptracks_keep } ] }
 ')
-[ $striptracks_debug -ge 2 ] && echo "jq track processing returned: $(echo "$striptracks_json_processed" | jq)" | awk '{print "Debug|"$0}' | log
+[ $striptracks_debug -ge 2 ] && echo "Debug|jq track processing returned ${#striptracks_json_processed} bytes." | log
+[ $striptracks_debug -ge 3 ] && echo "jq track processing returned: $(echo "$striptracks_json_processed" | jq)" | awk '{print "Debug|"$0}' | log
 
 # Write messages to log
 echo "$striptracks_json_processed" | jq -crM --argjson Debug $striptracks_debug '
 # Log the main striptracks log
 .striptracks_log // empty,
 
-# Log debug messages if Debug level is greater than 2
-( .tracks[] | (if $Debug > 2 then .striptracks_debug else empty end),
+# Log debug messages
+( .tracks[] | (if $Debug >= 2 then .striptracks_debug else empty end),
 
  # Log messages for kept tracks
  (select(.striptracks_keep) | .striptracks_log // empty)
@@ -1704,7 +1706,7 @@ elif [ -n "$striptracks_api_url" ]; then
               fi
             elif [ "$striptracks_newvideo_langcodes" = "und" ]; then
               # Only language detected is Unknown
-              echo "Warn|The only language in the video file was Unknown (und). Not updating ${striptracks_type^} database." | log
+              echo "Warn|The only audio language in the video file was Unknown (und). Not updating ${striptracks_type^} database." | log
             else
               # Video language not in striptracks_isocodemap
               striptracks_message="Warn|Video language code(s) '${striptracks_newvideo_langcodes//$'\n'/,}' not found in the ISO Codemap. Cannot evaluate."
