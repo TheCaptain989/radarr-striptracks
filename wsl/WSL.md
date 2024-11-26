@@ -29,10 +29,8 @@ installation script, entering your Linux user password when prompted:
    ---|---|---
    -Password|\<SecureString>|Your WSL Linux user password
    -Directory|\<path>|Directory to install striptracks to<br/>Default: `C:\ProgramData\striptracks`
-   -Owner|\<name>|GitHub repository owner<br/>Default: `TheCaptain989`
-   -Repository|\<name>|GitHub repository name<br/>Default: `radarr-striptracks`
-   -Release|\<string>|GitHub branch of source code to download<br/>Default: `latest`
-   -GhApiRoot|\<url>|GitHub API root URL<br/>Default: `https://api.github.com`
+   -Branch|\<string>|GitHub branch of source code to download<br/>Default: `master`
+   -Webroot|\<url>|GitHub download URL for striptracks<br/>Default: `https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/master`
 
    To pass command-line arguments to the script, you must download it and execute it in two separate steps.
 
@@ -41,7 +39,7 @@ installation script, entering your Linux user password when prompted:
    ```powershell
    Invoke-WebRequest "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/master/wsl/wsl-install-striptracks.ps1" -OutFile wsl-install-striptracks.ps1
    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser    # Needed to run unsigned downloaded scripts
-   .\wsl-install-striptracks.ps1 -Release "v2.9.0"
+   .\wsl-install-striptracks.ps1 -Branch "develop"
    ```
 
    </details>
@@ -52,7 +50,7 @@ installation script, entering your Linux user password when prompted:
    <details>
    <summary>Screenshot</summary>
 
-   *New Custom Script Example*  
+   *New Custom Script Example*
    ![wsl custom script](wsl-custom-script.png "New Custom Script")
 
    <detials>
