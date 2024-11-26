@@ -1352,6 +1352,7 @@ else . end |
 
 # Process tracks
 .tracks |= map(
+  # Set $lang to "und" if null or empty
   (if (.properties.language == "" or .properties.language == null) then "und" else .properties.language end) as $lang |
   .striptracks_debug = "Debug|Parsing: Track ID:\(.id) Type:\(.type) Lang:\($lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
   
@@ -1359,15 +1360,18 @@ else . end |
   if .type == "video" then
     .striptracks_keep = true
   elif .type == "audio" or .type == "subtitles" then
-    (
-      (if .type == "audio" then $AudioRules else $SubsRules end) as $currentRules |
-      .striptracks_keep = 
-          (($currentRules.languages | index("any")) or ($currentRules.languages | index($lang))) or
-          (.properties.forced_track and (($currentRules.forced_languages | index("any")) or ($currentRules.forced_languages | index($lang)))) or
-          (.properties.default_track and (($currentRules.default_languages | index("any")) or ($currentRules.default_languages | index($lang))))
-    ) |
+      if .type == "audio" then $AudioRules else $SubsRules end) as $currentRules |
+      if (($currentRules.languages | index("any")) or ($currentRules.languages | index($lang))) then
+        .striptracks_keep = true
+      elif (.properties.forced_track and (($currentRules.forced_languages | index("any")) or ($currentRules.forced_languages | index($lang)))) then
+        .striptracks_keep = true |
+        .rule = "forced"
+      elif (.properties.default_track and (($currentRules.default_languages | index("any")) or ($currentRules.default_languages | index($lang)))) then
+        .striptracks_keep = true |
+        .rule = "default"
+      else . end |
     if .striptracks_keep then
-      .striptracks_log = "Info|Keeping \(.type) track \(.id): \($lang) (\(.codec))"
+      .striptracks_log = "Info|Keeping \(if .rule then .rule + " " else "" end)\(.type) track \(.id): \($lang) (\(.codec))"
     else
       .striptracks_log = "\(.id): \($lang) (\(.codec))"
     end
