@@ -41,7 +41,7 @@
 #  8 - unsupported Radarr/Sonarr version (v2)
 #  9 - mkvmerge get media info failed
 # 10 - remuxing completed, but no output file found
-# 11 - source video had no audio or subtitle tracks
+# 11 - source video had no audio tracks
 # 12 - log file is not writable
 # 13 - mkvmerge exited abnormally
 # 15 - could not set permissions and/or owner on new file
@@ -1352,7 +1352,7 @@ else . end |
 
 # Process tracks
 .tracks |= map(
-  .properties.language as $lang |
+  (if (.properties.language == "" or .properties.language == null) then "und" else .properties.language end) as $lang |
   .striptracks_debug = "Debug|Parsing: Track ID:\(.id) Type:\(.type) Lang:\($lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
   
   # Determine keep logic based on type and rules
@@ -1398,6 +1398,7 @@ else . end |
 # Output simplified dataset
 { striptracks_log, tracks: [ .tracks[] | { id, type, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug, striptracks_log, striptracks_keep } ] }
 ')
+[ $striptracks_debug -ge 2 ] && echo "jq track processing returned: $(echo "$striptracks_json_processed" | jq)" | awk '{print "Debug|"$0}' | log
 
 # Write messages to log
 echo "$striptracks_json_processed" | jq -crM --argjson Debug $striptracks_debug '

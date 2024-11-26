@@ -13,6 +13,7 @@ striptracks_json='{"attachments":[],"chapters":[],"container":{"properties":{"co
 # striptracks_json=$(mkvmerge -J test5.mkv | jq '.tracks[5].properties.forced_track=true')
 # striptracks_json=$(mkvmerge -J sample.mp4)
 # striptracks_json='{ "attachments": [], "chapters": [], "container": { "properties": { "container_type": 25, "is_providing_timestamps": true }, "recognized": true, "supported": true, "type": "QuickTime/MP4" }, "errors": [], "file_name": "sample.mp4", "global_tags": [], "identification_format_version": 12, "track_tags": [], "tracks": [ { "codec": "MPEG-4p10/AVC/H.264", "id": 0, "properties": { "language": "und", "number": 1, "packetizer": "mpeg4_p10_video", "pixel_dimensions": "1920x1080" }, "type": "video" }, { "codec": "AAC", "id": 1, "properties": { "audio_bits_per_sample": 16, "audio_channels": 2, "audio_sampling_frequency": 44100, "language": "eng", "number": 2 }, "type": "audio" }, { "codec": "AAC", "id": 2, "properties": { "audio_bits_per_sample": 16, "audio_channels": 2, "audio_sampling_frequency": 44100, "language": "eng", "number": 3 }, "type": "audio" }  ], "warnings": [] }'
+striptracks_json='{"attachments":[],"chapters":[],"container":{"properties":{"container_type":5,"is_providing_timestamps":true},"recognized":true,"supported":true,"type":"AVI"},"errors":[],"file_name":"/config/test/Poppy/Poppy (1936).avi","global_tags":[],"identification_format_version":19,"track_tags":[],"tracks":[{"codec":"MPEG-4p2","id":0,"properties":{"pixel_dimensions":"640x480"},"type":"video"},{"codec":"MP3","id":1,"properties":{"audio_channels":2,"audio_sampling_frequency":44100},"type":"audio"}],"warnings":[]}'
 
 striptracks_json_processed=$(echo "$striptracks_json" | jq -c --arg AudioKeep "$striptracks_audiokeep" \
 --arg SubsKeep "$striptracks_subskeep" '
@@ -35,7 +36,8 @@ else . end |
 
 # Process tracks
 .tracks |= map(
-  .properties.language as $lang |
+  # Set $lang to "und" if null or empty
+  (if (.properties.language == "" or .properties.language == null) then "und" else .properties.language end) as $lang |
   .striptracks_debug = "Debug|Parsing: Track ID:\(.id) Type:\(.type) Lang:\($lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
   
   # Determine keep logic based on type and rules
@@ -81,6 +83,7 @@ else . end |
 # Output simplified dataset
 { striptracks_log, tracks: [ .tracks[] | { id, type, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug, striptracks_log, striptracks_keep } ] }
 ')
+[ $striptracks_debug -ge 2 ] && echo "jq track processing returned: $(echo "$striptracks_json_processed" | jq)" | awk '{print "Debug|"$0}'
 
 echo "$striptracks_json_processed" | jq -crM --argjson Debug $striptracks_debug '
 # Log the main striptracks log
