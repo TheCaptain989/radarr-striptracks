@@ -43,7 +43,7 @@
 # 10 - remuxing completed, but no output file found
 # 11 - source video had no audio tracks
 # 12 - log file is not writable
-# 13 - mkvmerge exited abnormally
+# 13 - mkvmerge exited with an error
 # 15 - could not set permissions and/or owner on new file
 # 16 - could not delete the original file
 # 17 - Radarr/Sonarr API error
@@ -1472,12 +1472,16 @@ striptracks_mkvcommand="nice /usr/bin/mkvmerge --title \"$striptracks_title\" -q
 eval $striptracks_mkvcommand
 striptracks_return=$?
 [ $striptracks_debug -ge 2 ] && echo "Debug|mkvmerge exited with code: $striptracks_return" | log
-[ $striptracks_return -ne 0 ] && {
-  striptracks_message="Error|[$striptracks_return] mkvmerge error while remuxing \"$striptracks_video\""
-  echo "$striptracks_message" | log
-  echo "$striptracks_message" >&2
-  end_script 13
-}
+case $striptracks_return in
+  1) striptracks_message="Warning|[$striptracks_return] mkvmerge warning while remuxing \"$striptracks_video\""
+    echo "$striptracks_message" | log
+  ;;
+  2) striptracks_message="Error|[$striptracks_return] mkvmerge error while remuxing \"$striptracks_video\". Halting."
+    echo "$striptracks_message" | log
+    echo "$striptracks_message" >&2
+    end_script 13
+  ;;
+esac
 #### END MAIN
 
 # Check for non-empty file
