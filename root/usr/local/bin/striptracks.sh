@@ -82,9 +82,13 @@ Options and Arguments:
   -a, --audio <audio_languages>    Audio languages to keep
                                    ISO639-2 code(s) prefixed with a colon \`:\`
                                    multiple codes may be concatenated.
+                                   Each code may optionally be followed by a
+                                   plus \`+\` and one or more modifiers.
   -s, --subs <subtitle_languages>  Subtitles languages to keep
                                    ISO639-2 code(s) prefixed with a colon \`:\`
                                    multiple codes may be concatenated.
+                                   Each code may optionally be followed by a
+                                   plus \`+\` and one or more modifiers.
   -f, --file <video_file>          If included, the script enters batch mode
                                    and converts the specified video file.
                                    WARNING: Do not use this argument when called
@@ -105,6 +109,9 @@ audio or subtitle languages configured in the Radarr or Sonarr profile.  When
 used on the command line, they override the detected codes.  They are also
 accepted as positional parameters for backwards compatibility.
 
+Language modifiers may be \`f\` or \`d\` which select Forced or Default
+tracks respectively.
+
 Batch Mode:
   In batch mode the script acts as if it were not called from within Radarr
   or Sonarr.  It converts the file specified on the command line and ignores
@@ -117,8 +124,8 @@ Examples:
                                            # Radarr/Sonarr
   $striptracks_script -a :eng:und -s :eng       # keep English and Unknown audio and
                                            # English subtitles
-  $striptracks_script -a :eng:org -s :eng       # keep English and Original audio and
-                                           # English subtitles
+  $striptracks_script -a :eng:org -s :any+f:eng       # keep English and Original audio,
+                                           #  and forced or English subtitles
   $striptracks_script :eng \"\"                   # keep English audio and no subtitles
   $striptracks_script -d :eng:kor:jpn :eng:spa  # Enable debugging level 1, keeping
                                            # English, Korean, and Japanese
@@ -1419,7 +1426,7 @@ def log_removed_tracks($type):
 .striptracks_log // empty,
 
 # Log debug messages
-( .tracks[] | (if $Debug >= 2 then .striptracks_debug else empty end),
+( .tracks[] | (if $Debug >= 1 then .striptracks_debug else empty end),
 
  # Log messages for kept tracks
  (select(.striptracks_keep) | .striptracks_log // empty)
