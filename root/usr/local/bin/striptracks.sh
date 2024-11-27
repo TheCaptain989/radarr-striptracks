@@ -1334,8 +1334,8 @@ striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
 striptracks_json_processed=$(echo "$striptracks_json" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
 --arg SubsKeep "$striptracks_subskeep" '
 # Parse input string into language rules
-def parse_language_codes($input):
-  ($input | split(":")[1:] | map(split("+")) | 
+def parse_language_codes($codes):
+  ($codes | split(":")[1:] | map(split("+")) | 
     {languages: map(select(length == 1) | .[0]),
      forced_languages: map(select(length > 1 and (.[1] | contains("f"))) | .[0]),
      default_languages: map(select(length > 1 and (.[1] | contains("d"))) | .[0])}
@@ -1345,14 +1345,14 @@ def parse_language_codes($input):
 (parse_language_codes($AudioKeep) | .languages += ["mis","zxx"]) as $AudioRules |
 parse_language_codes($SubsKeep) as $SubsRules |
 
-# Log chapters information
+# Log chapter information
 if (.chapters[0].num_entries) then
   .striptracks_log = "Info|Chapters: \(.chapters[].num_entries)"
 else . end |
 
 # Process tracks
 .tracks |= map(
-  # Set $lang to "und" if null or empty
+  # Set track language to "und" if null or empty
   (if (.properties.language == "" or .properties.language == null) then "und" else .properties.language end) as $lang |
   .striptracks_debug = "Debug|Parsing: Track ID:\(.id) Type:\(.type) Name:\(.properties.track_name) Lang:\($lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
   
@@ -1403,12 +1403,19 @@ else . end |
 # Output simplified dataset
 { striptracks_log, tracks: [ .tracks[] | { id, type, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug, striptracks_log, striptracks_keep } ] }
 ')
-[ $striptracks_debug -ge 2 ] && echo "Debug|jq track processing returned ${#striptracks_json_processed} bytes." | log
-[ $striptracks_debug -ge 3 ] && echo "jq track processing returned: $(echo "$striptracks_json_processed" | jq)" | awk '{print "Debug|"$0}' | log
+[ $striptracks_debug -ge 2 ] && echo "Debug|Track processing returned ${#striptracks_json_processed} bytes." | log
+[ $striptracks_debug -ge 3 ] && echo "Track processing returned: $(echo "$striptracks_json_processed" | jq)" | awk '{print "Debug|"$0}' | log
 
 # Write messages to log
 echo "$striptracks_json_processed" | jq -crM --argjson Debug $striptracks_debug '
-# Log the main striptracks log
+# Log removed tracks
+def log_removed_tracks($type):
+  if (.tracks | map(select(.type == $type and .striptracks_keep == false)) | length > 0) then
+    "Info|Removed \($type) tracks: " +
+    (.tracks | map(select(.type == $type and .striptracks_keep == false) | .striptracks_log) | join(", "))
+  else empty end;
+
+# Log the chapters, if any
 .striptracks_log // empty,
 
 # Log debug messages
@@ -1418,17 +1425,8 @@ echo "$striptracks_json_processed" | jq -crM --argjson Debug $striptracks_debug 
  (select(.striptracks_keep) | .striptracks_log // empty)
 ),
 
-# Log removed audio tracks
-if (.tracks | map(select(.type == "audio" and .striptracks_keep == false)) | length > 0) then
-  "Info|Removed audio tracks: " + 
-  (.tracks | map(select(.type == "audio" and .striptracks_keep == false) | .striptracks_log) | join(", "))
-else empty end,
-
-# Log removed subtitle tracks
-if (.tracks | map(select(.type == "subtitles" and .striptracks_keep == false)) | length > 0) then
-  "Info|Removed subtitles tracks: " + 
-  (.tracks | map(select(.type == "subtitles" and .striptracks_keep == false) | .striptracks_log) | join(", "))
-else empty end,
+log_removed_tracks("audio"),
+log_removed_tracks("subtitles"),
 
 # Summary of kept tracks
 "Info|Kept tracks: \(.tracks | map(select(.striptracks_keep)) | length) " +
@@ -1437,7 +1435,7 @@ else empty end,
 ' | log
 
 # Check for no audio or subtitle tracks
-[ "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio"))')" = "" ] && {
+[ "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio" and .striptracks_keep))')" = "" ] && {
   striptracks_message="Warn|Script encountered an error when determining audio tracks to keep and must close."
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
@@ -1445,15 +1443,16 @@ else empty end,
 }
 
 # All tracks matched/no tracks removed
-[ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles"))')" = "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles"))')" ] && {
+[ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles"))|length')" = "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles" and .striptracks_keep))|length')" ] && {
   [ $striptracks_debug -ge 1 ] && echo "Debug|No tracks will be removed from video \"$striptracks_video\"" | log
   # Check if already MKV.  Remuxing not performed.
   if [[ $striptracks_video == *.mkv ]]; then
     striptracks_message="Info|No tracks would be removed from video. Setting Title only and exiting."
     echo "$striptracks_message" | log
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: /usr/bin/mkvpropedit -q --edit info --set \"title=$striptracks_title\" \"$striptracks_video\"" | log
-    /usr/bin/mkvpropedit -q --edit info --set "title=$striptracks_title" "$striptracks_video" 2>&1 | log
-    end_script 0
+    striptracks_mkvcommand="/usr/bin/mkvpropedit -q --edit info --set \"title=$striptracks_title\" \"$striptracks_video\""
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $striptracks_mkvcommand" | log
+    eval $striptracks_mkvcommand
+    end_script $?
   else
     [ $striptracks_debug -ge 1 ] && echo "Debug|Source video is not MKV. Remuxing anyway." | log
   fi
