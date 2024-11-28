@@ -124,8 +124,8 @@ Examples:
                                            # Radarr/Sonarr
   $striptracks_script -a :eng:und -s :eng       # keep English and Unknown audio and
                                            # English subtitles
-  $striptracks_script -a :eng:org -s :any+f:eng       # keep English and Original audio,
-                                           #  and forced or English subtitles
+  $striptracks_script -a :eng:org -s :any+f:eng # keep English and Original audio,
+                                           # and forced or English subtitles
   $striptracks_script :eng \"\"                   # keep English audio and no subtitles
   $striptracks_script -d :eng:kor:jpn :eng:spa  # Enable debugging level 1, keeping
                                            # English, Korean, and Japanese
@@ -818,15 +818,22 @@ function check_compat {
       [ ${striptracks_arr_version/.*/} -ge 3 ] && local striptracks_return=0
     ;;
     languageprofile)
+      # Langauge Profiles
       [ "${striptracks_type,,}" = "sonarr" ] && [ ${striptracks_arr_version/.*/} -eq 3 ] && local striptracks_return=0
     ;;
     customformat)
+      # Language option in Custom Formats
       [ "${striptracks_type,,}" = "radarr" ] && [ ${striptracks_arr_version/.*/} -ge 3 ] && local striptracks_return=0
       [ "${striptracks_type,,}" = "sonarr" ] && [ ${striptracks_arr_version/.*/} -ge 4 ] && local striptracks_return=0
     ;;
     originallanguage)
+      # Original language selection
       [ "${striptracks_type,,}" = "radarr" ] && [ ${striptracks_arr_version/.*/} -ge 3 ] && local striptracks_return=0
       [ "${striptracks_type,,}" = "sonarr" ] && [ ${striptracks_arr_version/.*/} -ge 4 ] && local striptracks_return=0
+    ;;
+    qualitylanguage)
+      # Language option in Quality Profile
+      [ "${striptracks_type,,}" = "radarr" ] && [ ${striptracks_arr_version/.*/} -ge 3 ] && local striptracks_return=0
     ;;
     *)  # Unknown feature
       local striptracks_message="Error|Unknown feature $1 in ${striptracks_type^}"
@@ -834,7 +841,7 @@ function check_compat {
       echo "$striptracks_message" >&2
     ;;
   esac
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Feature $1 is $([ $striptracks_return -eq 1 ] && echo "not ")compatible with ${striptracks_type^} v${striptracks_arr_version}." | log
+  [ $striptracks_debug -ge 2 ] && echo "Debug|Feature $1 is $([ $striptracks_return -eq 1 ] && echo "not ")compatible with ${striptracks_type^} v${striptracks_arr_version}." | log
   return $striptracks_return
 }
 # Get media management configuration
@@ -1115,7 +1122,7 @@ elif [ -n "$striptracks_api_url" ]; then
           striptracks_profileName="$(echo $striptracks_qualityProfiles | jq -crM ".[] | select(.id == $striptracks_profileId).name")"
           striptracks_profileLanguages="$(echo $striptracks_qualityProfiles | jq -cM "[.[] | select(.id == $striptracks_profileId) | .language]")"
           striptracks_languageSource="quality profile"
-          [ $striptracks_debug -ge 1 ] && echo "Debug|Detected quality profile '(${striptracks_profileId}) ${striptracks_profileName}' with language '$(echo $striptracks_profileLanguages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')'" | log
+          [ $striptracks_debug -ge 1 ] && echo "Debug|Detected quality profile '(${striptracks_profileId}) ${striptracks_profileName}'$(check_compat qualitylanguage && echo " with language '$(echo $striptracks_profileLanguages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')'")" | log
 
           # Query custom formats if returned language from quality profile is null or -1 (Any)
           if [ -z "$striptracks_profileLanguages" -o "$striptracks_profileLanguages" = "[null]" -o "$(echo $striptracks_profileLanguages | jq -crM '.[].id')" = "-1" ] && check_compat customformat; then
