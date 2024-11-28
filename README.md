@@ -7,6 +7,7 @@ A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.i
 **This unified script works in both Radarr and Sonarr.  Use this mod in either container!**
 
 >![notes] This mod supports Linux OSes only.
+
 <!-- markdownlint-disable -->
 Production Container info: [![Docker Image Size](https://img.shields.io/docker/image-size/linuxserver/mods/radarr-striptracks)](https://hub.docker.com/r/linuxserver/mods/tags?name=radarr-striptracks "Docker image size")
 [![linuxserver/docker-mods/mods/radarr-striptracks](https://img.shields.io/badge/dynamic/json?logo=github&url=https%3A%2F%2Fthecaptain989.github.io%2Fghcr-pulls%2Fradarr-striptracks.json&query=%24.pulls&label=ghcr%20pulls&color=1572A4)](https://github.com/linuxserver/docker-mods/pkgs/container/mods "GitHub package pulls")  
@@ -16,8 +17,8 @@ Development Container info:
 [![Build Image](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/BuildImage.yml/badge.svg)](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/BuildImage.yml "BuildImage job")  
 <!-- markdownlint-restore -->  
 
-## Features Only Available From This Repository
-The following features are only available from this repository.  These are either not related to Linuxserver.io's images or not be related to Docker at all, so they are not published as part of the official Linuxserver.io Docker Mod package.
+## Features Only Available In This Repository
+The following features are only available from this repository.  These are either not related to Linuxserver.io's images or not related to Docker at all, so they are not published as part of the official Linuxserver.io Docker Mod package.
 
 - Works in [hotio](https://hotio.dev/) containers. See [HOTIO.md](./hotio/HOTIO.md) for more details.
 - Works in Windows by using [WSL](https://learn.microsoft.com/en-us/windows/wsl/).  See the [WSL.md](./wsl/WSL.md) file for more details.
