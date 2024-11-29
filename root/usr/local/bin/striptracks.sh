@@ -908,7 +908,7 @@ function process_org_code {
 
   if [[ "${!striptracks_keep_var}" =~ :org ]]; then
     # Log debug message if applicable
-    [ "$striptracks_debug" -ge 1 ] && echo "Debug|${$striptracks_track_type^} argument ':org' specified. Changing '${!striptracks_keep_var}' to '${!striptracks_keep_var//:org/${striptracks_originalLangCode}}'" | log
+    [ "$striptracks_debug" -ge 1 ] && echo "Debug|${striptracks_track_type^} argument ':org' specified. Changing '${!striptracks_keep_var}' to '${!striptracks_keep_var//:org/${striptracks_originalLangCode}}'" | log
 
     # Replace :org with the original language code
     declare -g "$striptracks_keep_var=${!striptracks_keep_var//:org/${striptracks_originalLangCode}}"
