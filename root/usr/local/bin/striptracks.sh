@@ -915,11 +915,11 @@ function process_org_code {
 
     # Check compatibility
     if [ "${striptracks_type,,}" = "batch" ]; then
-      local striptracks_message="Warn|${$striptracks_track_type^} argument contains ':org' code, but this is undefined for Batch mode! Unexpected behavior may result."
+      local striptracks_message="Warn|${striptracks_track_type^} argument contains ':org' code, but this is undefined for Batch mode! Unexpected behavior may result."
       echo "$striptracks_message" | log
       echo "$striptracks_message" >&2
     elif ! check_compat originallanguage; then
-      local striptracks_message="Warn|${$striptracks_track_type^} argument contains ':org' code, but this is undefined and not compatible with this mode/version! Unexpected behavior may result."
+      local striptracks_message="Warn|${striptracks_track_type^} argument contains ':org' code, but this is undefined and not compatible with this mode/version! Unexpected behavior may result."
       echo "$striptracks_message" | log
       echo "$striptracks_message" >&2
     fi
