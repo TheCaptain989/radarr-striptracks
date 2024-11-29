@@ -6,11 +6,8 @@ A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.i
 
 **This unified script works in both Radarr and Sonarr.  Use this mod in either container!**
 
-- There is a now an installer for [hotio](https://hotio.dev/) containers!  See the [HOTIO.md](./hotio/HOTIO.md) file for more details.  
-
-- **NEW!** The script can now be executed from Windows by using [WSL](https://learn.microsoft.com/en-us/windows/wsl/)!  See the [WSL.md](./wsl/WSL.md) file for more details.  
-
 >![notes] This mod supports Linux OSes only.
+
 <!-- markdownlint-disable -->
 Production Container info: [![Docker Image Size](https://img.shields.io/docker/image-size/linuxserver/mods/radarr-striptracks)](https://hub.docker.com/r/linuxserver/mods/tags?name=radarr-striptracks "Docker image size")
 [![linuxserver/docker-mods/mods/radarr-striptracks](https://img.shields.io/badge/dynamic/json?logo=github&url=https%3A%2F%2Fthecaptain989.github.io%2Fghcr-pulls%2Fradarr-striptracks.json&query=%24.pulls&label=ghcr%20pulls&color=1572A4)](https://github.com/linuxserver/docker-mods/pkgs/container/mods "GitHub package pulls")  
@@ -19,6 +16,12 @@ Development Container info:
 [![Docker Pulls](https://img.shields.io/docker/pulls/thecaptain989/radarr-striptracks?logo=docker)](https://hub.docker.com/r/thecaptain989/radarr-striptracks "Docker container pulls")
 [![Build Image](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/BuildImage.yml/badge.svg)](https://github.com/TheCaptain989/radarr-striptracks/actions/workflows/BuildImage.yml "BuildImage job")  
 <!-- markdownlint-restore -->  
+
+## Features Only Available In This Repository
+The following features are only available from this repository.  These are either not related to Linuxserver.io's images or not related to Docker at all, so they are not published as part of the official Linuxserver.io Docker Mod package.
+
+- Works in [hotio](https://hotio.dev/) containers. See [HOTIO.md](./hotio/HOTIO.md) for more details.
+- Works in Windows by using [WSL](https://learn.microsoft.com/en-us/windows/wsl/).  See the [WSL.md](./wsl/WSL.md) file for more details.
 
 # Installation
 1. Configure your selected Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
@@ -71,7 +74,7 @@ Development Container info:
       <details>
       <summary>Synology Screenshot</summary>
 
-      *Example Synology Configuration*
+      *Example Synology Configuration*  
       ![striptracks](.assets/striptracks-synology.png "Synology container settings")
 
       </details>
@@ -84,7 +87,7 @@ Development Container info:
    <details>
    <summary>Screenshot</summary>
 
-   *Example Custom Script*
+   *Example Custom Script*  
    ![striptracks custom script](.assets/striptracks-v3-custom-script.png "Radarr/Sonarr custom script settings")
 
    </details>
@@ -102,7 +105,7 @@ The following is a simplified example and steps to configure Radarr so the scrip
    <details>
    <summary>Screenshot</summary>
 
-   *New Custom Format Example*
+   *New Custom Format Example*  
    ![add custom format](.assets/add-custom-format.png "New Custom Format")
 
    </details>
@@ -125,7 +128,7 @@ The following is a simplified example and steps to configure Radarr so the scrip
    <details>
    <summary>Screenshot</summary>
 
-   *Radarr Quality Profile Example*
+   *Radarr Quality Profile Example*  
    ![quality profile](.assets/radarr-quality-profile.png "Radarr Quality Profile Language scoring")
 
    </details>
@@ -204,15 +207,15 @@ All language conditions with positive scores *and* Negated conditions with negat
 The script also supports command-line arguments that will override the automatic language detection.  More granular control can therefore be exerted or extended using tagging and defining multiple *Connect* scripts (this is native Radarr/Sonarr functionality outside the scope of this documentation).
 
 The syntax for the command-line is:  
-`striptracks.sh [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [{-l,--log} <log_file>] [{-c|--config} <config_file>] [{-d|--debug} [<level>]]`  
+`striptracks.sh [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-d|--debug} [<level>]]`  
 
 <details>
 <summary>Table of Command-Line Arguments</summary>
 
 Option|Argument|Description
 ---|---|---
--a, --audio|<audio_languages>|Audio languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)
--s, --subs|<subtitle_languages>|Subtitle languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)
+-a, --audio|<audio_languages>|Audio languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)<br/>Each code may optionally be followed by a plus (`+`) and one or more [modifiers](./README.md#language-code-modifiers).
+-s, --subs|<subtitle_languages>|Subtitle languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)<br/>Each code may optionally be followed by a plus (`+`) and one or more modifiers.
 -f, --file|<video_file>|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified video file.<br/>Requires the `-a` option.<br/>![notes] **Do not** use this argument when called from Radarr or Sonarr!
 -l, --log|\<log_file\>|The log filename<br/>Default is /config/log/striptracks.txt
 -c, --config|\<config_file\>|Radarr/Sonarr XML configuration file<br/>Default is /config/config.xml
@@ -234,6 +237,21 @@ For example:
 Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.  Order is unimportant.
 
 >![warning] **WARNING:** If no subtitle language is detected via Radarr/Sonarr configuration or specified on the command-line, all subtitles are removed.
+
+### Language Code Modifiers
+Each language code can optionally be followed by a plus (`+`) and one or more modifier characters.  Supported modifiers are:
+
+Modifier|Function
+---|---
+`f`|Selects only tracks with the forced flag set
+`d`|Selects only tracks with the default flag set
+
+These modifiers must be applied to each language code you wish.  They may be applied to either audio or subtitles codes.  
+For example, the following options, `--audio :org:any+d --subs :eng:any+f` would keep:  
+- Audio: All original language tracks, and all Default tracks regardless of language
+- Subtitles: All English language tracks, and all Forced tracks regardless of language
+
+Modifiers can be combined, such as `:any+fd` to keep all forced and all default tracks.
 
 ### Any language code
 The `:any` language code is a special code. When used, the script will preserve all language tracks, regardless of how they are tagged in the source video.
@@ -266,8 +284,8 @@ There is no way to force the script to remove audio tracks with these codes.
 -d 2                              # Enable debugging level 2, audio and subtitles
                                   # languages detected from Radarr/Sonarr
 -a :eng:und -s :eng               # Keep English and Unknown audio, and English subtitles
--a :org:eng -s :eng               # Keep English and Original audio, and English subtitles
-:eng ""                           # Keep English audio and remove all subtitles
+-a :org:eng -s :any+f:eng         # Keep English and Original audio, and all forced or English subtitles
+-a :eng -s ""                     # Keep English audio and remove all subtitles
 -d -a :eng:kor:jpn -s :eng:spa    # Enable debugging level 1, keeping English, Korean, and Japanese audio, and
                                   # English and Spanish subtitles
 -f "/movies/Finding Nemo (2003).mkv" -a :eng:und -s :eng
@@ -299,10 +317,9 @@ striptracks-eng-debug.sh   # Keep English and Unknown audio, and English subtitl
 striptracks-eng-fre.sh     # Keep English, French, and Unknown audio, and English and French subtitles
 striptracks-eng-jpn.sh     # Keep English, Japanese, and Unknown audio and English subtitles
 striptracks-fre.sh         # Keep French and Unknown audio, and French subtitles
-striptracks-fre-debug.sh   # Keep French and Unknown audio, French subtitles, and enable debug logging
 striptracks-ger.sh         # Keep German and Unknown audio, and German subtitles
 striptracks-spa.sh         # Keep Spanish and Unknown audio, and Spanish subtitles
-striptracks-org-eng.sh     # Keep Original, English, and Unknown audio, and Original and English subtitles
+striptracks-org-eng.sh     # Keep Original, English, Unknown, and forced audio, and Original, English, and forced subtitles
 striptracks-org-ger.sh     # Keep Original, German, and Unknown audio, and Original and German subtitles
 striptracks-org-spa.sh     # Keep Original, Spanish, and Unknown audio, and Original and Spanish subtitles
 ```
@@ -378,10 +395,10 @@ To keep English and Unknown audio and English subtitles on all video files endin
 find /movies/ -type f \( -name "*.mkv" -o -name "*.avi" -o -name "*.mp4" \) | while read file; do /usr/local/bin/striptracks.sh -f "$file" -a :eng:und -s :eng; done
 ```
 
-Here's another example to keep English, Danish, and Unknown languages on all video files in your `./videos` directory (requires the `file` program; testable with `file -v`):
+Here's another example to keep English, Danish, Unknown languages, and all forced subtitles on all video files in your `./videos` directory (requires the `file` program; testable with `file -v`):
 
 ```shell
-find ./videos/ -type f | while read filename; do if file -i "$filename" | grep -q video; then /usr/local/bin/striptracks.sh -f "$filename" --audio :eng:dan:und --subs :eng:dan:und; fi; done
+find ./videos/ -type f | while read filename; do if file -i "$filename" | grep -q video; then /usr/local/bin/striptracks.sh -f "$filename" --audio :eng:dan:und --subs :eng:dan:und:any+f; fi; done
 ```
 
 ## Logs
