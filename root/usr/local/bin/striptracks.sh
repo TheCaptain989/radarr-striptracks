@@ -43,7 +43,7 @@
 # 10 - remuxing completed, but no output file found
 # 11 - source video had no audio tracks
 # 12 - log file is not writable
-# 13 - mkvmerge exited with an error
+# 13 - mkvmerge or mkvpropedit exited with an error
 # 15 - could not set permissions and/or owner on new file
 # 16 - could not delete the original file
 # 17 - Radarr/Sonarr API error
