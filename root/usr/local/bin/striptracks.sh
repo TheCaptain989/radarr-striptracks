@@ -901,6 +901,30 @@ function set_video_info {
   fi
   return $striptracks_return
 }
+# Handle :org language code
+function process_org_code {
+  local striptracks_track_type="$1" # 'audio' or 'subtitles'
+  local striptracks_keep_var="$2"  # Variable name, e.g., striptracks_audiokeep or striptracks_subskeep
+
+  if [[ "${!striptracks_keep_var}" =~ :org ]]; then
+    # Log debug message if applicable
+    [ "$striptracks_debug" -ge 1 ] && echo "Debug|${$striptracks_track_type^} argument ':org' specified. Changing '${!striptracks_keep_var}' to '${!striptracks_keep_var//:org/${striptracks_originalLangCode}}'" | log
+
+    # Replace :org with the original language code
+    declare -g "$striptracks_keep_var=${!striptracks_keep_var//:org/${striptracks_originalLangCode}}"
+
+    # Check compatibility
+    if [ "${striptracks_type,,}" = "batch" ]; then
+      local striptracks_message="Warn|${$striptracks_track_type^} argument contains ':org' code, but this is undefined for Batch mode! Unexpected behavior may result."
+      echo "$striptracks_message" | log
+      echo "$striptracks_message" >&2
+    elif ! check_compat originallanguage; then
+      local striptracks_message="Warn|${$striptracks_track_type^} argument contains ':org' code, but this is undefined and not compatible with this mode/version! Unexpected behavior may result."
+      echo "$striptracks_message" | log
+      echo "$striptracks_message" >&2
+    fi
+  fi
+}
 # Exit program
 function end_script {
   # Cool bash feature
@@ -1274,24 +1298,8 @@ else
 fi
 
 # Special handling for ':org' code from command line.
-if [[ "$striptracks_audiokeep" =~ :org ]]; then
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Command line ':org' code specified for audio. Changing '${striptracks_audiokeep}' to '${striptracks_audiokeep//:org/${striptracks_originalLangCode}}'" | log
-  striptracks_audiokeep="${striptracks_audiokeep//:org/${striptracks_originalLangCode}}"
-  if ! check_compat originallanguage; then
-    striptracks_message="Warn|:org code specified for audio, but this is undefined and not compatible with this mode/version! Unexpected behavior may result."
-    echo "$striptracks_message" | log
-    echo "$striptracks_message" >&2
-  fi
-fi
-if [[ "$striptracks_subskeep" =~ :org ]]; then
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Command line ':org' specified for subtitles. Changing '${striptracks_subskeep}' to '${striptracks_subskeep//:org/${striptracks_originalLangCode}}'" | log
-  striptracks_subskeep="${striptracks_subskeep//:org/${striptracks_originalLangCode}}"
-  if ! check_compat originallanguage; then
-    striptracks_message="Warn|:org code specified for subtitles, but this is undefined and not compatible with this mode/version! Unexpected behavior may result."
-    echo "$striptracks_message" | log
-    echo "$striptracks_message" >&2
-  fi
-fi
+process_org_code "audio" "striptracks_audiokeep"
+process_org_code "subtitles" "striptracks_subskeep"
 
 # Final assignment of audio and subtitles selection
 ## Guard clause
