@@ -126,7 +126,7 @@ Examples:
                                            # English subtitles
   $striptracks_script -a :eng:org -s :any+f:eng # keep English and Original audio,
                                            # and forced or English subtitles
-  $striptracks_script :eng \"\"                   # keep English audio and no subtitles
+  $striptracks_script -a :eng -s \"\"             # keep English audio and no subtitles
   $striptracks_script -d :eng:kor:jpn :eng:spa  # Enable debugging level 1, keeping
                                            # English, Korean, and Japanese
                                            # audio, and English and Spanish
@@ -400,7 +400,7 @@ function get_videofile_info {
   striptracks_result=$(curl -s --fail-with-body -H "X-Api-Key: $striptracks_apikey" \
     -H "Content-Type: application/json" \
 		-H "Accept: application/json" \
-    --get "$url" )
+    --get "$url")
   local striptracks_curlret=$?; [ $striptracks_curlret -ne 0 ] && {
     local striptracks_message=$(echo -e "[$striptracks_curlret] curl error when calling: \"$url\"\nWeb server returned: $(echo $striptracks_result | jq -jcM .message?)" | awk '{print "Error|"$0}')
     echo "$striptracks_message" | log
@@ -674,8 +674,8 @@ function get_mediainfo {
   [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: /usr/bin/mkvmerge -J \"$1\"" | log
   unset striptracks_json
   striptracks_json=$(/usr/bin/mkvmerge -J "$1" 2>&1)
-  local striptracks_curlret=$?; [ $striptracks_curlret -ne 0 ] && {
-    local striptracks_message="Error|[$striptracks_curlret] Error executing mkvmerge. It returned: $striptracks_json"
+  local striptracks_mkvret=$?; [ $striptracks_mkvret -ne 0 ] && {
+    local striptracks_message="Error|[$striptracks_mkvret] Error executing mkvmerge. It returned: $striptracks_json"
     echo "$striptracks_message" | log
     echo "$striptracks_message" >&2
   }
@@ -841,7 +841,7 @@ function check_compat {
       echo "$striptracks_message" >&2
     ;;
   esac
-  [ $striptracks_debug -ge 2 ] && echo "Debug|Feature $1 is $([ $striptracks_return -eq 1 ] && echo "not ")compatible with ${striptracks_type^} v${striptracks_arr_version}." | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Feature $1 is $([ $striptracks_return -eq 1 ] && echo "not ")compatible with ${striptracks_type^} v${striptracks_arr_version}." | log
   return $striptracks_return
 }
 # Get media management configuration
@@ -1068,7 +1068,7 @@ fi
 
 # Check if video file variable is blank
 if [ -z "$striptracks_video" ]; then
-  striptracks_message="Error|No video file detected! radarr_moviefile_path or sonarr_episodefile_path environment variable missing and -f option not specified on command line."
+  striptracks_message="Error|No video file found! radarr_moviefile_path or sonarr_episodefile_path environment variable missing and -f option not specified on command line."
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
   usage 
@@ -1115,14 +1115,14 @@ elif [ -n "$striptracks_api_url" ]; then
 
           # Save original metadata
           striptracks_original_metadata="$(echo $striptracks_videofile_info | jq -crM '{quality, releaseGroup}')"
-          [ $striptracks_debug -ge 1 ] && echo "Debug|Detected video file quality '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' and release group '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'" | log
+          [ $striptracks_debug -ge 1 ] && echo "Debug|Found video file quality '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' and release group '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'" | log
 
           # Get language name(s) from quality profile used by video
           striptracks_profileId="$(echo $striptracks_videoinfo | jq -crM ${striptracks_video_rootNode}.qualityProfileId)"
           striptracks_profileName="$(echo $striptracks_qualityProfiles | jq -crM ".[] | select(.id == $striptracks_profileId).name")"
           striptracks_profileLanguages="$(echo $striptracks_qualityProfiles | jq -cM "[.[] | select(.id == $striptracks_profileId) | .language]")"
           striptracks_languageSource="quality profile"
-          [ $striptracks_debug -ge 1 ] && echo "Debug|Detected quality profile '(${striptracks_profileId}) ${striptracks_profileName}'$(check_compat qualitylanguage && echo " with language '$(echo $striptracks_profileLanguages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')'")" | log
+          [ $striptracks_debug -ge 1 ] && echo "Debug|Found quality profile '(${striptracks_profileId}) ${striptracks_profileName}'$(check_compat qualitylanguage && echo " with language '$(echo $striptracks_profileLanguages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')'")" | log
 
           # Query custom formats if returned language from quality profile is null or -1 (Any)
           if [ -z "$striptracks_profileLanguages" -o "$striptracks_profileLanguages" = "[null]" -o "$(echo $striptracks_profileLanguages | jq -crM '.[].id')" = "-1" ] && check_compat customformat; then
@@ -1164,7 +1164,7 @@ elif [ -n "$striptracks_api_url" ]; then
               # Convert the language codes into language code/name pairs
               striptracks_profileLanguages="$(echo $striptracks_lang_codes | jq -crM "map(select(.id | inside($striptracks_qcf_langcodes)) | {id, name})")"
               striptracks_languageSource="custom format"
-              [ $striptracks_debug -ge 1 ] && echo "Debug|Detected custom format language(s) '$(echo $striptracks_profileLanguages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')'" | log
+              [ $striptracks_debug -ge 1 ] && echo "Debug|Found custom format language(s) '$(echo $striptracks_profileLanguages | jq -crM '[.[] | "(\(.id | tostring)) \(.name)"] | join(",")')'" | log
             else
               [ $striptracks_debug -ge 1 ] && echo "Debug|None of the applied custom formats have language conditions with usable scores." | log
             fi
@@ -1181,7 +1181,7 @@ elif [ -n "$striptracks_api_url" ]; then
               striptracks_profileName="$(echo $striptracks_languageProfiles | jq -crM ".[] | select(.id == $striptracks_profileId).name")"
               striptracks_profileLanguages="$(echo $striptracks_languageProfiles | jq -cM "[.[] | select(.id == $striptracks_profileId) | .languages[] | select(.allowed).language]")"
               striptracks_languageSource="language profile"
-              [ $striptracks_debug -ge 1 ] && echo "Debug|Detected language profile '(${striptracks_profileId}) ${striptracks_profileName}' with language(s) '$(echo $striptracks_profileLanguages | jq -crM '[.[].name] | join(",")')'" | log
+              [ $striptracks_debug -ge 1 ] && echo "Debug|Found language profile '(${striptracks_profileId}) ${striptracks_profileName}' with language(s) '$(echo $striptracks_profileLanguages | jq -crM '[.[].name] | join(",")')'" | log
             else
               # languageProfile API failed
               striptracks_message="Warn|The 'languageprofile' API returned an error."
@@ -1209,7 +1209,7 @@ elif [ -n "$striptracks_api_url" ]; then
 
             # shellcheck disable=SC2090
             striptracks_originalLangCode="$(echo $striptracks_isocodemap | jq -jcM ".languages[] | select(.language.name == \"$striptracks_originalLangName\") | .language | \":\(.\"iso639-2\"[])\"")"
-            [ $striptracks_debug -ge 1 ] && echo "Debug|Detected original video language of '$striptracks_originalLangName ($striptracks_originalLangCode)' from $striptracks_video_type '$striptracks_rescan_id'" | log
+            [ $striptracks_debug -ge 1 ] && echo "Debug|Found original video language of '$striptracks_originalLangName ($striptracks_originalLangCode)' from $striptracks_video_type '$striptracks_rescan_id'" | log
           fi
 
           # Map language names to ISO code(s) used by mkvmerge
@@ -1368,7 +1368,7 @@ else . end |
 .tracks |= map(
   # Set track language to "und" if null or empty
   (if (.properties.language == "" or .properties.language == null) then "und" else .properties.language end) as $lang |
-  .striptracks_debug = "Debug|Parsing: Track ID:\(.id) Type:\(.type) Name:\(.properties.track_name) Lang:\($lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
+  .striptracks_debug_log = "Debug|Parsing track ID:\(.id) Type:\(.type) Name:\(.properties.track_name) Lang:\($lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
   
   # Determine keep logic based on type and rules
   if .type == "video" then
@@ -1415,7 +1415,7 @@ elif (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 
 else . end |
 
 # Output simplified dataset
-{ striptracks_log, tracks: [ .tracks[] | { id, type, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug, striptracks_log, striptracks_keep } ] }
+{ striptracks_log, tracks: [ .tracks[] | { id, type, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug_log, striptracks_log, striptracks_keep } ] }
 ')
 [ $striptracks_debug -ge 2 ] && echo "Debug|Track processing returned ${#striptracks_json_processed} bytes." | log
 [ $striptracks_debug -ge 3 ] && echo "Track processing returned: $(echo "$striptracks_json_processed" | jq)" | awk '{print "Debug|"$0}' | log
@@ -1433,7 +1433,7 @@ def log_removed_tracks($type):
 .striptracks_log // empty,
 
 # Log debug messages
-( .tracks[] | (if $Debug >= 1 then .striptracks_debug else empty end),
+( .tracks[] | (if $Debug >= 1 then .striptracks_debug_log else empty end),
 
  # Log messages for kept tracks
  (select(.striptracks_keep) | .striptracks_log // empty)
@@ -1449,48 +1449,58 @@ log_removed_tracks("subtitles"),
 ' | log
 
 # Check for no audio or subtitle tracks
-[ "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio" and .striptracks_keep))')" = "" ] && {
+if [ "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio" and .striptracks_keep))')" = "" ]; then
   striptracks_message="Warn|Script encountered an error when determining audio tracks to keep and must close."
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
   end_script 11
-}
+fi
 
 # All tracks matched/no tracks removed
-[ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles"))|length')" = "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles" and .striptracks_keep))|length')" ] && {
+if [ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles"))|length')" = "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles" and .striptracks_keep))|length')" ]; then
   [ $striptracks_debug -ge 1 ] && echo "Debug|No tracks will be removed from video \"$striptracks_video\"" | log
-  # Check if already MKV.  Remuxing not performed.
+  # Check if already MKV
   if [[ $striptracks_video == *.mkv ]]; then
+    # Remuxing not performed
     striptracks_message="Info|No tracks would be removed from video. Setting Title only and exiting."
     echo "$striptracks_message" | log
     striptracks_mkvcommand="/usr/bin/mkvpropedit -q --edit info --set \"title=$striptracks_title\" \"$striptracks_video\""
     [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $striptracks_mkvcommand" | log
-    eval $striptracks_mkvcommand
-    end_script $?
+    striptracks_result=$(eval $striptracks_mkvcommand 2>&1)
+    striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
+      striptracks_message=$(echo -e "[$striptracks_return] Error when setting video title: \"$striptracks_tempvideo\"\nmkvpropedit returned: $striptracks_result" | awk '{print "Error|"$0}')
+      echo "$striptracks_message" | log
+      echo "$striptracks_message" >&2
+      striptracks_exitstatus=13
+    }
+    end_script
   else
     [ $striptracks_debug -ge 1 ] && echo "Debug|Source video is not MKV. Remuxing anyway." | log
   fi
-}
+fi
 
 # Build argument with kept audio tracks for MKVmerge
 striptracks_audioarg=$(echo "$striptracks_json_processed" | jq -crM '.tracks | map(select(.type == "audio" and .striptracks_keep) | .id) | join(",")')
 striptracks_audioarg="-a $striptracks_audioarg"
 
-# Build argument with kept subtitles tracks for MKVmerge
+# Build argument with kept subtitles tracks for MKVmerge, or remove all subtitles
 striptracks_subsarg=$(echo "$striptracks_json_processed" | jq -crM '.tracks | map(select(.type == "subtitles" and .striptracks_keep) | .id) | join(",")')
-[ ${#striptracks_subsarg} -ne 0 ] && striptracks_subsarg="-s $striptracks_subsarg" || striptracks_subsarg="-S"
+if [ ${#striptracks_subsarg} -ne 0 ]; then
+  striptracks_subsarg="-s $striptracks_subsarg"
+else
+  striptracks_subsarg="-S"
+fi
 
 # Execute MKVmerge
 striptracks_mkvcommand="nice /usr/bin/mkvmerge --title \"$striptracks_title\" -q -o \"$striptracks_tempvideo\" $striptracks_audioarg $striptracks_subsarg \"$striptracks_video\""
 [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $striptracks_mkvcommand" | log
-eval $striptracks_mkvcommand
+striptracks_result=$(eval $striptracks_mkvcommand 2>&1)
 striptracks_return=$?
-[ $striptracks_debug -ge 2 ] && echo "Debug|mkvmerge exited with code: $striptracks_return" | log
 case $striptracks_return in
-  1) striptracks_message="Warning|[$striptracks_return] mkvmerge warning while remuxing \"$striptracks_video\""
+  1) striptracks_message=$(echo -e "[$striptracks_return] Warning when remuxing video: \"$striptracks_video\"\nmkvmerge returned: $striptracks_result" | awk '{print "Warn|"$0}')
     echo "$striptracks_message" | log
   ;;
-  2) striptracks_message="Error|[$striptracks_return] mkvmerge error while remuxing \"$striptracks_video\". Halting."
+  2) striptracks_message=$(echo -e "[$striptracks_return] Error when remuxing video: \"$striptracks_video\"\nmkvmerge returned: $striptracks_result" | awk '{print "Error|"$0}')
     echo "$striptracks_message" | log
     echo "$striptracks_message" >&2
     end_script 13
@@ -1510,9 +1520,9 @@ fi
 if [ "$(id -u)" -eq 0 ]; then
   # Set owner
   [ $striptracks_debug -ge 1 ] && echo "Debug|Changing owner of file \"$striptracks_tempvideo\"" | log
-  chown --reference="$striptracks_video" "$striptracks_tempvideo" >&2
+  striptracks_result=$(chown --reference="$striptracks_video" "$striptracks_tempvideo" 2>&1)
   striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
-    striptracks_message="Error|[$striptracks_return] Error when changing owner of file: \"$striptracks_tempvideo\""
+    striptracks_message=$(echo -e "[$striptracks_return] Error when changing owner of file: \"$striptracks_tempvideo\"\nchown returned: $striptracks_result" | awk '{print "Error|"$0}')
     echo "$striptracks_message" | log
     echo "$striptracks_message" >&2
     striptracks_exitstatus=15
@@ -1522,9 +1532,9 @@ else
   [ $striptracks_debug -ge 1 ] && echo "Debug|Unable to change owner of file when running as user '$(id -un)'" | log
 fi
 # Set permissions
-chmod --reference="$striptracks_video" "$striptracks_tempvideo" >&2
+striptracks_result=$(chmod --reference="$striptracks_video" "$striptracks_tempvideo" 2>&1)
 striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
-  striptracks_message="Error|[$striptracks_return] Error when changing permissions of file: \"$striptracks_tempvideo\""
+  striptracks_message=$(echo -e "[$striptracks_return] Error when changing permissions of file: \"$striptracks_tempvideo\"\nchmod returned: $striptracks_result" | awk '{print "Error|"$0}')
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
   striptracks_exitstatus=15
@@ -1533,9 +1543,9 @@ striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
 # Just delete the original video if running in batch mode
 if [ "$striptracks_type" = "batch" ]; then
   [ $striptracks_debug -ge 1 ] && echo "Debug|Deleting: \"$striptracks_video\"" | log
-  rm "$striptracks_video" 2>&1 | log
+  striptracks_result=$(rm "$striptracks_video" 2>&1)
   striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
-    striptracks_message="Error|[$striptracks_return] Error when deleting video: \"$striptracks_video\""
+    striptracks_message=$(echo -e "[$striptracks_return] Error when deleting video: \"$striptracks_video\"\nrm returned: $striptracks_result" | awk '{print "Error|"$0}')
     echo "$striptracks_message" | log
     echo "$striptracks_message" >&2
     striptracks_exitstatus=16
@@ -1561,9 +1571,9 @@ fi
 
 # Rename the temporary video file to MKV
 [ $striptracks_debug -ge 1 ] && echo "Debug|Renaming \"$striptracks_tempvideo\" to \"$striptracks_newvideo\"" | log
-mv -f "$striptracks_tempvideo" "$striptracks_newvideo" 2>&1 | log
+striptracks_result=$(mv -f "$striptracks_tempvideo" "$striptracks_newvideo" 2>&1)
 striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
-  striptracks_message="Error|[$striptracks_return] Unable to rename temp video: \"$striptracks_tempvideo\" to: \"$striptracks_newvideo\".  Halting."
+  striptracks_message=$(echo -e "[$striptracks_return] Unable to rename temp video: \"$striptracks_tempvideo\" to: \"$striptracks_newvideo\".  Halting.\nmv returned: $striptracks_result" | awk '{print "Error|"$0}')
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
   end_script 6

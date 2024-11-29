@@ -214,7 +214,7 @@ The syntax for the command-line is:
 
 Option|Argument|Description
 ---|---|---
--a, --audio|<audio_languages>|Audio languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)<br/>Each code may optionally be followed by a plus (`+`) and one or more modifiers.
+-a, --audio|<audio_languages>|Audio languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)<br/>Each code may optionally be followed by a plus (`+`) and one or more [modifiers](./README.md#language-code-modifiers).
 -s, --subs|<subtitle_languages>|Subtitle languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)<br/>Each code may optionally be followed by a plus (`+`) and one or more modifiers.
 -f, --file|<video_file>|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified video file.<br/>Requires the `-a` option.<br/>![notes] **Do not** use this argument when called from Radarr or Sonarr!
 -l, --log|\<log_file\>|The log filename<br/>Default is /config/log/striptracks.txt
@@ -285,7 +285,7 @@ There is no way to force the script to remove audio tracks with these codes.
                                   # languages detected from Radarr/Sonarr
 -a :eng:und -s :eng               # Keep English and Unknown audio, and English subtitles
 -a :org:eng -s :any+f:eng         # Keep English and Original audio, and all forced or English subtitles
-:eng ""                           # Keep English audio and remove all subtitles
+-a :eng -s ""                     # Keep English audio and remove all subtitles
 -d -a :eng:kor:jpn -s :eng:spa    # Enable debugging level 1, keeping English, Korean, and Japanese audio, and
                                   # English and Spanish subtitles
 -f "/movies/Finding Nemo (2003).mkv" -a :eng:und -s :eng
@@ -317,7 +317,6 @@ striptracks-eng-debug.sh   # Keep English and Unknown audio, and English subtitl
 striptracks-eng-fre.sh     # Keep English, French, and Unknown audio, and English and French subtitles
 striptracks-eng-jpn.sh     # Keep English, Japanese, and Unknown audio and English subtitles
 striptracks-fre.sh         # Keep French and Unknown audio, and French subtitles
-striptracks-fre-debug.sh   # Keep French and Unknown audio, French subtitles, and enable debug logging
 striptracks-ger.sh         # Keep German and Unknown audio, and German subtitles
 striptracks-spa.sh         # Keep Spanish and Unknown audio, and Spanish subtitles
 striptracks-org-eng.sh     # Keep Original, English, Unknown, and forced audio, and Original, English, and forced subtitles
@@ -396,10 +395,10 @@ To keep English and Unknown audio and English subtitles on all video files endin
 find /movies/ -type f \( -name "*.mkv" -o -name "*.avi" -o -name "*.mp4" \) | while read file; do /usr/local/bin/striptracks.sh -f "$file" -a :eng:und -s :eng; done
 ```
 
-Here's another example to keep English, Danish, and Unknown languages on all video files in your `./videos` directory (requires the `file` program; testable with `file -v`):
+Here's another example to keep English, Danish, Unknown languages, and all forced subtitles on all video files in your `./videos` directory (requires the `file` program; testable with `file -v`):
 
 ```shell
-find ./videos/ -type f | while read filename; do if file -i "$filename" | grep -q video; then /usr/local/bin/striptracks.sh -f "$filename" --audio :eng:dan:und --subs :eng:dan:und; fi; done
+find ./videos/ -type f | while read filename; do if file -i "$filename" | grep -q video; then /usr/local/bin/striptracks.sh -f "$filename" --audio :eng:dan:und --subs :eng:dan:und:any+f; fi; done
 ```
 
 ## Logs
