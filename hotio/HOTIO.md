@@ -33,49 +33,49 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 > [!WARNING]
 > The `/etc/cont-init.d/99-striptracks` path in the `volumes` section below is important; don't change it!
 
-  *Example Docker Compose YAML Configuration*
+   *Example Docker Compose YAML Configuration*
 
-  ```yaml
-  services:
-  sonarr:
-      container_name: sonarr
-      image: ghcr.io/hotio/sonarr
-      ports:
-      - "8989:8989"
-      environment:
-      - PUID=1000
-      - PGID=1000
-      - UMASK=002
-      - TZ=Etc/UTC
-      volumes:
-      - /<host_folder_config>:/config
-      - /<host_folder_data>:/data
-      - /volume1/docker/99-striptracks.sh:/etc/cont-init.d/99-striptracks
-  ```  
+   ```yaml
+   services:
+   sonarr:
+       container_name: sonarr
+       image: ghcr.io/hotio/sonarr
+       ports:
+       - "8989:8989"
+       environment:
+       - PUID=1000
+       - PGID=1000
+       - UMASK=002
+       - TZ=Etc/UTC
+       volumes:
+       - /<host_folder_config>:/config
+       - /<host_folder_data>:/data
+       - /volume1/docker/99-striptracks.sh:/etc/cont-init.d/99-striptracks
+   ```  
 
- <details>
- <summary>Example Docker Run Command</summary>
+   <details>
+   <summary>Example Docker Run Command</summary>
 
-  ```shell
-  docker run --rm \
-      --name sonarr \
-      -p 8989:8989 \
-      -e PUID=1000 \
-      -e PGID=1000 \
-      -e UMASK=002 \
-      -e TZ="Etc/UTC" \
-      -v /<host_folder_config>:/config \
-      -v /<host_folder_data>:/data \
-      -v /volume1/docker/99-striptracks.sh:/etc/cont-init.d/99-striptracks \
-      ghcr.io/hotio/sonarr
-  ```  
+   ```shell
+   docker run --rm \
+       --name sonarr \
+       -p 8989:8989 \
+       -e PUID=1000 \
+       -e PGID=1000 \
+       -e UMASK=002 \
+       -e TZ="Etc/UTC" \
+       -v /<host_folder_config>:/config \
+       -v /<host_folder_data>:/data \
+       -v /volume1/docker/99-striptracks.sh:/etc/cont-init.d/99-striptracks \
+       ghcr.io/hotio/sonarr
+   ```  
 
- </details>
- <details>
- <summary>Synology Screenshot</summary>
-
- *Example Synology Configuration*  
- ![striptracks hotio](hotio-striptracks-synology.png "Synology container ettings")
+   </details>
+   <details>
+   <summary>Synology Screenshot</summary>
+  
+   *Example Synology Configuration*  
+   ![striptracks hotio](hotio-striptracks-synology.png "Synology container ettings")
 
 > [!CAUTION]
 > Please be sure that your mount points for `/config` and `/data` above do not overlap with the newly added mount point!
@@ -84,10 +84,10 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 
 5. Start the container.
 
-6. After the container has fully started, continue with Installation step 2 in the main [Readme](../README.md#installation).
+6. After the container has fully started, continue with Installation step 2 in the main [Readme](../README.md#installation) to configure `striptracks.sh` as a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen.
 
 # Requirements
-You must have the **bash** shell available in your host path.  You *might* attempt editing the [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) in the 99-striptracks.sh script to get around this, but that is beyond the scope of this document.
+You must have the **bash** shell available in your host path.  You *might* attempt editing the [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) in the `99-striptracks.sh` script to get around this, but that is beyond the scope of this document.
 
 # Known Issues
 On at least *some* Synology hosts that use the ash shell, this script will cause the container to abort and not start.  If this happens, ***check your container logs*** for hints as to what may be wrong.
