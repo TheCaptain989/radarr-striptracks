@@ -29,61 +29,62 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 > Notice that no DOCKER_MODS environment variable is used in this setup.  That is a specific feature of LSIO containers and is not applicable to hotio containers.
 
 4. Add the **99-striptracks.sh** file path as a mount point in your `compose.yml` file or `docker run` command.  
+
 > [!WARNING]
 > The `/etc/cont-init.d/99-striptracks` path in the `volumes` section below is important; don't change it!
 
-   *Example Docker Compose YAML Configuration*  
+  *Example Docker Compose YAML Configuration*
 
-    ```yaml
-    services:
-    sonarr:
-        container_name: sonarr
-        image: ghcr.io/hotio/sonarr
-        ports:
-        - "8989:8989"
-        environment:
-        - PUID=1000
-        - PGID=1000
-        - UMASK=002
-        - TZ=Etc/UTC
-        volumes:
-        - /<host_folder_config>:/config
-        - /<host_folder_data>:/data
-        - /volume1/docker/99-striptracks.sh:/etc/cont-init.d/99-striptracks
-    ```  
+  ```yaml
+  services:
+  sonarr:
+      container_name: sonarr
+      image: ghcr.io/hotio/sonarr
+      ports:
+      - "8989:8989"
+      environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+      - TZ=Etc/UTC
+      volumes:
+      - /<host_folder_config>:/config
+      - /<host_folder_data>:/data
+      - /volume1/docker/99-striptracks.sh:/etc/cont-init.d/99-striptracks
+  ```  
 
-   <details>
-   <summary>Example Docker Run Command</summary>
+ <details>
+ <summary>Example Docker Run Command</summary>
 
-    ```shell
-    docker run --rm \
-        --name sonarr \
-        -p 8989:8989 \
-        -e PUID=1000 \
-        -e PGID=1000 \
-        -e UMASK=002 \
-        -e TZ="Etc/UTC" \
-        -v /<host_folder_config>:/config \
-        -v /<host_folder_data>:/data \
-        -v /volume1/docker/99-striptracks.sh:/etc/cont-init.d/99-striptracks \
-        ghcr.io/hotio/sonarr
-    ```  
+  ```shell
+  docker run --rm \
+      --name sonarr \
+      -p 8989:8989 \
+      -e PUID=1000 \
+      -e PGID=1000 \
+      -e UMASK=002 \
+      -e TZ="Etc/UTC" \
+      -v /<host_folder_config>:/config \
+      -v /<host_folder_data>:/data \
+      -v /volume1/docker/99-striptracks.sh:/etc/cont-init.d/99-striptracks \
+      ghcr.io/hotio/sonarr
+  ```  
 
-   </details>
-   <details>
-   <summary>Synology Screenshot</summary>
+ </details>
+ <details>
+ <summary>Synology Screenshot</summary>
 
-   *Example Synology Configuration*  
-   ![striptracks hotio](hotio-striptracks-synology.png "Synology container settings")
+ *Example Synology Configuration*  
+ ![striptracks hotio](hotio-striptracks-synology.png "Synology container ettings")
 
 > [!CAUTION]
 > Please be sure that your mount points for `/config` and `/data` above do not overlap with the newly added mount point!
 
-      </details>
+   </details>
 
-   2. Start the container.
+5. Start the container.
 
-4. After the container has fully started, continue with Installation step 2 in the main [Readme](../README.md#installation).
+6. After the container has fully started, continue with Installation step 2 in the main [Readme](../README.md#installation).
 
 # Requirements
 You must have the **bash** shell available in your host path.  You *might* attempt editing the [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) in the 99-striptracks.sh script to get around this, but that is beyond the scope of this document.
