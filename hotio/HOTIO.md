@@ -28,7 +28,7 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 > [!IMPORTANT]
 > Notice that no DOCKER_MODS environment variable is used in this setup.  That is a specific feature of LSIO containers and is not applicable to hotio containers.
 
-   1. Add the **99-striptracks.sh** file path as a mount point in your `compose.yml` file or `docker run` command.  
+4. Add the **99-striptracks.sh** file path as a mount point in your `compose.yml` file or `docker run` command.  
 > [!WARNING]
 > The `/etc/cont-init.d/99-striptracks` path in the `volumes` section below is important; don't change it!
 
