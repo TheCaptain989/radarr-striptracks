@@ -6,7 +6,7 @@ A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.i
 
 **This unified script works in both Radarr and Sonarr.  Use this mod in either container!**
 
->![notes] This mod supports Linux OSes only.
+> [!NOTE] This mod supports Linux OSes only.
 
 <!-- markdownlint-disable -->
 Production Container info: [![Docker Image Size](https://img.shields.io/docker/image-size/linuxserver/mods/radarr-striptracks)](https://hub.docker.com/r/linuxserver/mods/tags?name=radarr-striptracks "Docker image size")
@@ -95,7 +95,7 @@ The following features are only available from this repository.  These are eithe
    The script will detect the language(s) defined in Radarr/Sonarr for the movie or TV show and only keep the audio and subtitles selected.  
    Alternatively, a wrapper script or an environment variable may be used to more granularly define which tracks to keep.  See [Wrapper Scripts](./README.md#wrapper-scripts) or [Environment Variable](./README.md#environment-variable) for more details.
 
-   >![notes] You **must** configure language(s) in Radarr/Sonarr *or* pass command-line arguments for the script to do anything!  See the next section for an example.
+   > [!IMPORTANT] You **must** configure language(s) in Radarr/Sonarr *or* pass command-line arguments for the script to do anything!  See the next section for an example.
 
 ## Radarr Configuration Example
 The following is a simplified example and steps to configure Radarr so the script will keep Original and English languages of an imported movie.
@@ -143,33 +143,37 @@ Chapters, if they exist, are preserved. The Title attribute in the MKV is set to
 The language of the video file will be updated in the Radarr or Sonarr database to reflect the actual languages preserved in the remuxed video, and the video will be renamed according to the Radarr/Sonarr rules if needed (for example, if a removed track would trigger a name change.)
 
 If you've configured the Radarr/Sonarr **Recycle Bin** path correctly, the original video will be moved there.  
->![warning] **WARNING:** If you have *not* configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
+> [!CAUTION] If you have ***not*** configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
 
 If the resulting video file would contain the same tracks as the original, and it's already an MKV, the remux step is skipped.
 
 ## Automatic Language Detection
-Beginning with version 2.0 of this mod, the script may be called with no arguments.  It will detect the language(s) configured within Radarr/Sonarr on the particular movie or TV show.
-Language selection(s) may be configured in ***Custom Formats*** (in Radarr v3 and higher and Sonarr v4 and higher), ***Quality Profiles*** (only in Radarr), or ***Language Profiles*** (Sonarr v3).
+When the script is called with no arguments, it will attempt to detect the language(s) configured within Radarr/Sonarr on the particular movie or TV show.  
+Language selection(s) may be configured in:
+- ***Custom Formats*** (in Radarr v3 and higher and Sonarr v4 and higher),
+- ***Quality Profiles*** (only in Radarr), or
+- ***Language Profiles*** (Sonarr v3)
 
 Both audio **and** subtitle tracks that match the configured language(s) are kept.
 
+### Special Language Selections
 The language selection **'Original'** will use the language Radarr pulled from [The Movie Database](https://www.themoviedb.org/ "TMDB") or that Sonarr pulled from [The TVDB](https://www.thetvdb.com/ "TVDB") during its last refresh.
 Selecting this language is functionally equivalent to calling the script with `--audio :org --subs :org` command-line arguments.  See [Original language code](./README.md#original-language-code) below for more details.
 
 The language selection **'Unknown'** will match tracks with **no configured language** in the video file. Selecting this language is functionally equivalent to calling the script with `--audio :und --subs :und` command-line arguments.
 See [Unknown language code](./README.md#unknown-language-code) below for more details.
 
-The language selection **'Any'** has two purposes (Radarr only):
-   1) It will trigger a search of languages in ***Custom Formats***
-   2) If none are found, it will preserve **all languages** in the video file. This is functionally equivalent to calling the script with `--audio :any --subs :any` command-line arguments.
+The language selection **'Any'** has two purposes:
+   1) In Radarr only, when set on a Quality Profile, it will trigger a search of languages in ***Custom Formats***
+   2) If languages are not configured in a Custom Format, it will preserve **all languages** in the video file. This is functionally equivalent to calling the script with `--audio :any --subs :any` command-line arguments.
    See [Any language code](./README.md#any-language-code) below for more details.
 
->![notes] When using *Custom Format* language conditions and scoring you may not get the results you expect.
+> [!IMPORTANT] When using *Custom Formats* language conditions and scoring you may not get the results you expect.
 >This can be non-intuitive configuration, especially when using negative scoring, the 'Negate' option, and the 'Except Language' option.
->The script does not care what custom format is *detected* by Radarr/Sonarr on the video file, only what the *scores* are in the *Quality Profile*.
+>The script does not care what custom format is *applied* by Radarr/Sonarr on the video file, only what the custom format conditions are and the *scores* are in the corresponding *Quality Profile*.
 >If you choose to use Custom Formats, it is **highly recommended** to first run the script with the debug option `-d`, perform some test downloads and script runs, and then examine your results and the script logs closely to be sure things are working the way you want them to.
 
-It is **highly recommended** to review the [TraSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/) setup instructions for Language Custom Formats.
+> [!TIP] It is **highly recommended** to review the [TraSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/) setup instructions for Language Custom Formats.
 
 ### Language Detection Precedence
 The following chart represents the order of precedence that the script uses to decide which language(s) to select when there are multiple settings configured. Moving left to right, it will stop when it finds a configured language.
@@ -199,7 +203,7 @@ Descriptively, these steps are:
 All language conditions with positive scores *and* Negated conditions with negative scores *and* non-Negated Except Language conditions with negative scores are selected.
 5. If the *Custom Format* scores are zero (0) or there are none with configured language conditions, use the *Language Profile* (only supported in Sonarr v3)
 
->![notes] For step 3 above, using *Custom Formats* when 'Any' is in the *Quality Profile* is consistent with the behavior described in [TRaSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/ "TraSH Guides: How to setup Language Custom Formats").
+> [!NOTE] For step 4 above, using *Custom Formats* when 'Any' is in the *Quality Profile* is consistent with the behavior described in [TRaSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/ "TraSH Guides: How to setup Language Custom Formats").
 
 ## Command-Line Syntax
 
@@ -214,14 +218,14 @@ The syntax for the command-line is:
 
 Option|Argument|Description
 ---|---|---
--a, --audio|<audio_languages>|Audio languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)<br/>Each code may optionally be followed by a plus (`+`) and one or more [modifiers](./README.md#language-code-modifiers).
--s, --subs|<subtitle_languages>|Subtitle languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)<br/>Each code may optionally be followed by a plus (`+`) and one or more modifiers.
--f, --file|<video_file>|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified video file.<br/>Requires the `-a` option.<br/>![notes] **Do not** use this argument when called from Radarr or Sonarr!
--l, --log|\<log_file\>|The log filename<br/>Default is /config/log/striptracks.txt
--c, --config|\<config_file\>|Radarr/Sonarr XML configuration file<br/>Default is /config/config.xml
--d, --debug|\[\<level\>\]|Enables debug logging. Level is optional.<br/>Default is 1 (low)<br/>2 includes JSON output<br/>3 contains even more JSON output
---help| |Display help and exit.
---version| |Display version and exit.
+`-a`, `--audio`|`<audio_languages>`|Audio languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)<br/>Each code may optionally be followed by a plus (`+`) and one or more [modifiers](./README.md#language-code-modifiers).
+`-s`, `--subs`|`<subtitle_languages>`|Subtitle languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)<br/>Each code may optionally be followed by a plus (`+`) and one or more modifiers.
+`-f`, `--file`|`<video_file>`|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified video file.<br/>Requires the `-a` option.<br/> [!NOTE] **Do not** use this argument when called from Radarr or Sonarr!
+`-l`, `--log`|`<log_file>`|The log filename<br/>Default is /config/log/striptracks.txt
+`-c`, `--config`|`<config_file>`|Radarr/Sonarr XML configuration file<br/>Default is /config/config.xml
+`-d`, `--debug`|`[<level>]`|Enables debug logging. Level is optional.<br/>Default is 1 (low)<br/>2 includes JSON output<br/>3 contains even more JSON output
+`--help`| |Display help and exit.
+`--version`| |Display version and exit.
 
 </details>
 
@@ -236,7 +240,7 @@ For example:
 
 Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.  Order is unimportant.
 
->![warning] **WARNING:** If no subtitle language is detected via Radarr/Sonarr configuration or specified on the command-line, all subtitles are removed.
+> [!WARNING] If no subtitle language is detected via Radarr/Sonarr configuration or specified on the command-line, all subtitles are removed.
 
 ### Language Code Modifiers
 Each language code can optionally be followed by a plus (`+`) and one or more modifier characters.  Supported modifiers are:
@@ -248,8 +252,8 @@ Modifier|Function
 
 These modifiers must be applied to each language code you wish.  They may be applied to either audio or subtitles codes.  
 For example, the following options, `--audio :org:any+d --subs :eng:any+f` would keep:  
-- Audio: All original language tracks, and all Default tracks regardless of language
-- Subtitles: All English language tracks, and all Forced tracks regardless of language
+- All original language audio tracks, and all Default audio tracks regardless of language
+- All English language subtitles tracks, and all Forced subtitles tracks regardless of language
 
 Modifiers can be combined, such as `:any+fd` to keep all forced and all default tracks.
 
@@ -261,12 +265,12 @@ The `:org` language code is a special code. When used, instead of retaining a sp
 As an example, when importing "*Amores Perros (2000)*" with options `--audio :org:eng`, the Spanish and English audio tracks are preserved.  
 Several [Included Wrapper Scripts](./README.md#included-wrapper-scripts) use this special code.
 
->![notes] This feature relies on the 'originalLanguage' field in the Radarr/Sonarr database. The `:org` code is therefore invalid when used in Batch Mode.  
+> [!NOTE] This feature relies on the 'originalLanguage' field in the Radarr/Sonarr database. The `:org` code is therefore invalid when used in Batch Mode.  
 > The script will log a warning if it detects the use of `:org` in an invalid way, though it will continue to execute.
 
 ### Unknown language code
 The `:und` language code is a special code. When used, the script will match on any track that has a null or blank language attribute. If not included, tracks with no language attribute will be removed.  
->![warning] **WARNING:** It is common for M2TS and AVI files to have tracks with unknown languages! It is strongly recommended to include `:und` in most instances unless you know exactly what you're doing.
+> [!TIP] It is common for M2TS and AVI files to have tracks with unknown languages! It is recommended to include `:und` in most instances unless you know exactly what you're doing.
 
 ## Special Handling of Audio
 The script is smart enough to not remove the last audio track. There is in fact no way to force the script to remove all audio. This way you don't have to specify every possible language if you are importing a foreign film, for example.
@@ -343,10 +347,11 @@ chmod +x /config/striptracks-custom.sh
 
 Then put `/config/striptracks-custom.sh` in the **Path** field in place of `/usr/local/bin/striptracks.sh` mentioned in the [Installation](./README.md#installation) section above.
 
->![notes] If you followed the Linuxserver.io recommendations when configuring your container, the `/config` directory will be mapped to an external storage location.  It is therefore recommended to place custom scripts in the `/config` directory so they will survive container updates, but they may be placed anywhere that is accessible by Radarr or Sonarr.
+> [!TIP] If you followed the Linuxserver.io recommendations when configuring your container, the `/config` directory will be mapped to an external storage location.
+> It is therefore recommended to place custom scripts in the `/config` directory so they will survive container updates, but they may be placed anywhere that is accessible by Radarr or Sonarr.
 
 ## Environment Variable
-The `striptracks.sh` script can read command-line arguments from the `STRIPTRACKS_ARGS` environment variable. This allows advanced use cases without having to provide a custom script.
+The script can also read arguments from the `STRIPTRACKS_ARGS` environment variable. This allows advanced use cases without having to provide a custom wrapper script.
 
 For example, the following lines in your `compose.yml` file would keep English, Japanese, and Unknown audio and English subtitles:
 
@@ -369,7 +374,7 @@ In a `docker run` command, it would be:
 
 </details>
 
->![notes] The environment variable is *only* read when **no** command-line arguments are present. **Any** command-line argument will disable the use of the environment variable.
+> [!NOTE] The environment variable is *only* used when **no** command-line arguments are present. **Any** command-line argument will disable the use of the environment variable.
 
 ## Triggers
 The only events/notification triggers that are supported are **On Import** and **On Upgrade**.  The script will log an error if executed by any other trigger.
@@ -411,7 +416,7 @@ This log can be inspected or downloaded from Radarr/Sonarr under *System* > *Log
 Script errors will show up in both the script log and the native Radarr/Sonarr log.
 
 Log rotation is performed with 5 log files of 512KB each being kept.  
->![warning] **WARNING:** If debug logging is enabled with a level above 1, the log file can grow very large very quickly.  *Do not leave high-level debug logging enabled permanently.*
+> [!CAUTION] If debug logging is enabled with a level above 1, the log file can grow very large very quickly.  *Do not leave high-level debug logging enabled permanently.*
 
 # Uninstall
 To completely remove the mod:
@@ -432,10 +437,6 @@ This would not be possible without the following:
 [LinuxServer.io Docker Mods](https://hub.docker.com/r/linuxserver/mods "Docker Mods containers") project  
 [MKVToolNix](https://mkvtoolnix.download/ "MKVToolNix homepage") by Moritz Bunkus  
 The AWK script parsing mkvmerge output is adapted from Endoro's post on [VideoHelp](https://forum.videohelp.com/threads/343271-BULK-remove-non-English-tracks-from-MKV-container#post2292889).  
-Icons made by [Freepik](https://www.freepik.com) from [Flaticon](https://www.flaticon.com/)
 
 ## Legacy Change Notes
 Beginning with version 2.0 of this mod, it only supports v3 or later of Radarr/Sonarr.  For legacy Radarr/Sonarr v2 please use mod release 1.3 or earlier.
-
-[warning]: .assets/warning.png "Warning"
-[notes]: .assets/notes.png "Note"
