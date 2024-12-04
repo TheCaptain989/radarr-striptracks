@@ -96,7 +96,7 @@ The following features are only available from this repository.  These are eithe
    The script will detect the language(s) defined in Radarr/Sonarr for the movie or TV show and only keep the audio and subtitles selected.  
    Alternatively, a wrapper script or an environment variable may be used to more granularly define which tracks to keep.  See [Wrapper Scripts](./README.md#wrapper-scripts) or [Environment Variable](./README.md#environment-variable) for more details.
 
-   > [!IMPORTANT]
+> [!IMPORTANT]
    > You **must** configure language(s) in Radarr/Sonarr *or* pass command-line arguments for the script to do anything!  See the next section for an example.
 
 ## Radarr Configuration Example
