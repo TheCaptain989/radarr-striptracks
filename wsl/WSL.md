@@ -62,7 +62,7 @@ installation script, entering your Linux user password when prompted:
    <detials>
 
 # Explanation
-WSL provides a way to run a virtual Linux machine on Windows.  The script and supporting MKVToolNix package are running in the virtual machine
+WSL provides a way to run a virtual Linux machine on Windows.  Radarr and/or Sonarr are running in Windows while the script and supporting MKVToolNix package are running in the virtual machine
 and WSL makes the magic possible to have them interoperate.
 
 # Requirements
