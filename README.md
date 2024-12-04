@@ -6,7 +6,8 @@ A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.i
 
 **This unified script works in both Radarr and Sonarr.  Use this mod in either container!**
 
-> [!NOTE] This mod supports Linux OSes only.
+> [!NOTE]
+> This mod supports Linux OSes only.
 
 <!-- markdownlint-disable -->
 Production Container info: [![Docker Image Size](https://img.shields.io/docker/image-size/linuxserver/mods/radarr-striptracks)](https://hub.docker.com/r/linuxserver/mods/tags?name=radarr-striptracks "Docker image size")
@@ -95,7 +96,8 @@ The following features are only available from this repository.  These are eithe
    The script will detect the language(s) defined in Radarr/Sonarr for the movie or TV show and only keep the audio and subtitles selected.  
    Alternatively, a wrapper script or an environment variable may be used to more granularly define which tracks to keep.  See [Wrapper Scripts](./README.md#wrapper-scripts) or [Environment Variable](./README.md#environment-variable) for more details.
 
-   > [!IMPORTANT] You **must** configure language(s) in Radarr/Sonarr *or* pass command-line arguments for the script to do anything!  See the next section for an example.
+   > [!IMPORTANT]
+   > You **must** configure language(s) in Radarr/Sonarr *or* pass command-line arguments for the script to do anything!  See the next section for an example.
 
 ## Radarr Configuration Example
 The following is a simplified example and steps to configure Radarr so the script will keep Original and English languages of an imported movie.
@@ -143,7 +145,8 @@ Chapters, if they exist, are preserved. The Title attribute in the MKV is set to
 The language of the video file will be updated in the Radarr or Sonarr database to reflect the actual languages preserved in the remuxed video, and the video will be renamed according to the Radarr/Sonarr rules if needed (for example, if a removed track would trigger a name change.)
 
 If you've configured the Radarr/Sonarr **Recycle Bin** path correctly, the original video will be moved there.  
-> [!CAUTION] If you have ***not*** configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
+> [!CAUTION]
+> If you have ***not*** configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
 
 If the resulting video file would contain the same tracks as the original, and it's already an MKV, the remux step is skipped.
 
@@ -205,7 +208,8 @@ Descriptively, these steps are:
 All language conditions with positive scores *and* Negated conditions with negative scores *and* non-Negated Except Language conditions with negative scores are selected.
 5. If the *Custom Format* scores are zero (0) or there are none with configured language conditions, use the *Language Profile* (only supported in Sonarr v3)
 
-> [!NOTE] For step 4 above, using *Custom Formats* when 'Any' is in the *Quality Profile* is consistent with the behavior described in [TRaSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/ "TraSH Guides: How to setup Language Custom Formats").
+> [!NOTE]
+> For step 4 above, using *Custom Formats* when 'Any' is in the *Quality Profile* is consistent with the behavior described in [TRaSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/ "TraSH Guides: How to setup Language Custom Formats").
 
 ## Command-Line Syntax
 
@@ -242,7 +246,8 @@ For example:
 
 Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.  Order is unimportant.
 
-> [!WARNING] If no subtitle language is detected via Radarr/Sonarr configuration or specified on the command-line, all subtitles are removed.
+> [!WARNING]
+> If no subtitle language is detected via Radarr/Sonarr configuration or specified on the command-line, all subtitles are removed.
 
 ### Language Code Modifiers
 Each language code can optionally be followed by a plus (`+`) and one or more modifier characters.  Supported modifiers are:
@@ -267,12 +272,14 @@ The `:org` language code is a special code. When used, instead of retaining a sp
 As an example, when importing "*Amores Perros (2000)*" with options `--audio :org:eng`, the Spanish and English audio tracks are preserved.  
 Several [Included Wrapper Scripts](./README.md#included-wrapper-scripts) use this special code.
 
-> [!NOTE] This feature relies on the 'originalLanguage' field in the Radarr/Sonarr database. The `:org` code is therefore invalid when used in Batch Mode.  
+> [!NOTE]
+> This feature relies on the 'originalLanguage' field in the Radarr/Sonarr database. The `:org` code is therefore invalid when used in Batch Mode.  
 > The script will log a warning if it detects the use of `:org` in an invalid way, though it will continue to execute.
 
 ### Unknown language code
 The `:und` language code is a special code. When used, the script will match on any track that has a null or blank language attribute. If not included, tracks with no language attribute will be removed.  
-> [!TIP] It is common for M2TS and AVI files to have tracks with unknown languages! It is recommended to include `:und` in most instances unless you know exactly what you're doing.
+> [!TIP]
+> It is common for M2TS and AVI files to have tracks with unknown languages! It is recommended to include `:und` in most instances unless you know exactly what you're doing.
 
 ## Special Handling of Audio
 The script is smart enough to not remove the last audio track. There is in fact no way to force the script to remove all audio. This way you don't have to specify every possible language if you are importing a foreign film, for example.
@@ -349,7 +356,8 @@ chmod +x /config/striptracks-custom.sh
 
 Then put `/config/striptracks-custom.sh` in the **Path** field in place of `/usr/local/bin/striptracks.sh` mentioned in the [Installation](./README.md#installation) section above.
 
-> [!TIP] If you followed the Linuxserver.io recommendations when configuring your container, the `/config` directory will be mapped to an external storage location.
+> [!TIP]
+> If you followed the Linuxserver.io recommendations when configuring your container, the `/config` directory will be mapped to an external storage location.
 > It is therefore recommended to place custom scripts in the `/config` directory so they will survive container updates, but they may be placed anywhere that is accessible by Radarr or Sonarr.
 
 ## Environment Variable
@@ -376,7 +384,8 @@ In a `docker run` command, it would be:
 
 </details>
 
-> [!NOTE] The environment variable is *only* used when **no** command-line arguments are present. **Any** command-line argument will disable the use of the environment variable.
+> [!NOTE]
+> The environment variable is *only* used when **no** command-line arguments are present. **Any** command-line argument will disable the use of the environment variable.
 
 ## Triggers
 The only events/notification triggers that are supported are **On Import** and **On Upgrade**.  The script will log an error if executed by any other trigger.
@@ -418,7 +427,8 @@ This log can be inspected or downloaded from Radarr/Sonarr under *System* > *Log
 Script errors will show up in both the script log and the native Radarr/Sonarr log.
 
 Log rotation is performed with 5 log files of 512KB each being kept.  
-> [!CAUTION] If debug logging is enabled with a level above 1, the log file can grow very large very quickly.  *Do not leave high-level debug logging enabled permanently.*
+> [!CAUTION]
+> If debug logging is enabled with a level above 1, the log file can grow very large very quickly.  *Do not leave high-level debug logging enabled permanently.*
 
 # Uninstall
 To completely remove the mod:
