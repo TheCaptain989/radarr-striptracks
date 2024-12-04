@@ -50,7 +50,7 @@ installation script, entering your Linux user password when prompted:
 
    </details>
 
-4. Configure a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen and type the following in the **Path** field:  
+4. Configure a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen and type the following in the **Path** field (or the directory you installed striptracks to):  
    `C:\ProgramData\striptracks\wsl-striptracks.cmd`  
 
    <details>
