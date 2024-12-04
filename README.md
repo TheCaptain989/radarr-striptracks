@@ -168,12 +168,14 @@ The language selection **'Any'** has two purposes:
    2) If languages are not configured in a Custom Format, it will preserve **all languages** in the video file. This is functionally equivalent to calling the script with `--audio :any --subs :any` command-line arguments.
    See [Any language code](./README.md#any-language-code) below for more details.
 
-> [!IMPORTANT] When using *Custom Formats* language conditions and scoring you may not get the results you expect.
->This can be non-intuitive configuration, especially when using negative scoring, the 'Negate' option, and the 'Except Language' option.
->The script does not care what custom format is *applied* by Radarr/Sonarr on the video file, only what the custom format conditions are and the *scores* are in the corresponding *Quality Profile*.
->If you choose to use Custom Formats, it is **highly recommended** to first run the script with the debug option `-d`, perform some test downloads and script runs, and then examine your results and the script logs closely to be sure things are working the way you want them to.
+> [!IMPORTANT]
+> When using *Custom Formats* language conditions and scoring you may not get the results you expect.
+> This can be non-intuitive configuration, especially when using negative scoring, the 'Negate' option, and the 'Except Language' option.
+> The script does not care what custom format is *applied* by Radarr/Sonarr on the video file, only what the custom format conditions are and the *scores* are in the corresponding *Quality Profile*.
+> If you choose to use Custom Formats, it is **highly recommended** to first run the script with the debug option `-d`, perform some test downloads and script runs, and then examine your results and the script logs closely to be sure things are working the way you want them to.
 
-> [!TIP] It is **highly recommended** to review the [TraSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/) setup instructions for Language Custom Formats.
+> [!TIP]
+> It is **highly recommended** to review the [TraSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/) setup instructions for Language Custom Formats.
 
 ### Language Detection Precedence
 The following chart represents the order of precedence that the script uses to decide which language(s) to select when there are multiple settings configured. Moving left to right, it will stop when it finds a configured language.
