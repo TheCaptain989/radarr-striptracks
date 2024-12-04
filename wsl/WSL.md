@@ -28,7 +28,7 @@ installation script, entering your Linux user password when prompted:
 
    Option|Argument|Description
    ---|---|---
-   `-Password`|`<SecureString>`|Your WSL Linux user password. Must be a PowerShell `[SecureString]` data type.
+   `-Password`|`<SecureString>`|Your WSL Linux user password.<br/>Must be a PowerShell `[SecureString]` data type.
    `-Directory`|`<path>`|Directory to install striptracks to<br/>Default: `C:\ProgramData\striptracks`
    `-Owner`|`<name>`|GitHub repository owner<br/>Default: `TheCaptain989`
    `-Repository`|`<name>`|GitHub repository name<br/>Default: `radarr-striptracks`
