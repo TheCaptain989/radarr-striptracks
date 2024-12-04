@@ -342,6 +342,9 @@ striptracks-org-spa.sh     # Keep Original, Spanish, and Unknown audio, and Orig
 </details>
 
 ### Example Wrapper Script
+<details>
+<summary>Example Script</summary>
+
 To configure an entry from the [Examples](./README.md#examples) section above, create and save a file called `striptracks-custom.sh` to `/config` containing the following text:
 
 ```shell
@@ -361,6 +364,8 @@ Then put `/config/striptracks-custom.sh` in the **Path** field in place of `/usr
 > [!TIP]
 > If you followed the Linuxserver.io recommendations when configuring your container, the `/config` directory will be mapped to an external storage location.
 > It is therefore recommended to place custom scripts in the `/config` directory so they will survive container updates, but they may be placed anywhere that is accessible by Radarr or Sonarr.
+
+</details>
 
 ## Environment Variable
 The script can also read arguments from the `STRIPTRACKS_ARGS` environment variable. This allows advanced use cases without having to provide a custom wrapper script.
@@ -407,6 +412,9 @@ Because the script is not called from within Radarr or Sonarr, their database is
 * *Original video files are deleted.*<br/>The Recycle Bin function is not available.
 
 ### Batch Example
+<details>
+<summary>Batch Mode Example</summary>
+
 To keep English and Unknown audio and English subtitles on all video files ending in .MKV, .AVI, or .MP4 in the `/movies` directory, enter the following at the Linux command-line:
 
 ```shell
@@ -418,6 +426,8 @@ Here's another example to keep English, Danish, Unknown languages, and all force
 ```shell
 find ./videos/ -type f | while read filename; do if file -i "$filename" | grep -q video; then /usr/local/bin/striptracks.sh -f "$filename" --audio :eng:dan:und --subs :eng:dan:und:any+f; fi; done
 ```
+
+</details>
 
 ## Logs
 By default, a log file is created for the script activity called:
@@ -454,6 +464,7 @@ The AWK script parsing mkvmerge output is adapted from Endoro's post on [VideoHe
 Icons made by [Freepik](https://www.freepik.com) from [Flaticon](https://www.flaticon.com/)
 
 ## Legacy Change Notes
-Beginning with version 2.0 of this mod, it only supports v3 or later of Radarr/Sonarr.  For legacy Radarr/Sonarr v2 please use mod release 1.3 or earlier.
+Beginning with version 2.0 of this mod, it only supports v3 or later of Radarr/Sonarr.  For legacy Radarr/Sonarr v2 please use mod release 1.3 or earlier.  
+Version 2.0 of this mod introduced automatic language detection.
 
 [notes]: .assets/notes.png "Note"
