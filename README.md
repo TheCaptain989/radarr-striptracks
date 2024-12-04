@@ -173,7 +173,7 @@ See [Unknown language code](./README.md#unknown-language-code) below for more de
 
 The language selection **'Any'** has two purposes:
    1) In Radarr only, when set on a Quality Profile, it will trigger a search of languages in ***Custom Formats***
-   2) If languages are not configured in a Custom Format, it will preserve **all languages** in the video file. This is functionally equivalent to calling the script with `--audio :any --subs :any` command-line arguments.
+   2) If languages are not configured in a Custom Format, or if you're using Sonarr, it will preserve **all languages** in the video file. This is functionally equivalent to calling the script with `--audio :any --subs :any` command-line arguments.
    See [Any language code](./README.md#any-language-code) below for more details.
 
 > [!IMPORTANT]
