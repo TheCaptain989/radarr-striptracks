@@ -2,7 +2,8 @@
 This mod can now be used with [hotio](https://hotio.dev/) containers by using the method described in the hotio [FAQ](https://hotio.dev/faq/#:~:text=I%20would%20like%20to%20execute%20my%20own%20scripts%20on%20startup%2C%20how%20would%20I%20do%20this%3F) to install it.
 (This method relies on s6-overlay v2 behavior still working, though v3 is the current version.)
 
->This is a quick and dirty script with minimal testing or error checking.  Note that it only runs *inside* the hotio container.
+> [!NOTE]
+> This is a quick and dirty script with minimal testing or error checking.  Note that it only runs *inside* the hotio container.
 
 # Installation
 1. Download the **[99-striptracks.sh](./99-striptracks.sh)** install script and save it somewhere that can be mounted by your container.  
@@ -24,10 +25,11 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 3. Configure your selected Docker container with all the port, volume, and environment settings from the *original container documentation* here:  
    **[hotio/radarr](https://hotio.dev/containers/radarr/ "Radarr Docker container")**  OR  **[hotio/sonarr](https://hotio.dev/containers/sonarr/ "Sonarr Docker container")**
 
-   >![notes] Notice that no environment variables are used in this setup.  That is a specific feature of LSIO containers and is not applicable to hotio containers.
+> [!IMPORTANT]
+> Notice that no environment variables are used in this setup.  That is a specific feature of LSIO containers and is not applicable to hotio containers.
 
    1. Add the **99-striptracks.sh** file path as a mount point in your `compose.yml` file or `docker run` command.  
-      >![notes] The `/etc/cont-init.d/99-striptracks` path below is important; don't change it!
+> [!WARNING] The `/etc/cont-init.d/99-striptracks` path in the `volumes` section below is important; don't change it!
 
       *Example Docker Compose YAML Configuration*  
 
@@ -73,7 +75,8 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
       *Example Synology Configuration*  
       ![striptracks hotio](hotio-striptracks-synology.png "Synology container settings")
 
-      >![notes] Please be sure that your mount points for `/config` and `/data` above do not overlap with the newly added mount point!
+> [!CAUTION]
+> Please be sure that your mount points for `/config` and `/data` above do not overlap with the newly added mount point!
 
       </details>
 
@@ -86,5 +89,3 @@ You must have the **bash** shell available in your host path.  You *might* attem
 
 # Known Issues
 On at least *some* Synology hosts that use the ash shell, this script will cause the container to abort and not start.  If this happens, ***check your container logs*** for hints as to what may be wrong.
-
-[notes]: ../.assets/notes.png "Note"

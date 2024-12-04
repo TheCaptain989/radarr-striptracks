@@ -18,7 +18,8 @@ installation script, entering your Linux user password when prompted:
    iex (iwr "https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/refs/heads/master/wsl/wsl-install-striptracks.ps1").Content
    ```
 
-   >![notes] The password entered here is *only* used to execute sudo once to install required Linux packages.  It is not stored or saved anywhere.
+   > [!NOTE]
+   > The password entered here is *only* used to execute sudo once to install required Linux packages.  It is not stored or saved anywhere.
 
    The installation script supports optional command-line arguments to change the default branch, installation directory, etc.
 
@@ -66,5 +67,3 @@ and WSL makes the magic possible to have them interoperate.
 - This has only been tested on Windows 11 23H2.
 - Only one instance each of Radarr and Sonarr are supported.
 - The Radarr/Sonarr configurations must be stored under the `%ProgramData%` directory (by default, these are C:\ProgramData\Radarr or C:\ProgramData\Sonarr).
-
-[notes]: ../.assets/notes.png "Note"

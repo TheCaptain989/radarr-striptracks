@@ -97,7 +97,7 @@ The following features are only available from this repository.  These are eithe
    Alternatively, a wrapper script or an environment variable may be used to more granularly define which tracks to keep.  See [Wrapper Scripts](./README.md#wrapper-scripts) or [Environment Variable](./README.md#environment-variable) for more details.
 
 > [!IMPORTANT]
-   > You **must** configure language(s) in Radarr/Sonarr *or* pass command-line arguments for the script to do anything!  See the next section for an example.
+> You **must** configure language(s) in Radarr/Sonarr *or* pass command-line arguments for the script to do anything!  See the next section for an example.
 
 ## Radarr Configuration Example
 The following is a simplified example and steps to configure Radarr so the script will keep Original and English languages of an imported movie.
@@ -144,11 +144,13 @@ Chapters, if they exist, are preserved. The Title attribute in the MKV is set to
 (ex: `The Sting (1973)`) or the series title plus episode information (ex: `Happy! 01x01 - What Smiles Are For`).  
 The language of the video file will be updated in the Radarr or Sonarr database to reflect the actual languages preserved in the remuxed video, and the video will be renamed according to the Radarr/Sonarr rules if needed (for example, if a removed track would trigger a name change.)
 
-If you've configured the Radarr/Sonarr **Recycle Bin** path correctly, the original video will be moved there.  
+If the resulting video file would contain the same tracks as the original, and it's already an MKV, the remux step is skipped.
+
+> [!TIP]
+> If you've configured the Radarr/Sonarr **Recycle Bin** path correctly, the original video will be moved there.  
+
 > [!CAUTION]
 > If you have ***not*** configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
-
-If the resulting video file would contain the same tracks as the original, and it's already an MKV, the remux step is skipped.
 
 ## Automatic Language Detection
 When the script is called with no arguments, it will attempt to detect the language(s) configured within Radarr/Sonarr on the particular movie or TV show.  
@@ -158,6 +160,9 @@ Language selection(s) may be configured in:
 - ***Language Profiles*** (Sonarr v3)
 
 Both audio **and** subtitle tracks that match the configured language(s) are kept.
+
+> [!TIP]
+> It is **highly recommended** to review the [TraSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/) setup instructions for Language Custom Formats.
 
 ### Special Language Selections
 The language selection **'Original'** will use the language Radarr pulled from [The Movie Database](https://www.themoviedb.org/ "TMDB") or that Sonarr pulled from [The TVDB](https://www.thetvdb.com/ "TVDB") during its last refresh.
@@ -176,9 +181,6 @@ The language selection **'Any'** has two purposes:
 > This can be non-intuitive configuration, especially when using negative scoring, the 'Negate' option, and the 'Except Language' option.
 > The script does not care what custom format is *applied* by Radarr/Sonarr on the video file, only what the custom format conditions are and the *scores* are in the corresponding *Quality Profile*.
 > If you choose to use Custom Formats, it is **highly recommended** to first run the script with the debug option `-d`, perform some test downloads and script runs, and then examine your results and the script logs closely to be sure things are working the way you want them to.
-
-> [!TIP]
-> It is **highly recommended** to review the [TraSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/) setup instructions for Language Custom Formats.
 
 ### Language Detection Precedence
 The following chart represents the order of precedence that the script uses to decide which language(s) to select when there are multiple settings configured. Moving left to right, it will stop when it finds a configured language.
@@ -226,10 +228,10 @@ Option|Argument|Description
 ---|---|---
 `-a`, `--audio`|`<audio_languages>`|Audio languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)<br/>Each code may optionally be followed by a plus (`+`) and one or more [modifiers](./README.md#language-code-modifiers).
 `-s`, `--subs`|`<subtitle_languages>`|Subtitle languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)<br/>Each code may optionally be followed by a plus (`+`) and one or more modifiers.
-`-f`, `--file`|`<video_file>`|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified video file.<br/>Requires the `-a` option.<br/> [!NOTE] **Do not** use this argument when called from Radarr or Sonarr!
-`-l`, `--log`|`<log_file>`|The log filename<br/>Default is /config/log/striptracks.txt
-`-c`, `--config`|`<config_file>`|Radarr/Sonarr XML configuration file<br/>Default is /config/config.xml
-`-d`, `--debug`|`[<level>]`|Enables debug logging. Level is optional.<br/>Default is 1 (low)<br/>2 includes JSON output<br/>3 contains even more JSON output
+`-f`, `--file`|`<video_file>`|If included, the script enters **[Batch Mode](./README.md#batch-mode)** and converts the specified video file.<br/>Requires the `-a` option.<br/>![notes] **Do not** use this argument when called from Radarr or Sonarr!
+`-l`, `--log`|`<log_file>`|The log filename<br/>Default is `/config/log/striptracks.txt`
+`-c`, `--config`|`<config_file>`|Radarr/Sonarr XML configuration file<br/>Default is `/config/config.xml`
+`-d`, `--debug`|`[<level>]`|Enables debug logging. Level is optional.<br/>Default is `1` (low)<br/>`2` includes JSON output<br/>`3` contains even more JSON output
 `--help`| |Display help and exit.
 `--version`| |Display version and exit.
 
@@ -449,6 +451,9 @@ This would not be possible without the following:
 [LinuxServer.io Docker Mods](https://hub.docker.com/r/linuxserver/mods "Docker Mods containers") project  
 [MKVToolNix](https://mkvtoolnix.download/ "MKVToolNix homepage") by Moritz Bunkus  
 The AWK script parsing mkvmerge output is adapted from Endoro's post on [VideoHelp](https://forum.videohelp.com/threads/343271-BULK-remove-non-English-tracks-from-MKV-container#post2292889).  
+Icons made by [Freepik](https://www.freepik.com) from [Flaticon](https://www.flaticon.com/)
 
 ## Legacy Change Notes
 Beginning with version 2.0 of this mod, it only supports v3 or later of Radarr/Sonarr.  For legacy Radarr/Sonarr v2 please use mod release 1.3 or earlier.
+
+[notes]: .assets/notes.png "Note"
