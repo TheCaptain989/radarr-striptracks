@@ -3,7 +3,7 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 (This method relies on s6-overlay v2 behavior still working, though v3 is the current version.)
 
 > [!NOTE]
-> This is a quick and dirty script with minimal testing or error checking.  Note that it only runs *inside* the hotio container.
+> This is a quick and dirty script with minimal testing or error checking.  Note that it only runs *inside* the hotio container and should **not** be executed manually.
 
 # Installation
 1. Download the **[99-striptracks.sh](./99-striptracks.sh)** install script and save it somewhere that can be mounted by your container.  
@@ -26,10 +26,11 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
    **[hotio/radarr](https://hotio.dev/containers/radarr/ "Radarr Docker container")**  OR  **[hotio/sonarr](https://hotio.dev/containers/sonarr/ "Sonarr Docker container")**
 
 > [!IMPORTANT]
-> Notice that no environment variables are used in this setup.  That is a specific feature of LSIO containers and is not applicable to hotio containers.
+> Notice that no DOCKER_MODS environment variable is used in this setup.  That is a specific feature of LSIO containers and is not applicable to hotio containers.
 
    1. Add the **99-striptracks.sh** file path as a mount point in your `compose.yml` file or `docker run` command.  
-> [!WARNING] The `/etc/cont-init.d/99-striptracks` path in the `volumes` section below is important; don't change it!
+> [!WARNING]
+> The `/etc/cont-init.d/99-striptracks` path in the `volumes` section below is important; don't change it!
 
       *Example Docker Compose YAML Configuration*  
 
