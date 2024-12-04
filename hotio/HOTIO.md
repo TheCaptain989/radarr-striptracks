@@ -26,7 +26,7 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
    **[hotio/radarr](https://hotio.dev/containers/radarr/ "Radarr Docker container")**  OR  **[hotio/sonarr](https://hotio.dev/containers/sonarr/ "Sonarr Docker container")**
 
 > [!IMPORTANT]
-> Notice that no DOCKER_MODS environment variable is used in this setup.  That is a specific feature of LSIO containers and is not applicable to hotio containers.
+> Notice that the DOCKER_MODS environment variable is ***not*** used in this setup.  That is a specific feature of LSIO containers and is not applicable to hotio containers.
 
 4. Add the **99-striptracks.sh** file path as a mount point in your `compose.yml` file or `docker run` command.  
 
