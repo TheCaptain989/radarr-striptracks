@@ -315,6 +315,10 @@ There is no way to force the script to remove audio tracks with these codes.
 ## Wrapper Scripts
 To supply arguments to the script, you must either use one of the included wrapper scripts, create a custom wrapper script, or set the `STRIPTRACKS_ARGS` [environment variable](./README.md#environment-variable).
 
+> [!TIP]
+> If you followed the Linuxserver.io recommendations when configuring your container, the `/config` directory will be mapped to an external storage location.
+> It is therefore recommended to place custom scripts in the `/config` directory so they will survive container updates, but they may be placed anywhere that is accessible by Radarr or Sonarr.
+
 ### Included Wrapper Scripts
 For your convenience, several wrapper scripts are included in the `/usr/local/bin/` directory.  
 You may use any of these in place of `striptracks.sh` mentioned in the [Installation](./README.md#installation) section above.
@@ -361,14 +365,16 @@ chmod +x /config/striptracks-custom.sh
 
 Then put `/config/striptracks-custom.sh` in the **Path** field in place of `/usr/local/bin/striptracks.sh` mentioned in the [Installation](./README.md#installation) section above.
 
-> [!TIP]
-> If you followed the Linuxserver.io recommendations when configuring your container, the `/config` directory will be mapped to an external storage location.
-> It is therefore recommended to place custom scripts in the `/config` directory so they will survive container updates, but they may be placed anywhere that is accessible by Radarr or Sonarr.
-
 </details>
 
 ## Environment Variable
 The script can also read arguments from the `STRIPTRACKS_ARGS` environment variable. This allows advanced use cases without having to provide a custom wrapper script.
+
+> [!NOTE]
+> The environment variable is *only* used when **no** command-line arguments are present. **Any** command-line argument will disable the use of the environment variable.
+
+<details>
+<summary>Example Docker Compose</summary>
 
 For example, the following lines in your `compose.yml` file would keep English, Japanese, and Unknown audio and English subtitles:
 
@@ -377,11 +383,17 @@ environment:
   - STRIPTRACKS_ARGS=--audio :eng:jpn:und --subs :eng
 ```
 
+</details>
+<details>
+<summary>Example Docker Run Command</summary>
+
 In a `docker run` command, it would be:
 
 ```shell
 -e STRIPTRACKS_ARGS='--audio :eng:jpn:und --subs :eng'
 ```
+
+</details>
 
 <details>
 <summary>Synology Screenshot</summary>
@@ -390,9 +402,6 @@ In a `docker run` command, it would be:
 ![synology striptracks_args](.assets/striptracks-synology-2.png "Synology container settings")
 
 </details>
-
-> [!NOTE]
-> The environment variable is *only* used when **no** command-line arguments are present. **Any** command-line argument will disable the use of the environment variable.
 
 ## Triggers
 The only events/notification triggers that are supported are **On Import** and **On Upgrade**.  The script will log an error if executed by any other trigger.
