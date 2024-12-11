@@ -451,6 +451,30 @@ Log rotation is performed with 5 log files of 512KB each being kept.
 > [!CAUTION]
 > If debug logging is enabled with a level above 1, the log file can grow very large very quickly.  *Do not leave high-level debug logging enabled permanently.*
 
+# Limitations
+It should be noted that this script's core functionality nulifies some of the benefits of [hardlinks](https://trash-guides.info/hardlinks/).
+However, hardlinks are still recommended.
+
+<details>
+<summary>Hardlink Limitations</summary>
+
+*Radarr Hardlinks Configuration Screenshot*
+![radarr-enable-hardlinks](./.assets/radarr-enable-hardlinks.png "Radarr hardlinks screenshot")
+
+The purpose of a hardlink is to:
+- Allow instant file moves from the download client to Radarr or Sonarr
+- Reduce duplicate storage space
+- Allow torrent seeding after download
+
+Because the script creates a brand-new video file that includes only the selected streams and deletes the original, the concept of a hardlink doesn't make sense.
+Instant file moves from your download client should continue to work, but the new file will consume additional space, and the original file will be deleted by
+the script which will likely prevent torrent seeding.
+
+Note that the script does not *always* create a new file.  If there are no streams removed, the original video file is not deleted and therefore any hardlinks are preserved.
+It is therefore still recommended to enable and use hardlinks in Radarr and Sonarr.
+
+</details>
+
 # Uninstall
 To completely remove the mod:
 1. Delete the custom script from Radarr's or Sonarr's *Settings* > *Connect* screen that you created in the [Installation](./README.md#installation) section above.
