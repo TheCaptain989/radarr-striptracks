@@ -1101,7 +1101,7 @@ fi
 
 # Check if source video exists
 if [ ! -f "$striptracks_video" ]; then
-  striptracks_message="Error|Input file not found: \"$striptracks_video\""
+  striptracks_message="Error|Input video file not found: \"$striptracks_video\""
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
   end_script 5
@@ -1485,6 +1485,15 @@ if [ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or
   else
     [ $striptracks_debug -ge 1 ] && echo "Debug|Source video is not MKV. Remuxing anyway." | log
   fi
+fi
+
+# Test for hardlinked file
+striptracks_refcount=$(stat -c %h "$striptracks_video")
+[ $striptracks_debug -ge 1 ] && echo "Debug|Input file has a hard link count of $striptracks_refcount" | log
+if [ "$striptracks_refcount" != "1" ]; then
+  striptracks_message="Warn|Input video file is a hardlink and this will be broken by remuxing."
+  echo "$striptracks_message" | log
+  echo "$striptracks_message" >&2
 fi
 
 # Build argument with kept audio tracks for MKVmerge
