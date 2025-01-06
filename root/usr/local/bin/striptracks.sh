@@ -158,7 +158,7 @@ if [ -n "$STRIPTRACKS_ARGS" ]; then
 fi
 
 # Process arguments
-# Taken from Drew Strokes post 3/24/2015:
+# Taken from Drew Stokes post 3/24/2015:
 #  https://medium.com/@Drew_Stokes/bash-argument-parsing-54f3b81a6a8f
 unset striptracks_pos_params
 while (( "$#" )); do
@@ -182,11 +182,11 @@ while (( "$#" )); do
         exit 1
       fi
     ;;
-    --help ) # Display usage
+    -h|--help ) # Display usage
       usage
       exit 0
     ;;
-    --version ) # Display version
+    -v|--version ) # Display version
       echo "$striptracks_script $striptracks_ver"
       exit 0
     ;;
@@ -203,24 +203,30 @@ while (( "$#" )); do
       fi
     ;;
     -a|--audio ) # Audio languages to keep
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-        export striptracks_audiokeep="$2"
-        shift 2
-      else
-        echo "Error|Invalid option: $1 requires an argument." >&2
-        usage
-        exit 2
-      fi
-    ;;
-    -s|--subs ) # Subtitles languages to keep
-      if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-        export striptracks_subskeep="$2"
-        shift 2
-      else
+      if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
         echo "Error|Invalid option: $1 requires an argument." >&2
         usage
         exit 3
+      elif [[ "$2" != :* ]]; then
+        echo "Error|Invalid option: $1 argument requires a colon." >&2
+        usage
+        exit 3
       fi
+      export striptracks_audiokeep="$2"
+      shift 2
+    ;;
+    -s|--subs ) # Subtitles languages to keep
+      if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
+        echo "Error|Invalid option: $1 requires an argument." >&2
+        usage
+        exit 3
+      elif [[ "$2" != :* ]]; then
+        echo "Error|Invalid option: $1 argument requires a colon." >&2
+        usage
+        exit 3
+      fi
+      export striptracks_subskeep="$2"
+      shift 2
     ;;
     -c|--config ) # *arr XML configuration file
       if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
