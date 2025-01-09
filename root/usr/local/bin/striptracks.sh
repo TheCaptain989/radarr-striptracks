@@ -679,14 +679,14 @@ function set_metadata {
 function get_mediainfo {
   [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: /usr/bin/mkvmerge -J \"$1\"" | log
   unset striptracks_json
-  striptracks_json=$(/usr/bin/mkvmerge -J "$1" 2>&1)
+  striptracks_json=$(/usr/bin/mkvmerge -J "$1")
   local striptracks_mkvret=$?; [ $striptracks_mkvret -ne 0 ] && {
     local striptracks_message="Error|[$striptracks_mkvret] Error executing mkvmerge. It returned: $striptracks_json"
     echo "$striptracks_message" | log
     echo "$striptracks_message" >&2
   }
   [ $striptracks_debug -ge 2 ] && echo "mkvmerge returned: $striptracks_json" | awk '{print "Debug|"$0}' | log
-  if [ "$(echo $striptracks_json | jq -crM '.container.supported')" = "true" ]; then
+  if [ "$(echo "$striptracks_json" | jq -crM '.container.supported')" = "true" ]; then
     local striptracks_return=0
   else
     local striptracks_return=1
@@ -951,7 +951,7 @@ fi
 # Check that the log file exists
 if [ ! -f "$striptracks_log" ]; then
   echo "Info|Creating a new log file: $striptracks_log"
-  touch "$striptracks_log" 2>&1
+  touch "$striptracks_log"
 fi
 
 # Check that the log file is writable
@@ -1346,17 +1346,21 @@ echo "$striptracks_message" | log
 # Read in the output of mkvmerge info extraction
 # Populates the striptracks_json variable
 get_mediainfo "$striptracks_video"
-striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
+striptracks_return=$?
+case $striptracks_return in
   # Get media info failed
-  if [ "$(echo $striptracks_json | jq -crM '.container.supported')" = "false" ]; then
-    striptracks_message="Error|Container format '$(echo $striptracks_json | jq -crM .container.type)' is unsupported by mkvmerge. Unable to continue."
-  else
-    striptracks_message="Error|mkvmerge error. Unable to continue."
-  fi
-  echo "$striptracks_message" | log
-  echo "$striptracks_message" >&2
-  end_script 9
-}
+  1) striptracks_message=$(echo -e "[$striptracks_return] Warning when inspecting video.\nmkvmerge returned: $striptracks_result" | awk '{print "Warn|"$0}')
+    echo "$striptracks_message" | log
+  ;;
+  2) striptracks_message=$(echo -e "[$striptracks_return] Error when inspecting video.\nmkvmerge returned: $striptracks_result" | awk '{print "Error|"$0}')
+    if [ "$(echo "$striptracks_json" | jq -crM '.container.supported')" = "false" ]; then
+      striptracks_message+=$'\n'"Error|Container format '$(echo "$striptracks_json" | jq -crM .container.type)' is unsupported by mkvmerge. Unable to continue."
+    fi
+    echo "$striptracks_message" | log
+    echo "$striptracks_message" >&2
+    end_script 9
+  ;;
+esac
 
 # Process JSON data from MKVmerge; track selection logic
 striptracks_json_processed=$(echo "$striptracks_json" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
@@ -1480,7 +1484,7 @@ if [ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or
     echo "$striptracks_message" | log
     striptracks_mkvcommand="/usr/bin/mkvpropedit -q --edit info --set \"title=$striptracks_title\" \"$striptracks_video\""
     [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $striptracks_mkvcommand" | log
-    striptracks_result=$(eval $striptracks_mkvcommand 2>&1)
+    striptracks_result=$(eval $striptracks_mkvcommand)
     striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
       striptracks_message=$(echo -e "[$striptracks_return] Error when setting video title: \"$striptracks_tempvideo\"\nmkvpropedit returned: $striptracks_result" | awk '{print "Error|"$0}')
       echo "$striptracks_message" | log
@@ -1517,7 +1521,7 @@ fi
 # Execute MKVmerge
 striptracks_mkvcommand="nice /usr/bin/mkvmerge --title \"$striptracks_title\" -q -o \"$striptracks_tempvideo\" $striptracks_audioarg $striptracks_subsarg \"$striptracks_video\""
 [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $striptracks_mkvcommand" | log
-striptracks_result=$(eval $striptracks_mkvcommand 2>&1)
+striptracks_result=$(eval $striptracks_mkvcommand)
 striptracks_return=$?
 case $striptracks_return in
   1) striptracks_message=$(echo -e "[$striptracks_return] Warning when remuxing video: \"$striptracks_video\"\nmkvmerge returned: $striptracks_result" | awk '{print "Warn|"$0}')
@@ -1543,7 +1547,7 @@ fi
 if [ "$(id -u)" -eq 0 ]; then
   # Set owner
   [ $striptracks_debug -ge 1 ] && echo "Debug|Changing owner of file \"$striptracks_tempvideo\"" | log
-  striptracks_result=$(chown --reference="$striptracks_video" "$striptracks_tempvideo" 2>&1)
+  striptracks_result=$(chown --reference="$striptracks_video" "$striptracks_tempvideo")
   striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
     striptracks_message=$(echo -e "[$striptracks_return] Error when changing owner of file: \"$striptracks_tempvideo\"\nchown returned: $striptracks_result" | awk '{print "Error|"$0}')
     echo "$striptracks_message" | log
@@ -1555,7 +1559,7 @@ else
   [ $striptracks_debug -ge 1 ] && echo "Debug|Unable to change owner of file when running as user '$(id -un)'" | log
 fi
 # Set permissions
-striptracks_result=$(chmod --reference="$striptracks_video" "$striptracks_tempvideo" 2>&1)
+striptracks_result=$(chmod --reference="$striptracks_video" "$striptracks_tempvideo")
 striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
   striptracks_message=$(echo -e "[$striptracks_return] Error when changing permissions of file: \"$striptracks_tempvideo\"\nchmod returned: $striptracks_result" | awk '{print "Error|"$0}')
   echo "$striptracks_message" | log
@@ -1566,7 +1570,7 @@ striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
 # Just delete the original video if running in batch mode
 if [ "$striptracks_type" = "batch" ]; then
   [ $striptracks_debug -ge 1 ] && echo "Debug|Deleting: \"$striptracks_video\"" | log
-  striptracks_result=$(rm "$striptracks_video" 2>&1)
+  striptracks_result=$(rm "$striptracks_video")
   striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
     striptracks_message=$(echo -e "[$striptracks_return] Error when deleting video: \"$striptracks_video\"\nrm returned: $striptracks_result" | awk '{print "Error|"$0}')
     echo "$striptracks_message" | log
@@ -1594,7 +1598,7 @@ fi
 
 # Rename the temporary video file to MKV
 [ $striptracks_debug -ge 1 ] && echo "Debug|Renaming \"$striptracks_tempvideo\" to \"$striptracks_newvideo\"" | log
-striptracks_result=$(mv -f "$striptracks_tempvideo" "$striptracks_newvideo" 2>&1)
+striptracks_result=$(mv -f "$striptracks_tempvideo" "$striptracks_newvideo")
 striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
   striptracks_message=$(echo -e "[$striptracks_return] Unable to rename temp video: \"$striptracks_tempvideo\" to: \"$striptracks_newvideo\".  Halting.\nmv returned: $striptracks_result" | awk '{print "Error|"$0}')
   echo "$striptracks_message" | log
