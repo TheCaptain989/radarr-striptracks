@@ -74,7 +74,6 @@ case $striptracks_return in
   ;;
 esac
 
-<<comment
 striptracks_json='{
   "attachments": [],
   "chapters": [],
@@ -119,7 +118,6 @@ striptracks_json='{
   ],
   "warnings": []
 }'
-comment
 
 striptracks_audiokeep=":eng+1"
 striptracks_subskeep=":fre"
