@@ -34,12 +34,12 @@
 #  1 - no video file specified on command line
 #  2 - no audio language specified on command line
 #  3 - no subtitles language specified on command line
-#  4 - mkvmerge or mkvpropedit not found
+#  4 - mkvmerge, mkvpropedit, or jq not found
 #  5 - input video file not found
 #  6 - unable to rename temp video to MKV
 #  7 - unknown eventtype environment variable
 #  8 - unsupported Radarr/Sonarr version (v2)
-#  9 - mkvmerge get media info failed
+#  9 - mkvmerge get media info produced an error or warning
 # 10 - remuxing completed, but no output file found
 # 11 - source video had no audio tracks
 # 12 - log file is not writable
@@ -327,7 +327,7 @@ export striptracks_eventtype="${striptracks_type,,}_eventtype"
 export striptracks_newvideo="${striptracks_video%.*}.mkv"
 # If this were defined directly in Radarr or Sonarr this would not be needed here
 # shellcheck disable=SC2089
-striptracks_isocodemap='{"languages":[{"language":{"name":"Any","iso639-2":["any"]}},{"language":{"name":"Arabic","iso639-2":["ara"]}},{"language":{"name":"Bengali","iso639-2":["ben"]}},{"language":{"name":"Bosnian","iso639-2":["bos"]}},{"language":{"name":"Bulgarian","iso639-2":["bul"]}},{"language":{"name":"Catalan","iso639-2":["cat"]}},{"language":{"name":"Chinese","iso639-2":["zho","chi"]}},{"language":{"name":"Croatian","iso639-2":["hrv"]}},{"language":{"name":"Czech","iso639-2":["ces","cze"]}},{"language":{"name":"Danish","iso639-2":["dan"]}},{"language":{"name":"Dutch","iso639-2":["nld","dut"]}},{"language":{"name":"English","iso639-2":["eng"]}},{"language":{"name":"Estonian","iso639-2":["est"]}},{"language":{"name":"Finnish","iso639-2":["fin"]}},{"language":{"name":"Flemish","iso639-2":["nld","dut"]}},{"language":{"name":"French","iso639-2":["fra","fre"]}},{"language":{"name":"German","iso639-2":["deu","ger"]}},{"language":{"name":"Greek","iso639-2":["ell","gre"]}},{"language":{"name":"Hebrew","iso639-2":["heb"]}},{"language":{"name":"Hindi","iso639-2":["hin"]}},{"language":{"name":"Hungarian","iso639-2":["hun"]}},{"language":{"name":"Icelandic","iso639-2":["isl","ice"]}},{"language":{"name":"Indonesian","iso639-2":["ind"]}},{"language":{"name":"Italian","iso639-2":["ita"]}},{"language":{"name":"Japanese","iso639-2":["jpn"]}},{"language":{"name":"Kannada","iso639-2":["kan"]}},{"language":{"name":"Korean","iso639-2":["kor"]}},{"language":{"name":"Latvian","iso639-2":["lav"]}},{"language":{"name":"Lithuanian","iso639-2":["lit"]}},{"language":{"name":"Macedonian","iso639-2":["mac","mkd"]}},{"language":{"name":"Malayalam","iso639-2":["mal"]}},{"language":{"name":"Norwegian","iso639-2":["nno","nob","nor"]}},{"language":{"name":"Persian","iso639-2":["fas","per"]}},{"language":{"name":"Polish","iso639-2":["pol"]}},{"language":{"name":"Portuguese","iso639-2":["por"]}},{"language":{"name":"Portuguese (Brazil)","iso639-2":["por"]}},{"language":{"name":"Romanian","iso639-2":["rum","ron"]}},{"language":{"name":"Russian","iso639-2":["rus"]}},{"language":{"name":"Serbian","iso639-2":["srp"]}},{"language":{"name":"Slovak","iso639-2":["slk","slo"]}},{"language":{"name":"Slovenian","iso639-2":["slv"]}},{"language":{"name":"Spanish","iso639-2":["spa"]}},{"language":{"name":"Spanish (Latino)","iso639-2":["spa"]}},{"language":{"name":"Swedish","iso639-2":["swe"]}},{"language":{"name":"Tamil","iso639-2":["tam"]}},{"language":{"name":"Telugu","iso639-2":["tel"]}},{"language":{"name":"Thai","iso639-2":["tha"]}},{"language":{"name":"Turkish","iso639-2":["tur"]}},{"language":{"name":"Ukrainian","iso639-2":["ukr"]}},{"language":{"name":"Vietnamese","iso639-2":["vie"]}},{"language":{"name":"Unknown","iso639-2":["und"]}}]}'
+striptracks_isocodemap='{"languages":[{"language":{"name":"Any","iso639-2":["any"]}},{"language":{"name":"Afrikaans","iso639-2":["afr"]}},{"language":{"name":"Albanian","iso639-2":["sqi","alb"]}},{"language":{"name":"Arabic","iso639-2":["ara"]}},{"language":{"name":"Bengali","iso639-2":["ben"]}},{"language":{"name":"Bosnian","iso639-2":["bos"]}},{"language":{"name":"Bulgarian","iso639-2":["bul"]}},{"language":{"name":"Catalan","iso639-2":["cat"]}},{"language":{"name":"Chinese","iso639-2":["zho","chi"]}},{"language":{"name":"Croatian","iso639-2":["hrv"]}},{"language":{"name":"Czech","iso639-2":["ces","cze"]}},{"language":{"name":"Danish","iso639-2":["dan"]}},{"language":{"name":"Dutch","iso639-2":["nld","dut"]}},{"language":{"name":"English","iso639-2":["eng"]}},{"language":{"name":"Estonian","iso639-2":["est"]}},{"language":{"name":"Finnish","iso639-2":["fin"]}},{"language":{"name":"Flemish","iso639-2":["nld","dut"]}},{"language":{"name":"French","iso639-2":["fra","fre"]}},{"language":{"name":"German","iso639-2":["deu","ger"]}},{"language":{"name":"Greek","iso639-2":["ell","gre"]}},{"language":{"name":"Hebrew","iso639-2":["heb"]}},{"language":{"name":"Hindi","iso639-2":["hin"]}},{"language":{"name":"Hungarian","iso639-2":["hun"]}},{"language":{"name":"Icelandic","iso639-2":["isl","ice"]}},{"language":{"name":"Indonesian","iso639-2":["ind"]}},{"language":{"name":"Italian","iso639-2":["ita"]}},{"language":{"name":"Japanese","iso639-2":["jpn"]}},{"language":{"name":"Kannada","iso639-2":["kan"]}},{"language":{"name":"Korean","iso639-2":["kor"]}},{"language":{"name":"Latvian","iso639-2":["lav"]}},{"language":{"name":"Lithuanian","iso639-2":["lit"]}},{"language":{"name":"Macedonian","iso639-2":["mac","mkd"]}},{"language":{"name":"Malayalam","iso639-2":["mal"]}},{"language":{"name":"Marathi","iso639-2":["mar"]}},{"language":{"name":"Norwegian","iso639-2":["nno","nob","nor"]}},{"language":{"name":"Persian","iso639-2":["fas","per"]}},{"language":{"name":"Polish","iso639-2":["pol"]}},{"language":{"name":"Portuguese","iso639-2":["por"]}},{"language":{"name":"Portuguese (Brazil)","iso639-2":["por"]}},{"language":{"name":"Romanian","iso639-2":["rum","ron"]}},{"language":{"name":"Russian","iso639-2":["rus"]}},{"language":{"name":"Serbian","iso639-2":["srp"]}},{"language":{"name":"Slovak","iso639-2":["slk","slo"]}},{"language":{"name":"Slovenian","iso639-2":["slv"]}},{"language":{"name":"Spanish","iso639-2":["spa"]}},{"language":{"name":"Spanish (Latino)","iso639-2":["spa"]}},{"language":{"name":"Swedish","iso639-2":["swe"]}},{"language":{"name":"Tagalog","iso639-2":["tgl"]}},{"language":{"name":"Tamil","iso639-2":["tam"]}},{"language":{"name":"Telugu","iso639-2":["tel"]}},{"language":{"name":"Thai","iso639-2":["tha"]}},{"language":{"name":"Turkish","iso639-2":["tur"]}},{"language":{"name":"Ukrainian","iso639-2":["ukr"]}},{"language":{"name":"Vietnamese","iso639-2":["vie"]}},{"language":{"name":"Unknown","iso639-2":["und"]}}]}'
 
 ### Functions
 
@@ -680,17 +680,27 @@ function get_mediainfo {
   [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: /usr/bin/mkvmerge -J \"$1\"" | log
   unset striptracks_json
   striptracks_json=$(/usr/bin/mkvmerge -J "$1")
-  local striptracks_mkvret=$?; [ $striptracks_mkvret -ne 0 ] && {
-    local striptracks_message="Error|[$striptracks_mkvret] Error executing mkvmerge. It returned: $striptracks_json"
-    echo "$striptracks_message" | log
-    echo "$striptracks_message" >&2
-  }
+  local striptracks_return=$?
   [ $striptracks_debug -ge 2 ] && echo "mkvmerge returned: $striptracks_json" | awk '{print "Debug|"$0}' | log
-  if [ "$(echo "$striptracks_json" | jq -crM '.container.supported')" = "true" ]; then
-    local striptracks_return=0
-  else
-    local striptracks_return=1
-  fi
+  case $striptracks_return in
+    0)
+      # Check for unsupported container.
+      if [ "$(echo "$striptracks_json" | jq -crM '.container.supported')" = "false" ]; then
+        striptracks_message="Error|Video format for '$1' is unsupported. Unable to continue. mkvmerge returned container info: $(echo $striptracks_json | jq -crM .container)"
+        echo "$striptracks_message" | log
+        echo "$striptracks_message" >&2
+        end_script 9
+      fi
+    ;;
+    1) striptracks_message=$(echo -e "[$striptracks_return] Warning when inspecting video.\nmkvmerge returned: $(echo "$striptracks_json" | jq -crM '.warnings[]')" | awk '{print "Warn|"$0}')
+      echo "$striptracks_message" | log
+    ;;
+    2) striptracks_message=$(echo -e "[$striptracks_return] Error when inspecting video.\nmkvmerge returned: $(echo "$striptracks_json" | jq -crM '.errors[]')" | awk '{print "Error|"$0}')
+      echo "$striptracks_message" | log
+      echo "$striptracks_message" >&2
+      end_script 9
+    ;;
+  esac
   return $striptracks_return
 }
 # # Import new video into Radarr/Sonarr
@@ -1346,21 +1356,6 @@ echo "$striptracks_message" | log
 # Read in the output of mkvmerge info extraction
 # Populates the striptracks_json variable
 get_mediainfo "$striptracks_video"
-striptracks_return=$?
-case $striptracks_return in
-  # Get media info failed
-  1) striptracks_message=$(echo -e "[$striptracks_return] Warning when inspecting video.\nmkvmerge returned: $striptracks_result" | awk '{print "Warn|"$0}')
-    echo "$striptracks_message" | log
-  ;;
-  2) striptracks_message=$(echo -e "[$striptracks_return] Error when inspecting video.\nmkvmerge returned: $striptracks_result" | awk '{print "Error|"$0}')
-    if [ "$(echo "$striptracks_json" | jq -crM '.container.supported')" = "false" ]; then
-      striptracks_message+=$'\n'"Error|Container format '$(echo "$striptracks_json" | jq -crM .container.type)' is unsupported by mkvmerge. Unable to continue."
-    fi
-    echo "$striptracks_message" | log
-    echo "$striptracks_message" >&2
-    end_script 9
-  ;;
-esac
 
 # Process JSON data from MKVmerge; track selection logic
 striptracks_json_processed=$(echo "$striptracks_json" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
@@ -1707,73 +1702,67 @@ elif [ -n "$striptracks_api_url" ]; then
           # If we stripped out other languages, remove them
           # Only works in Radarr and Sonarr v4 (no per-episode edit function in Sonarr v3)
           [ $striptracks_debug -ge 1 ] && echo "Debug|Getting languages in new video file \"$striptracks_newvideo\"" | log
-          if get_mediainfo "$striptracks_newvideo"; then
-            # Build array of full name languages
-            striptracks_newvideo_langcodes="$(echo $striptracks_json | jq -crM '.tracks[] | select(.type == "audio") | .properties.language')"
-            unset striptracks_newvideo_languages
-            for i in $striptracks_newvideo_langcodes; do
-              # shellcheck disable=SC2090
-              # Exclude Any, Original, and Unknown
-              striptracks_newvideo_languages+="$(echo $striptracks_isocodemap | jq -crM ".languages[] | .language | select((.\"iso639-2\"[]) == \"$i\") | select(.name != \"Any\" and .name != \"Original\" and .name != \"Unknown\").name")"
-            done
-            if [ -n "$striptracks_newvideo_languages" ]; then
-              # Covert to standard JSON
-              striptracks_json_languages="$(echo $striptracks_lang_codes | jq -crM "map(select(.name | inside(\"$striptracks_newvideo_languages\")) | {id, name})")"
-              
-              # Check languages for Radarr and Sonarr v4
-              # Sooooo glad I did it this way
-              if [ "$(echo $striptracks_videofile_info | jq -crM .languages)" != "null" ]; then
-                if [ "$(echo $striptracks_videofile_info | jq -crM .languages)" != "$striptracks_json_languages" ]; then
-                  if set_radarr_language; then
-                    striptracks_exitstatus=0
-                  else
-                    striptracks_message="Error|${striptracks_type^} error when updating video language(s)."
-                    echo "$striptracks_message" | log
-                    echo "$striptracks_message" >&2
-                    striptracks_exitstatus=17
-                  fi
+          get_mediainfo "$striptracks_newvideo"
+
+          # Build array of full name languages
+          striptracks_newvideo_langcodes="$(echo $striptracks_json | jq -crM '.tracks[] | select(.type == "audio") | .properties.language')"
+          unset striptracks_newvideo_languages
+          for i in $striptracks_newvideo_langcodes; do
+            # shellcheck disable=SC2090
+            # Exclude Any, Original, and Unknown
+            striptracks_newvideo_languages+="$(echo $striptracks_isocodemap | jq -crM ".languages[] | .language | select((.\"iso639-2\"[]) == \"$i\") | select(.name != \"Any\" and .name != \"Original\" and .name != \"Unknown\").name")"
+          done
+          if [ -n "$striptracks_newvideo_languages" ]; then
+            # Covert to standard JSON
+            striptracks_json_languages="$(echo $striptracks_lang_codes | jq -crM "map(select(.name | inside(\"$striptracks_newvideo_languages\")) | {id, name})")"
+            
+            # Check languages for Radarr and Sonarr v4
+            # Sooooo glad I did it this way
+            if [ "$(echo $striptracks_videofile_info | jq -crM .languages)" != "null" ]; then
+              if [ "$(echo $striptracks_videofile_info | jq -crM .languages)" != "$striptracks_json_languages" ]; then
+                if set_radarr_language; then
+                  striptracks_exitstatus=0
                 else
-                  # The languages are already correct
-                  [ $striptracks_debug -ge 1 ] && echo "Debug|Language(s) '$(echo $striptracks_json_languages | jq -crM "[.[].name] | join(\",\")")' remained unchanged." | log
-                fi
-              # Check languages for Sonarr v3 and earlier
-              elif [ "$(echo $striptracks_videofile_info | jq -crM .language)" != "null" ]; then
-                if [ "$(echo $striptracks_videofile_info | jq -crM .language)" != "$(echo $striptracks_json_languages | jq -crM '.[0]')" ]; then
-                  if set_sonarr_language; then
-                    striptracks_exitstatus=0
-                  else
-                    striptracks_message="Error|${striptracks_type^} error when updating video language(s)."
-                    echo "$striptracks_message" | log
-                    echo "$striptracks_message" >&2
-                    striptracks_exitstatus=17
-                  fi
-                else
-                  # The languages are already correct
-                  [ $striptracks_debug -ge 1 ] && echo "Debug|Language '$(echo $striptracks_json_languages | jq -crM ".[0].name")' remained unchanged." | log
+                  striptracks_message="Error|${striptracks_type^} error when updating video language(s)."
+                  echo "$striptracks_message" | log
+                  echo "$striptracks_message" >&2
+                  striptracks_exitstatus=17
                 fi
               else
-                # Some unknown JSON formatting
-                striptracks_message="Warn|The '$striptracks_videofile_api' API returned unknown JSON language node."
-                echo "$striptracks_message" | log
-                echo "$striptracks_message" >&2
-                striptracks_exitstatus=20
+                # The languages are already correct
+                [ $striptracks_debug -ge 1 ] && echo "Debug|Language(s) '$(echo $striptracks_json_languages | jq -crM "[.[].name] | join(\",\")")' remained unchanged." | log
               fi
-            elif [ "$striptracks_newvideo_langcodes" = "und" ]; then
-              # Only language detected is Unknown
-              echo "Warn|The only audio language in the video file was Unknown (und). Not updating ${striptracks_type^} database." | log
+            # Check languages for Sonarr v3 and earlier
+            elif [ "$(echo $striptracks_videofile_info | jq -crM .language)" != "null" ]; then
+              if [ "$(echo $striptracks_videofile_info | jq -crM .language)" != "$(echo $striptracks_json_languages | jq -crM '.[0]')" ]; then
+                if set_sonarr_language; then
+                  striptracks_exitstatus=0
+                else
+                  striptracks_message="Error|${striptracks_type^} error when updating video language(s)."
+                  echo "$striptracks_message" | log
+                  echo "$striptracks_message" >&2
+                  striptracks_exitstatus=17
+                fi
+              else
+                # The languages are already correct
+                [ $striptracks_debug -ge 1 ] && echo "Debug|Language '$(echo $striptracks_json_languages | jq -crM ".[0].name")' remained unchanged." | log
+              fi
             else
-              # Video language not in striptracks_isocodemap
-              striptracks_message="Warn|Video language code(s) '${striptracks_newvideo_langcodes//$'\n'/,}' not found in the ISO Codemap. Cannot evaluate."
+              # Some unknown JSON formatting
+              striptracks_message="Warn|The '$striptracks_videofile_api' API returned unknown JSON language node."
               echo "$striptracks_message" | log
               echo "$striptracks_message" >&2
               striptracks_exitstatus=20
             fi
+          elif [ "$striptracks_newvideo_langcodes" = "und" ]; then
+            # Only language detected is Unknown
+            echo "Warn|The only audio language in the video file was Unknown (und). Not updating ${striptracks_type^} database." | log
           else
-            # Get media info failed
-            striptracks_message="Error|Could not get media info from new video file. Can't check resulting languages."
+            # Video language not in striptracks_isocodemap
+            striptracks_message="Warn|Video language code(s) '${striptracks_newvideo_langcodes//$'\n'/,}' not found in the ISO Codemap. Cannot evaluate."
             echo "$striptracks_message" | log
             echo "$striptracks_message" >&2
-            striptracks_exitstatus=9
+            striptracks_exitstatus=20
           fi
 
           # Get list of videos that could be renamed
