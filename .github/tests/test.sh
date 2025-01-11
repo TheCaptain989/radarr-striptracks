@@ -2,8 +2,8 @@
 
 striptracks_debug=0
 striptracks_pid=$$
-striptracks_tempvideo=.github/tests/test.mkv
-striptracks_title="Test Title"
+#striptracks_tempvideo=.github/tests/test.mkv
+#striptracks_title="Test Title"
 
 function log {(
   while read -r
@@ -56,8 +56,8 @@ striptracks_video=.github/tests/bear-320x240_corrupted_after_init_segment.webm
 
 get_mediainfo "$striptracks_video"
 
-striptracks_audioarg="-a 1"
-striptracks_subsarg="-S"
+#striptracks_audioarg="-a 1"
+#striptracks_subsarg="-S"
 
 # striptracks_mkvcommand="nice /usr/bin/mkvmerge --title \"$striptracks_title\" -q -o \"$striptracks_tempvideo\" $striptracks_audioarg $striptracks_subsarg \"$striptracks_video\""
 # [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $striptracks_mkvcommand" | log
@@ -119,44 +119,39 @@ striptracks_json='{
   "warnings": []
 }'
 
-striptracks_audiokeep=":eng+1:fre:ger+d"
+striptracks_audiokeep=":eng+1:fre:ger+d-1"
 striptracks_subskeep=":fre"
 
 echo "$striptracks_json" | jq -c --arg AudioKeep "$striptracks_audiokeep" \
 --arg SubsKeep "$striptracks_subskeep" '
 # Parse input string into language rules
-def parse_input($codes):
-  $codes | split(":")[1:] | map(
-    capture("(?<language>[a-z]{3})(?<modifiers>[+][df0-9]+)?") |
-    {
-      forced_language: (if (.modifiers | contains("f")) then .language else empty end)#,
-#      default_languages: (if (.modifiers | contains("d")) then .lang else empty end),
-#      limits: ((.modifiers | scan("[+]([0-9])") | map(tonumber)) as $nums
-#        | if $nums then {(.lang): $nums[0]} else {} end)
-    }
-  );
-
-def parse_language_codes($codes):
-  $codes | split(":")[1:] | map(split("+")) | 
+def parse_language_codes(codes):
+  # Supports f, d, and number modifiers
+  # -1 next to a language key means to keep unlimited tracks
+  codes | split(":")[1:] | map(split("+") | {lang: .[0], mods: .[1]}) | 
     {languages: map(
-      (select(length == 1) | .[0]),
-      (select(length > 1 and (.[1] | test("^[0-9]+$"))) | {(.[0]): .[1]})
+      (select(.mods == null) | {(.lang): -1}),
+      (select(.mods | test("^[0-9]+$")?) | {(.lang): .mods | tonumber})
      ),
      forced_languages: map(
-      select(length > 1 and (.[1] | contains("f"))) | .[0]
+      select(.mods | contains("f")?) | {(.lang): ((.mods | scan("[0-9]+") | tonumber) // -1)}
      ),
      default_languages: map(
-      select(length > 1 and (.[1] | contains("d"))) | .[0]
+      select(.mods | contains("d")?) | {(.lang): ((.mods | scan("[0-9]+") | tonumber) // -1)}
      )}
   ;
 
 # Language rules for audio and subtitles, adding required audio tracks
-# (parse_language_codes($AudioKeep) | .languages += ["mis","zxx"]) as $AudioRules |
-# parse_language_codes($SubsKeep) as $SubsRules |
+(parse_language_codes($AudioKeep) | .languages += [{"mis":-1},{"zxx":-1}]) as $AudioRules |
+parse_language_codes($SubsKeep) as $SubsRules |
 
-parse_input($AudioKeep) as $AudioRules | { $AudioRules }
-
-# Process tracks
+# Log chapter information
+if (.chapters[0].num_entries) then
+  .striptracks_log = "Info|Chapters: \(.chapters[].num_entries)"
+else . end |
+ 
+{$AudioRules,$SubsRules}
+# # Process tracks
 # .tracks |= map(
 #   # Set track language to "und" if null or empty
 #   (if (.properties.language == "" or .properties.language == null) then "und" else .properties.language end) as $lang |
@@ -205,7 +200,7 @@ parse_input($AudioKeep) as $AudioRules | { $AudioRules }
 #      striptracks_keep: true}
 #   else . end
 # else . end |
-
-# Output simplified dataset
+# 
+# # Output simplified dataset
 # { striptracks_log, tracks: [ .tracks[] | { id, type, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug_log, striptracks_log, striptracks_keep } ] }
 '
