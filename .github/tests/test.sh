@@ -54,7 +54,7 @@ function get_mediainfo {
 
 striptracks_video=.github/tests/bear-320x240_corrupted_after_init_segment.webm
 
-get_mediainfo "$striptracks_video"
+# get_mediainfo "$striptracks_video"
 
 #striptracks_audioarg="-a 1"
 #striptracks_subsarg="-S"
@@ -115,6 +115,34 @@ striptracks_json='{
       "type": "audio"
     },
     {
+      "codec": "TheCaptain989-forced",
+      "id": 4,
+      "properties": {
+        "audio_bits_per_sample": 16,
+        "audio_channels": 2,
+        "audio_sampling_frequency": 44100,
+        "track_name": "Should include",
+        "language": "ger",
+        "number": 5,
+        "forced_track": true
+      },
+      "type": "audio"
+    },
+    {
+      "codec": "TheCaptain989-default",
+      "id": 5,
+      "properties": {
+        "audio_bits_per_sample": 16,
+        "audio_channels": 2,
+        "audio_sampling_frequency": 44100,
+        "track_name": "Should include",
+        "language": "ger",
+        "number": 6,
+        "default_track": true
+      },
+      "type": "audio"
+    },
+    {
       "codec": "TheCaptain989",
       "id": 2,
       "properties": {
@@ -144,7 +172,7 @@ striptracks_json='{
   "warnings": []
 }'
 
-striptracks_audiokeep=":eng+1:fre:ger+d"
+striptracks_audiokeep=":eng+1:fre:ger+d:any+f"
 striptracks_subskeep=":fre"
 
 echo "$striptracks_json" | jq --arg AudioKeep "$striptracks_audiokeep" \
@@ -193,16 +221,19 @@ else . end |
       # Same logic for both audio and subtitles
       (if .type == "audio" then $AudioRules else $SubsRules end) as $currentRules |
       if (($currentRules.languages | has("any")) or ($currentRules.languages | has($track_lang))) then
-        .striptracks_keep = true
+        .striptracks_keep = true |
+        .striptracks_limit = ($currentRules.languages[$track_lang] // -1)
       elif (.properties.forced_track and (($currentRules.forced_languages | has("any")) or ($currentRules.forced_languages | has($track_lang)))) then
         .striptracks_keep = true |
-        .rule = "forced"
+        .striptracks_rule = "forced" | 
+        .striptracks_limit = ($currentRules.forced_languages[$track_lang] // -1)
       elif (.properties.default_track and (($currentRules.default_languages | has("any")) or ($currentRules.default_languages | has($track_lang)))) then
         .striptracks_keep = true |
-        .rule = "default"
+        .striptracks_rule = "default" |
+        .striptracks_limit = ($currentRules.default_languages[$track_lang] // -1)
       else . end |
     if .striptracks_keep then
-      .striptracks_log = "Info|Keeping \(if .rule then .rule + " " else "" end)\(.type) track " + .striptracks_log
+      .striptracks_log = "Info|Keeping \(if .striptracks_rule then .striptracks_rule + " " else "" end)\(.type) track " + .striptracks_log
     else
       .striptracks_keep = false
     end
@@ -210,19 +241,25 @@ else . end |
 ) |
 
 # Limit track selection based on key values
-.tracks |= map(
-  .properties.language as $track_lang |
-  if .type == "audio" and .striptracks_keep then
-    if $AudioRules.languages | has($track_lang) then
-      if $AudioRules.languages[$track_lang] > 0 and $AudioRules.languages[$track_lang] != -1 then
-        # TODO: This right here messes up the flow becuse it is switching context
-        $AudioRules.languages | .[$track_lang] -= 1
-      else
-        .striptracks_keep = false
-      end
-    else . end
-  else . end
-) |
+$AudioRules |
+
+debug | halt |
+
+# # Limit track selection based on key values
+# .tracks |= map(
+#   .properties.language as $track_lang |
+#   if .type == "audio" and .striptracks_keep then
+#     if $AudioRules.languages | has($track_lang) then
+#       if $AudioRules.languages[$track_lang] > 0 and $AudioRules.languages[$track_lang] != -1 then
+#         # TODO: This right here messes up the flow becuse it is switching context
+#         debug |
+#         $AudioRules.languages | .[$track_lang] -= 1
+#       else
+#         .striptracks_keep = false
+#       end
+#     else . end
+#   else . end
+# ) |
 
 # Ensure at least one audio track is kept
 if ((.tracks | map(select(.type == "audio")) | length == 1) and (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0)) then
