@@ -52,7 +52,7 @@ function get_mediainfo {
 
 # get_mediainfo "README.md"
 
-striptracks_video=.github/tests/bear-320x240_corrupted_after_init_segment.webm
+#  striptracks_video=.github/tests/bear-320x240_corrupted_after_init_segment.webm
 
 # get_mediainfo "$striptracks_video"
 
@@ -241,7 +241,7 @@ else . end |
 ) |
 
 # Limit track selection based on key values
-$AudioRules |
+# $AudioRules |
 
 debug | halt |
 
