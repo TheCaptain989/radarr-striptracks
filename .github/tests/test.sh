@@ -241,7 +241,7 @@ else . end |
 ) |
 
 # Limit track selection based on key values
-# $AudioRules |
+$AudioRules |
 
 debug | halt |
 
