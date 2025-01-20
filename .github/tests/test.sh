@@ -210,7 +210,7 @@ else . end |
 # Process tracks
 .tracks |= map(
   # Set track language to "und" if null or empty
-  if (.properties.language == "" or .properties.language == null) then .properties.language = "und" else . end | .properties.language as $track_lang |
+  (.properties.language // "und") as $track_lang |
   .striptracks_debug_log = "Debug|Parsing track ID:\(.id) Type:\(.type) Name:\(.properties.track_name) Lang:\($track_lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
   
   # Keep track logic based on type and rules, raw pass
@@ -222,15 +222,13 @@ else . end |
       (if .type == "audio" then $AudioRules else $SubsRules end) as $currentRules |
       if (($currentRules.languages | has("any")) or ($currentRules.languages | has($track_lang))) then
         .striptracks_keep = true |
-        .striptracks_limit = ($currentRules.languages[$track_lang] // -1)
+        .striptracks_rule = "normal"
       elif (.properties.forced_track and (($currentRules.forced_languages | has("any")) or ($currentRules.forced_languages | has($track_lang)))) then
         .striptracks_keep = true |
-        .striptracks_rule = "forced" | 
-        .striptracks_limit = ($currentRules.forced_languages[$track_lang] // -1)
+        .striptracks_rule = "forced"
       elif (.properties.default_track and (($currentRules.default_languages | has("any")) or ($currentRules.default_languages | has($track_lang)))) then
         .striptracks_keep = true |
-        .striptracks_rule = "default" |
-        .striptracks_limit = ($currentRules.default_languages[$track_lang] // -1)
+        .striptracks_rule = "default"
       else . end |
     if .striptracks_keep then
       .striptracks_log = "Info|Keeping \(if .striptracks_rule then .striptracks_rule + " " else "" end)\(.type) track " + .striptracks_log
@@ -239,27 +237,6 @@ else . end |
     end
   else . end
 ) |
-
-# Limit track selection based on key values
-$AudioRules |
-
-debug | halt |
-
-# # Limit track selection based on key values
-# .tracks |= map(
-#   .properties.language as $track_lang |
-#   if .type == "audio" and .striptracks_keep then
-#     if $AudioRules.languages | has($track_lang) then
-#       if $AudioRules.languages[$track_lang] > 0 and $AudioRules.languages[$track_lang] != -1 then
-#         # TODO: This right here messes up the flow becuse it is switching context
-#         debug |
-#         $AudioRules.languages | .[$track_lang] -= 1
-#       else
-#         .striptracks_keep = false
-#       end
-#     else . end
-#   else . end
-# ) |
 
 # Ensure at least one audio track is kept
 if ((.tracks | map(select(.type == "audio")) | length == 1) and (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0)) then
