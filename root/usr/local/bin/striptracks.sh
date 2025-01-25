@@ -1465,7 +1465,7 @@ if [ "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type==
 fi
 
 # All tracks matched/no tracks removed
-if [ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles"))|length')" = "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles" and .striptracks_keep))|length')" ]; then
+if [ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles"))|length')" = "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select((.type=="audio" or .type=="subtitles") and .striptracks_keep))|length')" ]; then
   [ $striptracks_debug -ge 1 ] && echo "Debug|No tracks will be removed from video \"$striptracks_video\"" | log
   # Check if already MKV
   if [[ $striptracks_video == *.mkv ]]; then
