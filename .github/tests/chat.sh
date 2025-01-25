@@ -1,3 +1,5 @@
+#!/bin/bash
+
 jq -c --argjson rules '{"rules":{"a":1,"b":-1}}' '
 reduce .things[] as $thing (
   {"things": [], "counts": {}}; 
