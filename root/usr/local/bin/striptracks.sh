@@ -885,10 +885,10 @@ function get_media_config {
 # Update file metadata in Radarr/Sonarr
 function set_video_info {
   local url="$striptracks_api_url/$striptracks_video_api/$striptracks_video_id"
-  local data="$(echo $striptracks_videoinfo | jq -crM .monitored='true')"
+  local data="$(echo $striptracks_videoinfo | jq -crM .monitored="$striptracks_videomonitored")"
   local i=0
   for ((i=1; i <= 5; i++)); do
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Updating monitored to 'true'. Calling ${striptracks_type^} API using PUT and URL '$url' with data $data" | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Updating monitored to '$striptracks_videomonitored'. Calling ${striptracks_type^} API using PUT and URL '$url' with data $data" | log
     unset striptracks_result
     striptracks_result=$(curl -s --fail-with-body -H "X-Api-Key: $striptracks_apikey" \
       -H "Content-Type: application/json" \
@@ -1142,6 +1142,7 @@ elif [ -n "$striptracks_api_url" ]; then
     # Get video profile
     if get_video_info; then
       striptracks_videoinfo="$striptracks_result"
+      striptracks_videomonitored="$(echo "$striptracks_videoinfo" | jq -crM ".monitored")"
       # This is not strictly necessary as this is normally set in the environment. However, this is needed for testing scripts and it doesn't hurt to use the data returned by the API call.
       striptracks_videofile_id="$(echo $striptracks_videoinfo | jq -crM .${striptracks_json_quality_root}.id)"
 
@@ -1301,7 +1302,6 @@ elif [ -n "$striptracks_api_url" ]; then
     striptracks_exitstatus=17
   }
   if [ "$(echo "$striptracks_result" | jq -crM ".autoUnmonitorPreviouslyDownloaded${striptracks_video_api^}s")" = "true" ]; then
-    striptracks_conf_unmonitor=1
     striptracks_message="Warn|Will compensate for ${striptracks_type^} configuration to unmonitor deleted ${striptracks_video_api}s."
     echo "$striptracks_message" | log
   fi
@@ -1438,7 +1438,7 @@ echo "$striptracks_json_processed" | jq -crM --argjson Debug $striptracks_debug 
 # Log removed tracks
 def log_removed_tracks($type):
   if (.tracks | map(select(.type == $type and .striptracks_keep == false)) | length > 0) then
-    "Info|Removed \($type) tracks: " +
+    "Info|Removing \($type) tracks: " +
     (.tracks | map(select(.type == $type and .striptracks_keep == false) | .striptracks_log) | join(", "))
   else empty end;
 
@@ -1668,11 +1668,11 @@ elif [ -n "$striptracks_api_url" ]; then
         striptracks_videofile_id="$(echo $striptracks_videoinfo | jq -crM .${striptracks_json_quality_root}.id)"
         [ $striptracks_debug -ge 1 ] && echo "Debug|Using new video file id '$striptracks_videofile_id'" | log
 
-        # Check if video is unmonitored after the delete/import
-        if [ ${striptracks_conf_unmonitor:-0} -eq 1 -a "$(echo "$striptracks_videoinfo" | jq -crM ".monitored")" = "false" ]; then
-          striptracks_message="Warn|'$striptracks_title' is unmonitored after deleting the original video.  Compensating for ${striptracks_type^} configuration."
+        # Check if video monitored status changed after the delete/import
+        if [ "$(echo "$striptracks_videoinfo" | jq -crM ".monitored")" != "$striptracks_videomonitored" ]; then
+          striptracks_message="Warn|Video monitor status changed after deleting the original.  Setting it back to '$striptracks_videomonitored'"
           echo "$striptracks_message" | log
-          # Set video to monitored again
+          # Set video monitor state
           set_video_info
         fi
 
