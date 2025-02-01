@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# shellcheck disable=all
 jq -c --argjson rules '{"rules":{"a":1,"b":-1}}' '
 reduce .things[] as $thing (
   {"things": [], "counts": {}}; 
@@ -15,4 +16,4 @@ reduce .things[] as $thing (
   .counts[$thing.type] += if ($rules.rules[$thing.type] == -1) then 0 else (.things[-1].keep | if . then 1 else 0 end) end
 )
 | .things
-' .github/tests/input.json
+' .github/tests/e.json

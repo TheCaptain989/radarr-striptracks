@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# shellcheck disable=all
 json='{"tracks":[{"properties":{"language":"eng"}},{"properties":{"language":"eng"}},{"properties":{"language":"fre"}}]}'
 
 echo "$json" | jq -c --argjson rules_raw '{"languages":{"eng":1,"fre":-1,"mis":-1,"zxx":-1}}' '

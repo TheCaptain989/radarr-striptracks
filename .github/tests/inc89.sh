@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# shellcheck disable=all
 striptracks_arr_config=/config/config.xml
 striptracks_audiokeep=:org:jpn:eng:zho:chi:und
 striptracks_debug=2
