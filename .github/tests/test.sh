@@ -143,6 +143,17 @@ striptracks_json='{
       "type": "audio"
     },
     {
+      "codec": "TheCaptain989-subs",
+      "id": 27,
+      "properties": {
+        "track_name": "Subs forced",
+        "language": "fre",
+        "number": 3,
+        "forced_track": true
+      },
+      "type": "subtitles"
+    },
+    {
       "codec": "TheCaptain989",
       "id": 2,
       "properties": {
@@ -172,10 +183,12 @@ striptracks_json='{
   "warnings": []
 }'
 
-striptracks_audiokeep=":eng+1:fre:ger+d:any+f"
-striptracks_subskeep=":fre"
+striptracks_audiokeep=":eng+1:eng+d:fre:ger+d:any+f"
+striptracks_subskeep=":any+f"
 
-echo "$striptracks_json" | jq --arg AudioKeep "$striptracks_audiokeep" \
+echo "Keeping Audio $striptracks_audiokeep     Subtitles $striptracks_subskeep"
+
+echo "$striptracks_json" | jq -c --arg AudioKeep "$striptracks_audiokeep" \
 --arg SubsKeep "$striptracks_subskeep" '
 # Parse input string into language rules
 def parse_language_codes(codes):
@@ -208,34 +221,56 @@ if (.chapters[0].num_entries) then
 else . end |
  
 # Process tracks
-.tracks |= map(
-  # Set track language to "und" if null or empty
-  (.properties.language // "und") as $track_lang |
-  .striptracks_debug_log = "Debug|Parsing track ID:\(.id) Type:\(.type) Name:\(.properties.track_name) Lang:\($track_lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
-  
-  # Keep track logic based on type and rules, raw pass
-  if .type == "video" then
-    .striptracks_keep = true
-  elif .type == "audio" or .type == "subtitles" then
+reduce .tracks[] as $track (
+  {"tracks": [], "audio": {"normal": {}, "forced": {}, "default": {}}, "subtitles": {"normal": {}, "forced": {}, "default": {}}} ;
+  (if ($track.properties.language == "" or $track.properties.language == null) then "und" else $track.properties.language end) as $track_lang |
+  .[$track.type].normal[$track_lang] = (.[$track.type].normal[$track_lang] // 0) |
+  if $track.properties.forced_track then .[$track.type].forced[$track_lang] = (.[$track.type].forced[$track_lang] // 0) else . end |
+  if $track.properties.default_track then .[$track.type].default[$track_lang] = (.[$track.type].default[$track_lang] // 0) else . end |
+  .[$track.type] as $track_counters |
+  .tracks += [
+    $track |
+    .striptracks_debug_log = "Debug|Parsing track ID:\(.id) Type:\(.type) Name:\(.properties.track_name) Lang:\($track_lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
+    if .type == "video" then
+      .striptracks_keep = true
+    elif .type == "audio" or .type == "subtitles" then
       .striptracks_log = "\(.id): \($track_lang) (\(.codec))\(if .properties.track_name then " \"" + .properties.track_name + "\"" else "" end)" |
       # Same logic for both audio and subtitles
       (if .type == "audio" then $AudioRules else $SubsRules end) as $currentRules |
-      if (($currentRules.languages | has("any")) or ($currentRules.languages | has($track_lang))) then
-        .striptracks_keep = true |
-        .striptracks_rule = "normal"
-      elif (.properties.forced_track and (($currentRules.forced_languages | has("any")) or ($currentRules.forced_languages | has($track_lang)))) then
+      if ($currentRules.languages["any"] == -1 or ($track_counters.normal | add) < $currentRules.languages["any"] or
+          $currentRules.languages[$track_lang] == -1 or $track_counters.normal[$track_lang] < $currentRules.languages[$track_lang]) then
+        .striptracks_keep = true
+        # | .striptracks_rule = "normal"
+      elif (.properties.forced_track and
+            ($currentRules.forced_languages["any"] == -1 or ($track_counters.forced | add) < $currentRules.forced_languages["any"] or
+              $currentRules.forced_languages[$track_lang] == -1 or $track_counters.forced[$track_lang] < $currentRules.forced_languages[$track_lang])) then
         .striptracks_keep = true |
         .striptracks_rule = "forced"
-      elif (.properties.default_track and (($currentRules.default_languages | has("any")) or ($currentRules.default_languages | has($track_lang)))) then
+      elif (.properties.default_track and
+            ($currentRules.default_languages["any"] == -1 or ($track_counters.default | add) < $currentRules.default_languages["any"] or
+              $currentRules.default_languages[$track_lang] == -1 or $track_counters.default[$track_lang] < $currentRules.default_languages[$track_lang])) then
         .striptracks_keep = true |
         .striptracks_rule = "default"
       else . end |
-    if .striptracks_keep then
-      .striptracks_log = "Info|Keeping \(if .striptracks_rule then .striptracks_rule + " " else "" end)\(.type) track " + .striptracks_log
-    else
-      .striptracks_keep = false
-    end
-  else . end
+      if .striptracks_keep then
+        .striptracks_log = "Info|Keeping \(if .striptracks_rule then .striptracks_rule + " " else "" end)\(.type) track " + .striptracks_log
+      else
+        .striptracks_keep = false
+      end
+    else . end
+  ] | 
+  .[$track.type].normal[$track_lang] +=
+    if .tracks[-1].striptracks_keep then
+      1
+    else 0 end | 
+  .[$track.type].forced[$track_lang] +=
+    if ($track.properties.forced_track and .tracks[-1].striptracks_keep) then
+      1
+    else 0 end |
+  .[$track.type].default[$track_lang] +=
+    if ($track.properties.default_track and .tracks[-1].striptracks_keep) then
+      1
+    else 0 end
 ) |
 
 # Ensure at least one audio track is kept
