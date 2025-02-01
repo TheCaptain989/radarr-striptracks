@@ -158,12 +158,12 @@ else . end |
  
 # Process tracks
 reduce .tracks[] as $track (
-  {"tracks": [], "audio": {"normal": {}, "forced": {}, "default": {}}, "subtitles": {"normal": {}, "forced": {}, "default": {}}} ;
+  {"tracks": [], "counters": {"audio": {"normal": {}, "forced": {}, "default": {}}, "subtitles": {"normal": {}, "forced": {}, "default": {}}}};
   (if ($track.properties.language == "" or $track.properties.language == null) then "und" else $track.properties.language end) as $track_lang |
-  .[$track.type].normal[$track_lang] = (.[$track.type].normal[$track_lang] // 0) |
-  if $track.properties.forced_track then .[$track.type].forced[$track_lang] = (.[$track.type].forced[$track_lang] // 0) else . end |
-  if $track.properties.default_track then .[$track.type].default[$track_lang] = (.[$track.type].default[$track_lang] // 0) else . end |
-  .[$track.type] as $track_counters |
+  .counters[$track.type].normal[$track_lang] = (.counters[$track.type].normal[$track_lang] // 0) |
+  if $track.properties.forced_track then .counters[$track.type].forced[$track_lang] = (.counters[$track.type].forced[$track_lang] // 0) else . end |
+  if $track.properties.default_track then .counters[$track.type].default[$track_lang] = (.counters[$track.type].default[$track_lang] // 0) else . end |
+  .counters[$track.type] as $track_counters |
   .tracks += [
     $track |
     .striptracks_debug_log = "Debug|Parsing track ID:\(.id) Type:\(.type) Name:\(.properties.track_name) Lang:\($track_lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
@@ -195,15 +195,15 @@ reduce .tracks[] as $track (
       end
     else . end
   ] | 
-  .[$track.type].normal[$track_lang] +=
+  .counters[$track.type].normal[$track_lang] +=
     if .tracks[-1].striptracks_keep then
       1
     else 0 end | 
-  .[$track.type].forced[$track_lang] +=
+  .counters[$track.type].forced[$track_lang] +=
     if ($track.properties.forced_track and .tracks[-1].striptracks_keep) then
       1
     else 0 end |
-  .[$track.type].default[$track_lang] +=
+  .counters[$track.type].default[$track_lang] +=
     if ($track.properties.default_track and .tracks[-1].striptracks_keep) then
       1
     else 0 end

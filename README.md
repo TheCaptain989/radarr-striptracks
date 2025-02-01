@@ -258,13 +258,14 @@ Modifier|Function
 ---|---
 `f`|Selects only tracks with the forced flag set
 `d`|Selects only tracks with the default flag set
+`[0-9]`|Specifies the maximum number of tracks to select
 
 These modifiers must be applied to each language code you wish.  They may be applied to either audio or subtitles codes.  
 For example, the following options, `--audio :org:any+d --subs :eng:any+f` would keep:  
 - All original language audio tracks, and all Default audio tracks regardless of language
 - All English language subtitles tracks, and all Forced subtitles tracks regardless of language
 
-Modifiers can be combined, such as `:any+fd` to keep all forced and all default tracks.
+Modifiers may be combined, such as `:any+fd` to keep all forced and all default tracks, or `:eng+1d` to keep one default English track.
 
 ### Any language code
 The `:any` language code is a special code. When used, the script will preserve all language tracks, regardless of how they are tagged in the source video.
