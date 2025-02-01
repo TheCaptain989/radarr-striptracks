@@ -1,6 +1,5 @@
 #!/bin/bash
 
-striptracks_debug=0
 striptracks_pid=$$
 
 function log {(
