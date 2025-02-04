@@ -258,14 +258,18 @@ Modifier|Function
 ---|---
 `f`|Selects only tracks with the forced flag set
 `d`|Selects only tracks with the default flag set
-`[0-9]`|Specifies the maximum number of tracks to select
+`[0-9]`|Specifies the maximum number of tracks to select.<br/>Based on the order of the tracks in the original source video.
 
-These modifiers must be applied to each language code you wish.  They may be applied to either audio or subtitles codes.  
-For example, the following options, `--audio :org:any+d --subs :eng:any+f` would keep:  
+These modifiers must be applied to each language code you want to modify.  They may be used with either audio or subtitles codes.  
+For example, the following options, `--audio :org:any+d --subs :eng+1:any+f` would keep:  
 - All original language audio tracks, and all Default audio tracks regardless of language
-- All English language subtitles tracks, and all Forced subtitles tracks regardless of language
+- One English language audio track, and all Forced subtitles tracks regardless of language
 
 Modifiers may be combined, such as `:any+fd` to keep all forced and all default tracks, or `:eng+1d` to keep one default English track.
+
+> [!NOTE]
+> Note the exact phrasing of the previous sentence.  There is nuance here that is not obvious.  
+> `:any+fd` is equivalent to `:any+f:any+d`, but `:eng+1d` is **not** the same as `:eng+1:eng+d`.
 
 ### Any language code
 The `:any` language code is a special code. When used, the script will preserve all language tracks, regardless of how they are tagged in the source video.
@@ -302,13 +306,18 @@ There is no way to force the script to remove audio tracks with these codes.
 -a :eng:und -s :eng               # Keep English and Unknown audio, and English subtitles
 -a :org:eng -s :any+f:eng         # Keep English and Original audio, and all forced or English subtitles
 -a :eng -s ""                     # Keep English audio and remove all subtitles
--d -a :eng:kor:jpn -s :eng:spa    # Enable debugging level 1, keeping English, Korean, and Japanese audio, and
-                                  # English and Spanish subtitles
+-a :any -s ""                     # Keep all audio and remove all subtitles
+-d -a :eng:kor:jpn -s :eng:spa    # Enable debugging level 1, keeping English, Korean, and Japanese audio,
+                                  # and English and Spanish subtitles
 -f "/movies/Finding Nemo (2003).mkv" -a :eng:und -s :eng
                                   # Batch Mode
                                   # Keep English and Unknown audio and English subtitles, converting
                                   # video specified
--a :any -s ""                     # Keep all audio and remove all subtitles
+--audio :org:any+d1 --subs :eng+1:any+f2
+                                  # Keep Original audio and one default audio track regardless of language
+                                  # (first audio track flagged as Default as it appears in the source file),
+                                  # one English subtitles track and two forced subtitles regardless of
+                                  # language (as they appear in the source file)
 ```
 
 </details>

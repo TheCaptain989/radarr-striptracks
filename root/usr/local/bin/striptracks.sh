@@ -1389,7 +1389,7 @@ parse_language_codes($SubsKeep) as $SubsRules |
 if (.chapters[0].num_entries) then
   .striptracks_log = "Info|Chapters: \(.chapters[].num_entries)"
 else . end |
- 
+
 # Process tracks
 reduce .tracks[] as $track (
   # Create object to hold tracks and counters for each reduce iteration
