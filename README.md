@@ -263,7 +263,7 @@ Modifier|Function
 These modifiers must be applied to each language code you want to modify.  They may be used with either audio or subtitles codes.  
 For example, the following options, `--audio :org:any+d --subs :eng+1:any+f` would keep:  
 - All original language audio tracks, and all Default audio tracks regardless of language
-- One English language audio track, and all Forced subtitles tracks regardless of language
+- One English language subtitles track, and all Forced subtitles tracks regardless of language
 
 Modifiers may be combined, such as `:any+fd` to keep all forced and all default tracks, or `:eng+1d` to keep one default English track.
 
