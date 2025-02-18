@@ -62,8 +62,12 @@ export striptracks_debug=0
 # Presence of '*_eventtype' variable sets script mode
 export striptracks_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
 
-# Usage function
+# Usage functions
 function usage {
+  usage="Try '$striptracks_script --help' for more information."
+  echo "$usage" >&2
+}
+function long_usage {
   usage="
 $striptracks_script   Version: $striptracks_ver
 Video remuxing script that only keeps tracks with the specified languages.
@@ -138,7 +142,7 @@ Examples:
                                            # specified
   $striptracks_script -a :any -s \"\"             # Keep all audio and no subtitles
 "
-  echo "$usage" >&2
+  echo "$usage"
 }
 
 # Log command-line arguments
@@ -182,8 +186,8 @@ while (( "$#" )); do
         exit 1
       fi
     ;;
-    -h|--help ) # Display usage
-      usage
+    -h|--help ) # Display full usage
+      long_usage
       exit 0
     ;;
     -v|--version ) # Display version
@@ -319,7 +323,8 @@ elif [[ "${striptracks_type,,}" = "sonarr" ]]; then
   # export striptracks_sonarr_json=" \"episodeIds\":[.episodes[].id],"
 else
   # Called in an unexpected way
-  echo -e "Error|Unknown or missing '*_eventtype' environment variable: ${striptracks_type}\nNot called from Radarr/Sonarr.\nTry using Batch Mode option: -f <file>" >&2
+  echo -e "Error|Unknown or missing '*_eventtype' environment variable: ${striptracks_type}\nNot calling from Radarr/Sonarr? Try using Batch Mode option: -f <file>" >&2
+  usage
   exit 7
 fi
 export striptracks_rescan_api="Rescan${striptracks_video_type^}"

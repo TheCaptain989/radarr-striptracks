@@ -126,9 +126,9 @@ echo "Keeping Audio $striptracks_audiokeep     Subtitles $striptracks_subskeep"
 
 echo "$striptracks_json" | jq -c --arg AudioKeep "$striptracks_audiokeep" \
 --arg SubsKeep "$striptracks_subskeep" '
-# Parse input string into language rules
+# Parse input string into JSON language rules
 def parse_language_codes(codes):
-  # Supports f, d, and number modifiers
+  # Supports f, d, and number modifiers (see issues #82 and #86)
   # -1 default value in language key means to keep unlimited tracks
   # NOTE: Logic can result in duplicate keys, but jq just uses the last defined key
   codes | split(":")[1:] | map(split("+") | {lang: .[0], mods: .[1]}) |
@@ -147,7 +147,7 @@ def parse_language_codes(codes):
     ) | add
   };
 
-# Language rules for audio and subtitles, adding required audio tracks
+# Language rules for audio and subtitles, adding required audio tracks (see issue #54)
 (parse_language_codes($AudioKeep) | .languages += {"mis":-1,"zxx":-1}) as $AudioRules |
 parse_language_codes($SubsKeep) as $SubsRules |
 
@@ -155,18 +155,28 @@ parse_language_codes($SubsKeep) as $SubsRules |
 if (.chapters[0].num_entries) then
   .striptracks_log = "Info|Chapters: \(.chapters[].num_entries)"
 else . end |
- 
+
 # Process tracks
 reduce .tracks[] as $track (
+  # Create object to hold tracks and counters for each reduce iteration
+  # This is what will be output at the end of the reduce loop
   {"tracks": [], "counters": {"audio": {"normal": {}, "forced": {}, "default": {}}, "subtitles": {"normal": {}, "forced": {}, "default": {}}}};
+
+  # Set track language to "und" if null or empty
   (if ($track.properties.language == "" or $track.properties.language == null) then "und" else $track.properties.language end) as $track_lang |
+
+  # Initialize counters for each track type and language
   .counters[$track.type].normal[$track_lang] = (.counters[$track.type].normal[$track_lang] // 0) |
   if $track.properties.forced_track then .counters[$track.type].forced[$track_lang] = (.counters[$track.type].forced[$track_lang] // 0) else . end |
   if $track.properties.default_track then .counters[$track.type].default[$track_lang] = (.counters[$track.type].default[$track_lang] // 0) else . end |
   .counters[$track.type] as $track_counters |
+  
+  # Add tracks one at a time to output object above
   .tracks += [
     $track |
     .striptracks_debug_log = "Debug|Parsing track ID:\(.id) Type:\(.type) Name:\(.properties.track_name) Lang:\($track_lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
+    
+    # Determine keep logic based on type and rules
     if .type == "video" then
       .striptracks_keep = true
     elif .type == "audio" or .type == "subtitles" then
@@ -176,7 +186,6 @@ reduce .tracks[] as $track (
       if ($currentRules.languages["any"] == -1 or ($track_counters.normal | add) < $currentRules.languages["any"] or
           $currentRules.languages[$track_lang] == -1 or $track_counters.normal[$track_lang] < $currentRules.languages[$track_lang]) then
         .striptracks_keep = true
-        # | .striptracks_rule = "normal"
       elif (.properties.forced_track and
             ($currentRules.forced_languages["any"] == -1 or ($track_counters.forced | add) < $currentRules.forced_languages["any"] or
               $currentRules.forced_languages[$track_lang] == -1 or $track_counters.forced[$track_lang] < $currentRules.forced_languages[$track_lang])) then
@@ -195,6 +204,8 @@ reduce .tracks[] as $track (
       end
     else . end
   ] | 
+  
+  # Increment counters for each track type and language
   .counters[$track.type].normal[$track_lang] +=
     if .tracks[-1].striptracks_keep then
       1
