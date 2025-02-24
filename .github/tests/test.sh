@@ -124,7 +124,7 @@ striptracks_subskeep=":any+f"
 
 echo "Keeping Audio $striptracks_audiokeep     Subtitles $striptracks_subskeep"
 
-echo "$striptracks_json" | jq -c --arg AudioKeep "$striptracks_audiokeep" \
+striptracks_json_processed=$(echo "$striptracks_json" | jq -c --arg AudioKeep "$striptracks_audiokeep" \
 --arg SubsKeep "$striptracks_subskeep" '
 # Parse input string into JSON language rules
 def parse_language_codes(codes):
@@ -163,19 +163,22 @@ reduce .tracks[] as $track (
   {"tracks": [], "counters": {"audio": {"normal": {}, "forced": {}, "default": {}}, "subtitles": {"normal": {}, "forced": {}, "default": {}}}};
 
   # Set track language to "und" if null or empty
+  # NOTE: The // operator cannot be used here because it checks for null or empty values, not blank strings
   (if ($track.properties.language == "" or $track.properties.language == null) then "und" else $track.properties.language end) as $track_lang |
 
   # Initialize counters for each track type and language
-  .counters[$track.type].normal[$track_lang] = (.counters[$track.type].normal[$track_lang] // 0) |
-  if $track.properties.forced_track then .counters[$track.type].forced[$track_lang] = (.counters[$track.type].forced[$track_lang] // 0) else . end |
-  if $track.properties.default_track then .counters[$track.type].default[$track_lang] = (.counters[$track.type].default[$track_lang] // 0) else . end |
+  (.counters[$track.type].normal[$track_lang] //= 0) |
+  if $track.properties.forced_track then (.counters[$track.type].forced[$track_lang] //= 0) else . end |
+  if $track.properties.default_track then (.counters[$track.type].default[$track_lang] //= 0) else . end |
   .counters[$track.type] as $track_counters |
   
   # Add tracks one at a time to output object above
   .tracks += [
     $track |
     .striptracks_debug_log = "Debug|Parsing track ID:\(.id) Type:\(.type) Name:\(.properties.track_name) Lang:\($track_lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
-    
+    # Use track language evaluation above
+    .properties.language = $track_lang |
+
     # Determine keep logic based on type and rules
     if .type == "video" then
       .striptracks_keep = true
@@ -242,5 +245,37 @@ elif (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 
 else . end |
 
 # Output simplified dataset
-{ striptracks_log, tracks: [ .tracks[] | { id, type, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug_log, striptracks_log, striptracks_keep } ] }
+{ striptracks_log, tracks: .tracks | map({ id, type, language: .properties.language, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug_log, striptracks_log, striptracks_keep }) }
+')
+
+echo "$striptracks_json_processed" | jq -c .
+
+echo "$striptracks_json_processed" | jq -c --arg AudioKeep "$striptracks_audiokeep" \
+--arg SubsKeep "$striptracks_subskeep" '
+def order_tracks($tracks; $Rules; $tracktype):
+  $Rules | split(":")[1:] | map(split("+") | {lang: .[0], mods: .[1]}) | 
+  # NOTE: This can produce duplicate track ids in the output array, but mkvmerge does not seem to care
+  reduce .[] as $rule (
+    [];
+    . += [ $tracks |
+    map(. as $track | 
+      select(.type == $tracktype and .striptracks_keep and
+        ($rule.lang | in({"any":0,($track.language):0})) and
+        ($rule.mods == null or
+          ($rule.mods | test("[fd]") | not) or
+          ($rule.mods | contains("f") and $track.forced) or
+          ($rule.mods | contains("d") and $track.default)
+        )
+      ) |
+      .id
+    ) ]
+  ) | flatten;
+
+# Order tracks
+.tracks as $tracks |
+order_tracks($tracks; $AudioKeep; "audio") as $audioTracks |
+order_tracks($tracks; $SubsKeep; "subtitles") as $subsTracks |
+
+# Output ordered track string compatible with the mkvmerge --track-order option
+$tracks | map(select(.type == "video") | .id) + $audioTracks + $subsTracks | map("0:" + tostring) | join(",")
 '
