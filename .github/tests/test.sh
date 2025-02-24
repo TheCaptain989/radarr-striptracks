@@ -250,16 +250,18 @@ else . end |
 
 echo "$striptracks_json_processed" | jq -c .
 
+# Reorder tracks
 echo "$striptracks_json_processed" | jq -c --arg AudioKeep "$striptracks_audiokeep" \
 --arg SubsKeep "$striptracks_subskeep" '
-def order_tracks($tracks; $Rules; $tracktype):
-  $Rules | split(":")[1:] | map(split("+") | {lang: .[0], mods: .[1]}) | 
-  # NOTE: This can produce duplicate track ids in the output array, but mkvmerge does not seem to care
+# Reorder tracks
+def order_tracks(tracks; rules; tracktype):
+  rules | split(":")[1:] | map(split("+") | {lang: .[0], mods: .[1]}) | 
   reduce .[] as $rule (
     [];
-    . += [ $tracks |
+    . as $orderedTracks |
+    . += [tracks |
     map(. as $track | 
-      select(.type == $tracktype and .striptracks_keep and
+      select(.type == tracktype and .striptracks_keep and
         ($rule.lang | in({"any":0,($track.language):0})) and
         ($rule.mods == null or
           ($rule.mods | test("[fd]") | not) or
@@ -267,15 +269,18 @@ def order_tracks($tracks; $Rules; $tracktype):
           ($rule.mods | contains("d") and $track.default)
         )
       ) |
-      .id
-    ) ]
+      .id as $id |
+      # Remove track id from orderedTracks if it already exists
+      if ([$id] | flatten | inside($orderedTracks | flatten)) then empty else $id end
+    )]
   ) | flatten;
 
-# Order tracks
+# Reorder audio and subtitles according to language rules
 .tracks as $tracks |
-order_tracks($tracks; $AudioKeep; "audio") as $audioTracks |
-order_tracks($tracks; $SubsKeep; "subtitles") as $subsTracks |
+order_tracks($tracks; $AudioKeep; "audio") as $audioOrder |
+order_tracks($tracks; $SubsKeep; "subtitles") as $subsOrder |
 
 # Output ordered track string compatible with the mkvmerge --track-order option
-$tracks | map(select(.type == "video") | .id) + $audioTracks + $subsTracks | map("0:" + tostring) | join(",")
+# Video tracks are always first, followed by audio tracks, then subtitles
+$tracks | map(select(.type == "video") | .id) + $audioOrder + $subsOrder | map("0:" + tostring) | join(",")
 '
