@@ -2,7 +2,7 @@
 This is a development and test repository.  Visit the [production repository and branch](https://github.com/linuxserver/docker-mods/tree/radarr-striptracks) for stable/production releases.
 
 # About
-A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.io Radarr/Sonarr v3 or higher Docker containers that adds a script to automatically strip out unwanted audio and subtitle tracks, keeping only the desired languages. A [Batch Mode](#batch-mode) is also supported that allows usage outside of Lidarr.
+A [Docker Mod](https://github.com/linuxserver/docker-mods) for the LinuxServer.io Radarr/Sonarr v3 or higher Docker containers that adds a script to automatically strip out unwanted audio and subtitle tracks, keeping only the desired languages. A [Batch Mode](#batch-mode) is also supported that allows usage outside of Radarr/Sonarr.
 
 **This unified script works in both Radarr and Sonarr.  Use this mod in either container!**
 
