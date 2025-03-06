@@ -21,8 +21,8 @@ Development Container info:
 ## Features Only Available In This Repository
 The following features are only available from this repository.  These are either not related to Linuxserver.io's images or not related to Docker at all, so they are not published as part of the official Linuxserver.io Docker Mod package.
 
-- Works in [hotio](https://hotio.dev/) containers. See [HOTIO.md](hotio/HOTIO.md) for more details.
-- Works in Windows by using [WSL](https://learn.microsoft.com/en-us/windows/wsl/).  See the [WSL.md](wsl/WSL.md) file for more details.
+- Works in [hotio](https://hotio.dev/) containers. See [HOTIO.md](hotio) for more details.
+- Works in Windows by using [WSL](https://learn.microsoft.com/en-us/windows/wsl/).  See the [WSL.md](wsl) file for more details.
 
 # Installation
 1. Configure your selected Docker container with all the port, volume, and environment settings from the *original container documentation* here:  

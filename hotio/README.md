@@ -6,7 +6,7 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 > This is a quick and dirty script with minimal testing or error checking.  Note that it only runs *inside* the hotio container and should **not** be executed manually.
 
 # Installation
-1. Download the **[99-striptracks.sh](./99-striptracks.sh)** install script and save it somewhere that can be mounted by your container.  
+1. Download the **[99-striptracks.sh](99-striptracks.sh)** install script and save it somewhere that can be mounted by your container.  
 
     *Example location:*  `/volume1/docker/99-striptracks.sh`  
 
@@ -84,7 +84,7 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 
 5. Start the container.
 
-6. After the container has fully started, continue with Installation step 2 in the main [Readme](../README.md#installation) to configure `striptracks.sh` as a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen.
+6. After the container has fully started, continue with Installation step 2 in the main [Readme](../#installation) to configure `striptracks.sh` as a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen.
 
 # Requirements
 You must have the **bash** shell available in your host path.  You *might* attempt editing the [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) in the `99-striptracks.sh` script to get around this, but that is beyond the scope of this document.
