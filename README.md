@@ -228,8 +228,8 @@ Option|Argument|Description
 ---|---|---
 `-a`, `--audio`|`<audio_languages>`|Audio languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)<br/>Each code may optionally be followed by a plus (`+`) and one or more [modifiers](#language-code-modifiers).
 `-s`, `--subs`|`<subtitle_languages>`|Subtitle languages to keep<br/>ISO 639-2 code(s) prefixed with a colon (`:`)<br/>Each code may optionally be followed by a plus (`+`) and one or more modifiers.
-`--reorder`| |Reorder audio and subtitles tracks to match the order the languages are specified on the command line.<br/>This has no effect if no tracks would be removed.
-`-f`, `--file`|`<video_file>`|If included, the script enters **[Batch Mode](#batch-mode)** and converts the specified video file.<br/>Requires the `-a` option.<br/>![notes] **Do not** use this argument when called from Radarr or Sonarr!
+`--reorder`| |Reorder audio and subtitles tracks to match the language code order specified in the `<audio_languages>` and `<subtitle_languages>` arguments.<br/>This is skipped if no tracks are removed.
+`-f`, `--file`|`<video_file>`|If included, the script enters **[Batch Mode](#batch-mode)** and converts the specified video file.<br/>Requires the `--audio` option.<br/>![notes] **Do not** use this argument when called from Radarr or Sonarr!
 `-l`, `--log`|`<log_file>`|The log filename<br/>Default is `/config/log/striptracks.txt`
 `-c`, `--config`|`<config_file>`|Radarr/Sonarr XML configuration file<br/>Default is `/config/config.xml`
 `-d`, `--debug`|`[<level>]`|Enables debug logging. Level is optional.<br/>Default is `1` (low)<br/>`2` includes JSON output<br/>`3` contains even more JSON output
@@ -238,7 +238,7 @@ Option|Argument|Description
 
 </details>
 
-The `<audio_languages>` and `<subtitle_languages>` are optional arguments that are colon (`:`) prepended language codes in [ISO 639-2](https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes "List of ISO 639-2 codes") format.  
+The `<audio_languages>` and `<subtitle_languages>` arguments are colon (`:`) prepended language codes in [ISO 639-2](https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes "List of ISO 639-2 codes") format.  
 For example:
 
 * `:eng`
@@ -247,7 +247,7 @@ For example:
 
 ...etc.
 
-Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.  Order is unimportant.
+Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.  Order is unimportant, unless the `--reorder` option is also specified.
 
 > [!WARNING]
 > If no subtitle language is detected via Radarr/Sonarr configuration or specified on the command-line, all subtitles are removed.

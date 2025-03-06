@@ -68,8 +68,7 @@ function usage {
   echo "$usage" >&2
 }
 function long_usage {
-  usage="
-$striptracks_script   Version: $striptracks_ver
+  usage="$striptracks_script   Version: $striptracks_ver
 Video remuxing script that only keeps tracks with the specified languages.
 Designed for use with Radarr and Sonarr, but may be used standalone in batch
 mode.
@@ -93,9 +92,12 @@ Options and Arguments:
                                    multiple codes may be concatenated.
                                    Each code may optionally be followed by a
                                    plus \`+\` and one or more modifiers.
-  --reorder                        Reorder audio and subtitles tracks to match
-                                   the order the languages are specified on the
-                                   command line.
+      --reorder                    Reorder audio and subtitles tracks to match
+                                   the language code order specified in the
+                                   <audio_languages> and <subtitle_languages>
+                                   arguments.
+                                   Track reorder is skipped if no tracks are
+                                   removed.
   -f, --file <video_file>          If included, the script enters batch mode
                                    and converts the specified video file.
                                    WARNING: Do not use this argument when called
@@ -129,11 +131,11 @@ Examples:
   $striptracks_script -d 2                      # Enable debugging level 2, audio and
                                            # subtitles languages detected from
                                            # Radarr/Sonarr
-  $striptracks_script -a :eng:und -s :eng       # keep English and Unknown audio and
+  $striptracks_script -a :eng:und -s :eng       # Keep English and Unknown audio and
                                            # English subtitles
-  $striptracks_script -a :eng:org -s :any+f:eng # keep English and Original audio,
+  $striptracks_script -a :eng:org -s :any+f:eng # Keep English and Original audio,
                                            # and forced or English subtitles
-  $striptracks_script -a :eng -s \"\"             # keep English audio and no subtitles
+  $striptracks_script -a :eng -s \"\"             # Keep English audio and no subtitles
   $striptracks_script -d :eng:kor:jpn :eng:spa  # Enable debugging level 1, keeping
                                            # English, Korean, and Japanese
                                            # audio, and English and Spanish
@@ -144,6 +146,11 @@ Examples:
                                            # English subtitles, converting video
                                            # specified
   $striptracks_script -a :any -s \"\"             # Keep all audio and no subtitles
+  $striptracks_script -a :org:any+d1 -s :eng+1:any+f2
+                                           # Keep all Original and one default
+                                           # audio in any language, and one
+                                           # English and two forced subtitles
+                                           # in any language
 "
   echo "$usage"
 }
@@ -189,11 +196,11 @@ while (( "$#" )); do
         exit 1
       fi
     ;;
-    -h|--help ) # Display full usage
+    --help ) # Display full usage
       long_usage
       exit 0
     ;;
-    -v|--version ) # Display version
+    --version ) # Display version
       echo "$striptracks_script $striptracks_ver"
       exit 0
     ;;
