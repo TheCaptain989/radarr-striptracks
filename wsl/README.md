@@ -11,7 +11,7 @@ Below are highly simplified installation instructions assuming defaults on a bas
    wsl --install
    ```
 
-3. Run the [wsl-install-striptracks.ps1](./wsl-install-striptracks.ps1)
+3. Run the [wsl-install-striptracks.ps1](wsl-install-striptracks.ps1)
 installation script, entering your Linux user password when prompted:
 
    ```powershell
