@@ -132,8 +132,7 @@ order=$(echo "$json_processed" | jq -jcM '
 .tracks | map(select(.type == "video") | .id) + map(select(.type == "audio" and .striptracks_keep) | .id) + map(select(.type == "subtitles" and .striptracks_keep) | .id)| map("0:" + tostring) | join(",")
 ')
 
-neworder=$(echo "$json_processed" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
---arg SubsKeep "$striptracks_subskeep" '
+neworder=$(echo "$json_processed" | jq -jcM '
 # Reorder tracks
 def order_tracks(tracks; rules; tracktype):
   rules | split(":")[1:] | map(split("+") | {lang: .[0], mods: .[1]}) | 
