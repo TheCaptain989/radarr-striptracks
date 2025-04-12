@@ -1544,7 +1544,6 @@ fi
 striptracks_order=$(echo "$striptracks_json_processed" | jq -jcM '
 .tracks | map(select(.type == "video") | .id) + map(select(.type == "audio" and .striptracks_keep) | .id) + map(select(.type == "subtitles" and .striptracks_keep) | .id)| map("0:" + tostring) | join(",")
 ')
-exit
 
 # Prepare to reorder tracks if option is enabled (see issue #92)
 if [ "$striptracks_reorder" = "true" ]; then

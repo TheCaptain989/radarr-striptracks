@@ -1,10 +1,14 @@
 #!/bin/bash
 
+striptracks_audiokeep=":eng+1:fre:ger+d:any+f"
+striptracks_subskeep=":any+f"
+
 json='{"attachments":[],"chapters":[],"container":{"properties":{"container_type":25,"is_providing_timestamps":true},"recognized":true,"supported":true,"type":"QuickTime/MP4"},"errors":[],"file_name":"ElephantsDream.mp4","global_tags":[],"identification_format_version":12,"track_tags":[],"tracks":[{"codec":"MPEG-4p10/AVC/H.264","id":0,"properties":{"language":"","number":1,"packetizer":"mpeg4_p10_video","pixel_dimensions":"1280x720"},"type":"video"},{"codec":"MPEG-4p10/AVC/H.264","id":10,"properties":{"language":"","number":10,"packetizer":"mpeg4_p10_video","pixel_dimensions":"1280x720"},"type":"video"},{"codec":"AAC","id":1,"properties":{"audio_bits_per_sample":16,"audio_channels":2,"audio_sampling_frequency":44100,"number":2},"type":"audio"},{"codec":"TheCaptain989-forced","id":2,"properties":{"audio_bits_per_sample":16,"audio_channels":2,"audio_sampling_frequency":44100,"track_name":"Should include","language":"ger","number":5,"forced_track":true},"type":"audio"},{"codec":"TheCaptain989-default","id":3,"properties":{"audio_bits_per_sample":16,"audio_channels":2,"audio_sampling_frequency":44100,"track_name":"Should include","language":"ger","number":6,"default_track":true},"type":"audio"},{"codec":"SubsAlpha","id":4,"properties":{"track_name":"Should include","language":"eng","forced_track":true},"type":"subtitles"},{"codec":"TheCaptain989","id":5,"properties":{"audio_bits_per_sample":16,"audio_channels":2,"audio_sampling_frequency":44100,"track_name":"Should include","language":"eng","number":3},"type":"audio"},{"codec":"TheCaptain989-2","id":6,"properties":{"audio_bits_per_sample":16,"audio_channels":2,"audio_sampling_frequency":44100,"language":"eng","track_name":"Should exclude","number":4},"type":"audio"}],"warnings":[]}'
 
 json_processed='{"striptracks_log":null,"tracks":[{"id":0,"type":"video","language":"und","forced":false,"default":true,"striptracks_debug_log":"Debug|Parsing track ID:0 Type:video Name:null Lang:und Codec:MPEG-4p10/AVC/H.264 Default:true Forced:false","striptracks_log":null,"striptracks_keep":true},{"id":1,"type":"audio","language":"und","forced":false,"default":true,"striptracks_debug_log":"Debug|Parsing track ID:1 Type:audio Name:null Lang:und Codec:AAC Default:true Forced:false","striptracks_log":"Info|Keeping audio track 1: und (AAC)","striptracks_keep":true}]}'
 
-json_processed=$(echo "$json" | jq -jcM '
+json_processed=$(echo "$json" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
+--arg SubsKeep "$striptracks_subskeep" '
 # Parse input string into JSON language rules
 def parse_language_codes(codes):
   # Supports f, d, and number modifiers (see issues #82 and #86)
@@ -131,7 +135,8 @@ order=$(echo "$json_processed" | jq -jcM '
 .tracks | map(select(.type == "video") | .id) + map(select(.type == "audio" and .striptracks_keep) | .id) + map(select(.type == "subtitles" and .striptracks_keep) | .id)| map("0:" + tostring) | join(",")
 ')
 
-neworder=$(echo "$json_processed" | jq -jcM '
+neworder=$(echo "$json_processed" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
+--arg SubsKeep "$striptracks_subskeep" '
 # Reorder tracks
 def order_tracks(tracks; rules; tracktype):
   rules | split(":")[1:] | map(split("+") | {lang: .[0], mods: .[1]}) | 
