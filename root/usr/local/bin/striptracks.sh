@@ -1532,38 +1532,21 @@ log_removed_tracks("subtitles"),
 "subtitles: \(.tracks | map(select(.type == "subtitles" and .striptracks_keep)) | length))"
 ' | log
 
-# Check for no audio or subtitle tracks
-if [ "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio" and .striptracks_keep))')" = "" ]; then
-  striptracks_message="Warn|Script encountered an error when determining audio tracks to keep and must close."
+# Check for no audio tracks
+if [ "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio" and .striptracks_keep))')" = "[]" ]; then
+  striptracks_message="Error|Unable to determine any audio tracks to keep. Exiting."
   echo "$striptracks_message" | log
   echo "$striptracks_message" >&2
   end_script 11
 fi
 
-# All tracks matched/no tracks removed (see issues #49 and #89)
-if [ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles"))|length')" = "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select((.type=="audio" or .type=="subtitles") and .striptracks_keep))|length')" ]; then
-  [ $striptracks_debug -ge 1 ] && echo "Debug|No tracks will be removed from video \"$striptracks_video\"" | log
-  # Check if already MKV
-  if [[ $striptracks_video == *.mkv ]]; then
-    # Remuxing not performed
-    striptracks_message="Info|No tracks would be removed from video. Setting Title only and exiting."
-    echo "$striptracks_message" | log
-    striptracks_mkvcommand="/usr/bin/mkvpropedit -q --edit info --set \"title=$striptracks_title\" \"$striptracks_video\""
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $striptracks_mkvcommand" | log
-    striptracks_result=$(eval $striptracks_mkvcommand)
-    striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
-      striptracks_message=$(echo -e "[$striptracks_return] Error when setting video title: \"$striptracks_tempvideo\"\nmkvpropedit returned: $striptracks_result" | awk '{print "Error|"$0}')
-      echo "$striptracks_message" | log
-      echo "$striptracks_message" >&2
-      striptracks_exitstatus=13
-    }
-    end_script
-  else
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Source video is not MKV. Remuxing anyway." | log
-  fi
-fi
+# Find current track order
+striptracks_order=$(echo "$striptracks_json_processed" | jq -jcM '
+.tracks | map(select(.type == "video") | .id) + map(select(.type == "audio" and .striptracks_keep) | .id) + map(select(.type == "subtitles" and .striptracks_keep) | .id)| map("0:" + tostring) | join(",")
+')
+exit
 
-# Prepare to reorder tracks if option is enabled
+# Prepare to reorder tracks if option is enabled (see issue #92)
 if [ "$striptracks_reorder" = "true" ]; then
   striptracks_neworder=$(echo "$striptracks_json_processed" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
 --arg SubsKeep "$striptracks_subskeep" '
@@ -1598,10 +1581,40 @@ order_tracks($tracks; $SubsKeep; "subtitles") as $subsOrder |
 # Video tracks are always first, followed by audio tracks, then subtitles
 $tracks | map(select(.type == "video") | .id) + $audioOrder + $subsOrder | map("0:" + tostring) | join(",")
 ')
-  striptracks_neworder="--track-order $striptracks_neworder"
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Using track reorder string: $striptracks_neworder" | log
   striptracks_message="Info|Reordering tracks using language rules."
   echo "$striptracks_message" | log
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Using track reorder string: $striptracks_neworder" | log
+fi
+
+# All tracks matched/no tracks removed (see issues #49 and #89)
+if [ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles"))|length')" = "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select((.type=="audio" or .type=="subtitles") and .striptracks_keep))|length')" ]; then
+  [ $striptracks_debug -ge 1 ] && echo "Debug|No tracks will be removed from video \"$striptracks_video\"" | log
+  # Check if already MKV
+  if [[ $striptracks_video == *.mkv ]]; then
+    # Check if reorder option is unset or if the order wouldn't change (see issue #92)
+    if [ "$striptracks_reorder" != "true" -o "$striptracks_order" = "$striptracks_neworder" ]; then
+      # Remuxing not performed
+      striptracks_message="Info|No tracks would be removed from video. Setting Title only and exiting."
+      echo "$striptracks_message" | log
+      striptracks_mkvcommand="/usr/bin/mkvpropedit -q --edit info --set \"title=$striptracks_title\" \"$striptracks_video\""
+      [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $striptracks_mkvcommand" | log
+      striptracks_result=$(eval $striptracks_mkvcommand)
+      striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
+        striptracks_message=$(echo -e "[$striptracks_return] Error when setting video title: \"$striptracks_tempvideo\"\nmkvpropedit returned: $striptracks_result" | awk '{print "Error|"$0}')
+        echo "$striptracks_message" | log
+        echo "$striptracks_message" >&2
+        striptracks_exitstatus=13
+      }
+      end_script
+    else
+      # Reorder tracks
+      striptracks_message="Info|No tracks would be removed from video, but reorder option specified. Remuxing anyway."
+      echo "$striptracks_message" | log
+    fi
+  else
+    # Not MKV
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Source video is not MKV. Remuxing anyway." | log
+  fi
 fi
 
 # Test for hardlinked file (see issue #85)
@@ -1623,6 +1636,11 @@ if [ ${#striptracks_subsarg} -ne 0 ]; then
   striptracks_subsarg="-s $striptracks_subsarg"
 else
   striptracks_subsarg="-S"
+fi
+
+# Build argument for track reorder option for MKVmerge
+if [ ${#striptracks_neworder} -ne 0 ]; then
+  striptracks_neworder="--track-order $striptracks_neworder"
 fi
 
 # Execute MKVmerge (remux then rename, see issue #46)
@@ -1722,7 +1740,7 @@ echo "$striptracks_message" | log
 #### Call Radarr/Sonarr API to RescanMovie/RescanSeries
 # Check for URL
 if [ "$striptracks_type" = "batch" ]; then
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Cannot use API in batch mode." | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Not calling API while in batch mode." | log
 elif [ -n "$striptracks_api_url" ]; then
   # Check for video IDs
   if [ "$striptracks_video_id" -a "$striptracks_videofile_id" ]; then
