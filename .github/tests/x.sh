@@ -4,8 +4,7 @@ json='{"attachments":[],"chapters":[],"container":{"properties":{"container_type
 
 json_processed='{"striptracks_log":null,"tracks":[{"id":0,"type":"video","language":"und","forced":false,"default":true,"striptracks_debug_log":"Debug|Parsing track ID:0 Type:video Name:null Lang:und Codec:MPEG-4p10/AVC/H.264 Default:true Forced:false","striptracks_log":null,"striptracks_keep":true},{"id":1,"type":"audio","language":"und","forced":false,"default":true,"striptracks_debug_log":"Debug|Parsing track ID:1 Type:audio Name:null Lang:und Codec:AAC Default:true Forced:false","striptracks_log":"Info|Keeping audio track 1: und (AAC)","striptracks_keep":true}]}'
 
-json_processed=$(echo "$json" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
---arg SubsKeep "$striptracks_subskeep" '
+json_processed=$(echo "$json" | jq -jcM '
 # Parse input string into JSON language rules
 def parse_language_codes(codes):
   # Supports f, d, and number modifiers (see issues #82 and #86)
