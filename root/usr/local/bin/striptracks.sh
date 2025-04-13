@@ -1379,7 +1379,7 @@ get_mediainfo "$striptracks_video"
 # Process JSON data from MKVmerge; track selection logic
 striptracks_json_processed=$(echo "$striptracks_json" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
 --arg SubsKeep "$striptracks_subskeep" '
-# Parse input string into JSON language rules
+# Parse input string into JSON language rules function
 def parse_language_codes(codes):
   # Supports f, d, and number modifiers (see issues #82 and #86)
   # -1 default value in language key means to keep unlimited tracks
@@ -1505,7 +1505,7 @@ else . end |
 
 # Write messages to log
 echo "$striptracks_json_processed" | jq -crM --argjson Debug $striptracks_debug '
-# Join log messages into one line
+# Join log messages into one line function
 def log_removed_tracks($type):
   if (.tracks | map(select(.type == $type and .striptracks_keep == false)) | length > 0) then
     "Info|Removing \($type) tracks: " +
@@ -1540,16 +1540,15 @@ if [ "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type==
   end_script 11
 fi
 
-# Find current track order
-striptracks_order=$(echo "$striptracks_json_processed" | jq -jcM '
-.tracks | map(select(.type == "video") | .id) + map(select(.type == "audio" and .striptracks_keep) | .id) + map(select(.type == "subtitles" and .striptracks_keep) | .id)| map("0:" + tostring) | join(",")
-')
+# Map current track order
+striptracks_order=$(echo "$striptracks_json_processed" | jq -jcM '.tracks | map(.id | "0:" + tostring) | join(",")')
+[ $striptracks_debug -ge 1 ] && echo "Debug|Current mkvmerge track order: $striptracks_order" | log
 
 # Prepare to reorder tracks if option is enabled (see issue #92)
 if [ "$striptracks_reorder" = "true" ]; then
   striptracks_neworder=$(echo "$striptracks_json_processed" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
 --arg SubsKeep "$striptracks_subskeep" '
-# Reorder tracks
+# Reorder tracks function
 def order_tracks(tracks; rules; tracktype):
   rules | split(":")[1:] | map(split("+") | {lang: .[0], mods: .[1]}) | 
   reduce .[] as $rule (
@@ -1580,7 +1579,7 @@ order_tracks($tracks; $SubsKeep; "subtitles") as $subsOrder |
 # Video tracks are always first, followed by audio tracks, then subtitles
 $tracks | map(select(.type == "video") | .id) + $audioOrder + $subsOrder | map("0:" + tostring) | join(",")
 ')
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Using track reorder string: $striptracks_neworder" | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|New mkvmerge track order: $striptracks_neworder" | log
   striptracks_message="Info|Reordering tracks using language rules."
   echo "$striptracks_message" | log
 fi
@@ -1606,8 +1605,8 @@ if [ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or
       }
       end_script
     else
-      # Reorder tracks
-      striptracks_message="Info|No tracks would be removed from video, but reorder option specified. Remuxing anyway."
+      # Reorder tracks anyway
+      striptracks_message="Info|No tracks will be removed from video, but they can be reordered. Remuxing anyway."
       echo "$striptracks_message" | log
     fi
   else
