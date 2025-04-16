@@ -96,8 +96,6 @@ Options and Arguments:
                                    the language code order specified in the
                                    <audio_languages> and <subtitle_languages>
                                    arguments.
-                                   Track reorder is skipped if no tracks are
-                                   removed.
   -f, --file <video_file>          If included, the script enters batch mode
                                    and converts the specified video file.
                                    WARNING: Do not use this argument when called
@@ -1570,17 +1568,18 @@ def order_tracks(tracks; rules; tracktype):
     )]
   ) | flatten;
 
-# Reorder audio and subtitles according to language rules
+# Reorder audio and subtitles according to language code order
 .tracks as $tracks |
 order_tracks($tracks; $AudioKeep; "audio") as $audioOrder |
 order_tracks($tracks; $SubsKeep; "subtitles") as $subsOrder |
 
 # Output ordered track string compatible with the mkvmerge --track-order option
 # Video tracks are always first, followed by audio tracks, then subtitles
+# NOTE: Other track types are still preserved as mkvmerge will automatically place any missing tracks after those listed per https://mkvtoolnix.download/doc/mkvmerge.html#d4e544
 $tracks | map(select(.type == "video") | .id) + $audioOrder + $subsOrder | map("0:" + tostring) | join(",")
 ')
   [ $striptracks_debug -ge 1 ] && echo "Debug|New mkvmerge track order: $striptracks_neworder" | log
-  striptracks_message="Info|Reordering tracks using language rules."
+  striptracks_message="Info|Reordering tracks using language code order."
   echo "$striptracks_message" | log
 fi
 
@@ -1592,7 +1591,7 @@ if [ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or
     # Check if reorder option is unset or if the order wouldn't change (see issue #92)
     if [ "$striptracks_reorder" != "true" -o "$striptracks_order" = "$striptracks_neworder" ]; then
       # Remuxing not performed
-      striptracks_message="Info|No tracks would be removed from video. Setting Title only and exiting."
+      striptracks_message="Info|No tracks would be removed from video$( [ "$striptracks_reorder" = "true" ] && echo " or reordered"). Setting Title only and exiting."
       echo "$striptracks_message" | log
       striptracks_mkvcommand="/usr/bin/mkvpropedit -q --edit info --set \"title=$striptracks_title\" \"$striptracks_video\""
       [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $striptracks_mkvcommand" | log

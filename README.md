@@ -247,7 +247,7 @@ For example:
 
 ...etc.
 
-Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.  Order is unimportant, unless the `--reorder` option is also specified.
+Multiple codes may be concatenated, such as `:eng:spa` for both English and Spanish.  Order is unimportant, unless the `--reorder` option is specified.
 
 > [!WARNING]
 > If no subtitle language is detected via Radarr/Sonarr configuration or specified on the command-line, all subtitles are removed.
@@ -288,6 +288,37 @@ Several [Included Wrapper Scripts](#included-wrapper-scripts) use this special c
 The `:und` language code is a special code. When used, the script will match on any track that has a null or blank language attribute. If not included, tracks with no language attribute will be removed.  
 > [!TIP]
 > It is common for M2TS and AVI files to have tracks with unknown languages! It is recommended to include `:und` in most instances unless you know exactly what you're doing.
+
+### Reorder Option
+The `--reorder` option uses the order the language codes are specified to re-order the tracks in the output MKV video file.  Video tracks are always first, followed by audio tracks, and then subtitles.  Track removals and preservations occur the way they normally would.
+
+<details>
+<summary>Reorder Example</summary>
+
+For example, given a source video (w/original language of English) that has the following track order:
+
+> Track ID:0 Type:video Name:null Lang:und Codec:AVC/H.264/MPEG-4p10 Default:true Forced:false  
+> Track ID:1 Type:audio Name:French Lang:fre Codec:E-AC-3 Default:true Forced:false  
+> Track ID:2 Type:audio Name:German Lang:deu Codec:AC-3 Default:false Forced:false  
+> Track ID:3 Type:audio Name:English Lang:eng Codec:AC-3 Default:false Forced:false  
+> Track ID:4 Type:subtitles Name:French Lang:fre Codec:SubRip/SRT Default:false Forced:false  
+> Track ID:5 Type:subtitles Name:English Lang:eng Codec:SubRip/SRT Default:false Forced:false  
+
+And using the command line:
+
+```shell
+/usr/local/bin/striptracks.sh --audio :org+1:eng+1:fre+1:und+1 --subs :eng+1:fre+1:spa+1 --reorder
+```
+
+Will create an MKV file with tracks:
+
+> Track ID:0 Type:video Name:null Lang:und Codec:AVC/H.264/MPEG-4p10 Default:true Forced:false  
+> Track ID:1 Type:audio Name:English Lang:eng Codec:AC-3 Default:false Forced:false  
+> Track ID:2 Type:audio Name:French Lang:fre Codec:E-AC-3 Default:true Forced:false  
+> Track ID:3 Type:subtitles Name:English Lang:eng Codec:SubRip/SRT Default:false Forced:false  
+> Track ID:4 Type:subtitles Name:French Lang:fre Codec:SubRip/SRT Default:false Forced:false  
+
+</details>
 
 ## Special Handling of Audio
 The script is smart enough to not remove the last audio track. There is in fact no way to force the script to remove all audio. This way you don't have to specify every possible language if you are importing a foreign film, for example.
