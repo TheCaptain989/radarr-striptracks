@@ -659,8 +659,8 @@ function delete_video {
 # }
 # Update file metadata in Radarr/Sonarr
 function set_metadata {
-  local url="$striptracks_api_url/$striptracks_videofile_api/editor"
-  local data="$(echo $striptracks_original_metadata | jq -crM "{${striptracks_videofile_api}Ids: [${striptracks_videofile_id}], quality, releaseGroup}")"
+  local url="$striptracks_api_url/$striptracks_videofile_api/bulk"
+  local data="$(echo $striptracks_original_metadata | jq -crM "[{id:${striptracks_videofile_id}, quality, releaseGroup}]")"
   local i=0
   for ((i=1; i <= 5; i++)); do
     [ $striptracks_debug -ge 1 ] && echo "Debug|Updating from quality '$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)' to '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' and release group '$(echo $striptracks_videofile_info | jq -crM '.releaseGroup | select(. != null)')' to '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'. Calling ${striptracks_type^} API using PUT and URL '$url' with data $data" | log
@@ -794,10 +794,10 @@ function rename_video {
   fi
   return $striptracks_return
 }
-# Set video language in Radarr
-function set_radarr_language {
-  local url="$striptracks_api_url/$striptracks_videofile_api/editor"
-  local data="{\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"languages\":${striptracks_json_languages}}"
+# Set video language
+function set_language {
+  local url="$striptracks_api_url/$striptracks_videofile_api/bulk"
+  local data="[{\"id\":${striptracks_videofile_id},\"languages\":${striptracks_json_languages}}]"
   [ $striptracks_debug -ge 1 ] && echo "Debug|Updating from language(s) '$(echo $striptracks_videofile_info | jq -crM "[.languages[].name] | join(\",\")")' to '$(echo $striptracks_json_languages | jq -crM "[.[].name] | join(\",\")")'. Calling ${striptracks_type^} API using PUT and URL '$url' with data $data" | log
   unset striptracks_result
   striptracks_result=$(curl -s --fail-with-body -H "X-Api-Key: $striptracks_apikey" \
@@ -818,8 +818,8 @@ function set_radarr_language {
   fi
   return $striptracks_return
 }
-# Set video language in Sonarr
-function set_sonarr_language {
+# Set video language in Sonarr v3
+function set_legacy_sonarr_language {
   local url="$striptracks_api_url/$striptracks_videofile_api/editor"
   local data="{\"${striptracks_videofile_api}Ids\":[${striptracks_videofile_id}],\"language\":$(echo $striptracks_json_languages | jq -crM ".[0]")}"
   [ $striptracks_debug -ge 1 ] && echo "Debug|Updating from language '$(echo $striptracks_videofile_info | jq -crM ".language.name")' to '$(echo $striptracks_json_languages | jq -crM ".[0].name")'. Calling ${striptracks_type^} API using PUT and URL '$url' with data $data" | log
@@ -1848,7 +1848,7 @@ elif [ -n "$striptracks_api_url" ]; then
             # Sooooo glad I did it this way
             if [ "$(echo $striptracks_videofile_info | jq -crM .languages)" != "null" ]; then
               if [ "$(echo $striptracks_videofile_info | jq -crM .languages)" != "$striptracks_json_languages" ]; then
-                if set_radarr_language; then
+                if set_language; then
                   striptracks_exitstatus=0
                 else
                   striptracks_message="Error|${striptracks_type^} error when updating video language(s)."
@@ -1863,7 +1863,7 @@ elif [ -n "$striptracks_api_url" ]; then
             # Check languages for Sonarr v3 and earlier
             elif [ "$(echo $striptracks_videofile_info | jq -crM .language)" != "null" ]; then
               if [ "$(echo $striptracks_videofile_info | jq -crM .language)" != "$(echo $striptracks_json_languages | jq -crM '.[0]')" ]; then
-                if set_sonarr_language; then
+                if set_legacy_sonarr_language; then
                   striptracks_exitstatus=0
                 else
                   striptracks_message="Error|${striptracks_type^} error when updating video language(s)."
