@@ -1539,7 +1539,7 @@ if [ "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type==
 fi
 
 # Map current track order
-striptracks_order=$(echo "$striptracks_json_processed" | jq -jcM '.tracks | map(.id | "0:" + tostring) | join(",")')
+striptracks_order=$(echo "$striptracks_json_processed" | jq -jcM '.tracks | map(select(.striptracks_keep) | .id | "0:" + tostring) | join(",")')
 [ $striptracks_debug -ge 1 ] && echo "Debug|Current mkvmerge track order: $striptracks_order" | log
 
 # Prepare to reorder tracks if option is enabled (see issue #92)
