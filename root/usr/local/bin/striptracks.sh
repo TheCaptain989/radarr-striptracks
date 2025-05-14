@@ -76,7 +76,7 @@ mode.
 Source: https://github.com/TheCaptain989/radarr-striptracks
 
 Usage:
-  $0 [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [--reorder] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-d|--debug} [<level>]]
+  $0 [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-d|--debug} [<level>]]
 
   Options can also be set via the STRIPTRACKS_ARGS environment variable.
   Command-line arguments override the environment variable.
@@ -94,12 +94,14 @@ Options and Arguments:
                                    plus \`+\` and one or more modifiers.
   -f, --file <video_file>          If included, the script enters batch mode
                                    and converts the specified video file.
-                                   WARNING: Do not use this argument when called
-                                   from Radarr or Sonarr!
+                                   WARNING: Do not use this argument when
+                                   calling from Radarr or Sonarr!
       --reorder                    Reorder audio and subtitles tracks to match
                                    the language code order specified in the
                                    <audio_languages> and <subtitle_languages>
                                    arguments.
+      --disable-recycle            Disable recycle bin use, even if configured
+                                   in Radarr/Sonarr
   -l, --log <log_file>             Log filename
                                    [default: /config/log/striptracks.txt]
   -c, --config <config_file>       Radarr/Sonarr XML configuration file
@@ -253,6 +255,10 @@ while (( "$#" )); do
     ;;
     --reorder ) # Reorder audio and subtitles tracks
       export striptracks_reorder="true"
+      shift
+    ;;
+    --disable-recycle ) # Disable recycle bin use
+      export striptracks_recycle="false"
       shift
     ;;
     -*) # Unknown option
@@ -1688,8 +1694,8 @@ striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
   striptracks_exitstatus=15
 }
 
-# Just delete the original video if running in batch mode
-if [ "$striptracks_type" = "batch" ]; then
+# Just delete the original video if running in batch mode or if configured to do so (see issue #99)
+if [ "$striptracks_type" = "batch" -o "$striptracks_recycle" = "false" ]; then
   [ $striptracks_debug -ge 1 ] && echo "Debug|Deleting: \"$striptracks_video\"" | log
   striptracks_result=$(rm "$striptracks_video")
   striptracks_return=$?; [ $striptracks_return -ne 0 ] && {
@@ -1764,6 +1770,12 @@ elif [ -n "$striptracks_api_url" ]; then
       # }
       # striptracks_jobid="$(echo $striptracks_result | jq -crM .id)"
       # Check status of job
+    # Rescan if recycle bin use is disabled to remove the original video from the database
+    if [ "$striptracks_recycle" = "false" ]; then
+      [ $striptracks_debug -ge 1 ] && echo "Debug|Recycle Bin use is disabled and original video has been deleted. Rescaning to remove the original video from the ${striptracks_type^} database." | log
+      rescan
+      sleep 1
+    fi
     # Scan the disk for the new movie file
     if rescan; then
       # Give it a beat
