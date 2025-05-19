@@ -18,6 +18,11 @@ jobs:
           curl -s https://raw.githubusercontent.com/pgrange/bash_unit/master/install.sh | bash
           FORCE_COLOR=true ./bash_unit .github/tests/test_*
 
+      - name: Clean up
+        # Remove bash_unit after testing
+        run: |
+          rm -rf bash_unit
+
   lint:
     name: Lint Job
     needs: unit_test

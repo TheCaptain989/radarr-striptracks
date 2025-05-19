@@ -1872,10 +1872,7 @@ function rescan_and_cleanup {
 }
 
 # Do not execute if this script is being sourced from a test script
-if [[ "${BASH_SOURCE[1]}" =~ tests/test_.*\.sh$ ]]; then
-  echo "BASH_SOURCE[1] = ${BASH_SOURCE[1]}"
-  exit 0
+if [[ ! "${BASH_SOURCE[1]}" =~ test_.*\.sh$ ]]; then
+  main "$@"
+  end_script
 fi
-
-main "$@"
-end_script
