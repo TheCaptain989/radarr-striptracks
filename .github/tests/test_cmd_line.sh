@@ -12,7 +12,7 @@ test_cmd_options_require_argument() {
   assert_status_code 1 "process_command_line --file" && \
   assert_status_code 1 "process_command_line --audio" && \
   assert_status_code 1 "process_command_line --subtitles" && \
-  assert_status_code 1 "process_command_line --config" &&
+  assert_status_code 1 "process_command_line --config"
 }
 
 test_cmd_unknown_option() {
