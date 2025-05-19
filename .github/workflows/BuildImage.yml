@@ -21,7 +21,7 @@ jobs:
       - name: Clean up
         # Remove bash_unit after testing
         run: |
-          rm -rf bash_unit
+          rm bash_unit
 
   lint:
     name: Lint Job

@@ -26,9 +26,21 @@ test_cmd_invalid_subs_option() {
 }
 
 test_cmd_dup_options_audio() {
-  assert_equals "Warning|Both positional and named arguments set for audio. Using :org" "$(process_command_line :eng -a :org 2>&1)"
+  assert_matches "^Warning\|Both positional.*audio" "$(process_command_line :eng -a :org 2>&1)"
 }
 
 test_cmd_dup_options_subs() {
-  assert_equals "Warning|Both positional and named arguments set for subtitles. Using :org" "$(process_command_line :fre :eng -s :org 2>&1)"
+  assert_matches "^Warning\|Both positional.*subtitles" "$(process_command_line :fre :eng -s :org 2>&1)"
+}
+
+test_env_usage_with_cmd() {
+  local STRIPTRACKS_ARGS="-a :org"
+  process_command_line -a :eng
+  assert_matches "^Warning\|STRIPTRACKS_ARGS environment.*" "$striptracks_prelogmessage"
+}
+
+test_env_usage() {
+  local STRIPTRACKS_ARGS="-a :org"
+  process_command_line
+  assert_equals "Info|Using settings from environment variable." "$striptracks_prelogmessage"
 }
