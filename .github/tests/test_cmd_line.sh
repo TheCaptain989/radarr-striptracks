@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# bash_unit test
+# bash_unit tests
+# Command line options
 
 setup_suite() {
   source ../../root/usr/local/bin/striptracks.sh
@@ -43,4 +44,9 @@ test_env_usage() {
   local STRIPTRACKS_ARGS="-a :org"
   process_command_line
   assert_equals "Info|Using settings from environment variable." "$striptracks_prelogmessage"
+}
+
+teardown() {
+  unset STRIPTRACKS_ARGS
+  unset striptracks_prelogmessage
 }
