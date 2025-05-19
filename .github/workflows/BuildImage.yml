@@ -6,8 +6,21 @@ env:
   ENDPOINT: "thecaptain989/radarr-striptracks"
 
 jobs:
+  unit_test:
+    name: Unit Test Job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Unit testing with bash_unit
+        run: |
+          curl -s https://raw.githubusercontent.com/pgrange/bash_unit/master/install.sh | bash
+          FORCE_COLOR=true ./bash_unit .github/tests/test_*
+
   lint:
     name: Lint Job
+    needs: unit_test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -19,11 +32,6 @@ jobs:
         with:
           # Full git history is needed to get a proper list of changed files within `super-linter`
           fetch-depth: 0
-
-      - name: Unit testing with bash_unit
-        run: |
-          curl -s https://raw.githubusercontent.com/pgrange/bash_unit/master/install.sh | bash
-          FORCE_COLOR=true ./bash_unit .github/tests/test_*
 
       - name: Lint Code Base
         uses: super-linter/super-linter@v7
