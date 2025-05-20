@@ -15,7 +15,7 @@ jobs:
 
       - name: Unit testing with bash_unit
         run: |
-          curl -s https://raw.githubusercontent.com/pgrange/bash_unit/master/install.sh | bash
+          curl -s https://raw.githubusercontent.com/bash-unit/bash_unit/main/install.sh | bash
           FORCE_COLOR=true ./bash_unit .github/tests/test_*
 
       - name: Clean up

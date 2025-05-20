@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # bash_unit tests
-# Configuration file
+# Video file
 
 setup_suite() {
   source ../../root/usr/local/bin/striptracks.sh
