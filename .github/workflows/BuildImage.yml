@@ -10,6 +10,11 @@ jobs:
     name: Unit Test Job
     runs-on: ubuntu-latest
     steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install jq mkvtoolnix
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -17,11 +22,6 @@ jobs:
         run: |
           curl -s https://raw.githubusercontent.com/bash-unit/bash_unit/main/install.sh | bash
           FORCE_COLOR=true ./bash_unit .github/tests/test_*
-
-      - name: Clean up
-        # Remove bash_unit after testing
-        run: |
-          rm bash_unit
 
   lint:
     name: Lint Job

@@ -4,7 +4,6 @@
 # Remux video file
 
 setup_suite() {
-  sudo apt-get -qq -y update && sudo apt-get -qq -y install mkvtoolnix
   source ../../root/usr/local/bin/striptracks.sh
   initialize_variables
   check_log >/dev/null
@@ -18,10 +17,6 @@ setup() {
   [ -f "$test_video1" ] || wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "$test_video1"
   [ -f "$test_video2" ] || wget -q "https://mkvtoolnix.download/samples/vsshort-vorbis-subs.mkv"
   [ -f "$test_video3" ] || wget -q "https://github.com/ietf-wg-cellar/matroska-test-files/raw/refs/heads/master/test_files/test5.mkv"
-}
-
-teardown() {
-  rm -f "${test_video1%.webm}.mkv"
 }
 
 test_get_media_info() {
