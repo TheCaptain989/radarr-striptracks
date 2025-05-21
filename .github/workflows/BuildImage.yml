@@ -13,7 +13,6 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get -qy update
-          sudo apt-get -qy upgrade
           sudo apt-get -qy install mkvtoolnix jq
 
       - name: Checkout code

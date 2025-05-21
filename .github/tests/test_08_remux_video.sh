@@ -4,6 +4,7 @@
 # Remux video file
 
 setup_suite() {
+  which mkvmkerge >/dev/null || sudo apt-get install -y mkvtoolnix
   source ../../root/usr/local/bin/striptracks.sh
   initialize_variables
   check_log >/dev/null
