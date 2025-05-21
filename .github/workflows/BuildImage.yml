@@ -12,8 +12,9 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install mkvtoolnix
+          sudo apt-get -qy update
+          sudo apt-get -qy upgrade
+          sudo apt-get -qy install mkvtoolnix jq
 
       - name: Checkout code
         uses: actions/checkout@v4
