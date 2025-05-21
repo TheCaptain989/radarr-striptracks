@@ -14,7 +14,7 @@ jobs:
         run: |
           sudo wget -O /etc/apt/keyrings/gpg-pub-moritzbunkus.gpg https://mkvtoolnix.download/gpg-pub-moritzbunkus.gpg
           sudo touch /etc/apt/sources.list.d/mkvtoolnix.download.list
-          sudo chmod 644 /etc/apt/sources.list.d/mkvtoolnix.download.list
+          sudo chmod a+w /etc/apt/sources.list.d/mkvtoolnix.download.list
           sudo echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/ubuntu/ noble main" >>/etc/apt/sources.list.d/mkvtoolnix.download.list
           sudo echo "deb-src [arch=amd64 signed-by=/etc/apt/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/ubuntu/ noble main" >>/etc/apt/sources.list.d/mkvtoolnix.download.list
 
