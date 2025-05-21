@@ -13,9 +13,10 @@ jobs:
       - name: Add packages to list
         run: |
           sudo wget -O /etc/apt/keyrings/gpg-pub-moritzbunkus.gpg https://mkvtoolnix.download/gpg-pub-moritzbunkus.gpg
-          sudo ls -l /etc/apt/*
-          sudo echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/ubuntu/ noble main" >/etc/apt/sources.list.d/mkvtoolnix.download.list
-          # sudo echo "deb-src [arch=amd64 signed-by=/etc/apt/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/ubuntu/ noble main" >>/etc/apt/sources.list.d/mkvtoolnix.download.list
+          sudo touch /etc/apt/sources.list.d/mkvtoolnix.download.list
+          sudo chmod 644 /etc/apt/sources.list.d/mkvtoolnix.download.list
+          sudo echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/ubuntu/ noble main" >>/etc/apt/sources.list.d/mkvtoolnix.download.list
+          sudo echo "deb-src [arch=amd64 signed-by=/etc/apt/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/ubuntu/ noble main" >>/etc/apt/sources.list.d/mkvtoolnix.download.list
 
       - name: Install dependencies
         run: |
