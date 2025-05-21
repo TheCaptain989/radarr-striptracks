@@ -13,7 +13,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get -qy update
-          sudo apt-get -qy install mkvtoolnix mkvtoolnix-gui
+          sudo apt-get -qy install mkvtoolnix
 
       - name: Checkout code
         uses: actions/checkout@v4
