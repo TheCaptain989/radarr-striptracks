@@ -10,6 +10,12 @@ jobs:
     name: Unit Test Job
     runs-on: ubuntu-latest
     steps:
+      - name: Add packages to list
+        run: |
+          sudo wget -O /etc/apt/keyrings/gpg-pub-moritzbunkus.gpg https://mkvtoolnix.download/gpg-pub-moritzbunkus.gpg
+          sudo echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/ubuntu/ noble main" >>/etc/apt/sources.list.d/mkvtoolnix.download.list
+          sudo echo "deb-src [arch=amd64 signed-by=/etc/apt/keyrings/gpg-pub-moritzbunkus.gpg] https://mkvtoolnix.download/ubuntu/ noble main" >>/etc/apt/sources.list.d/mkvtoolnix.download.list
+
       - name: Install dependencies
         run: |
           sudo apt-get -qy update
