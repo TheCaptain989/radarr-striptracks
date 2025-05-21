@@ -4,9 +4,10 @@
 # Remux video file
 
 setup_suite() {
+  sudo apt-get -qq -y update && sudo apt-get -qq -y install mkvtoolnix
   source ../../root/usr/local/bin/striptracks.sh
   initialize_variables
-  check_required_binaries
+  check_log >/dev/null
   export test_video1="Racism_is_evil.webm"
   export test_video2="vsshort-vorbis-subs.mkv"
   export test_video3="test5.mkv"
@@ -29,9 +30,8 @@ test_get_media_info() {
   assert_equals "true" "$(echo $striptracks_json | jq -crM '.container.supported')"
 }
 
-test_remux_video1() {
+test_remux_video() {
   process_command_line -a :eng -f "$test_video1"
-  check_log >/dev/null
   check_video
   get_mediainfo "$striptracks_video"
   process_mkvmerge_json
@@ -42,13 +42,9 @@ test_remux_video1() {
 test_remove_all_subtitles() {
   process_command_line -a :eng -f "$test_video2"
   initialize_mode_variables
-  check_log >/dev/null
-  log_script_start
   check_video
-  resolve_code_conflict
   get_mediainfo "$striptracks_video"
   process_mkvmerge_json
-  set_title_and_exit_if_nothing_removed
   remux_video
   set_perms_and_owner
   replace_original_video
