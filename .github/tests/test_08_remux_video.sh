@@ -4,7 +4,7 @@
 # Remux video file
 
 setup_suite() {
-  which mkvmkerge >/dev/null || { echo "mkvmerge not found"; exit 1; }
+  which mkvmerge >/dev/null || { printf "\t\e[0;91mmkvmerge not found\e[0m\n"; exit 1; }
   source ../../root/usr/local/bin/striptracks.sh
   initialize_variables
   check_log >/dev/null
@@ -44,7 +44,7 @@ test_remove_all_subtitles() {
   remux_video
   set_perms_and_owner
   replace_original_video
-  assert_equals "" "$(mkvmerge -J "$striptracks_video" | jq '.tracks[] | select(.type == "subtitles")')"
+  assert_equals "" "$(/usr/bin/mkvmerge -J "$striptracks_video" | jq '.tracks[] | select(.type == "subtitles")')"
 }
 
 teardown_suite() {
