@@ -47,6 +47,5 @@ test_env_usage() {
 }
 
 teardown() {
-  unset STRIPTRACKS_ARGS
-  unset striptracks_prelogmessage
+  unset STRIPTRACKS_ARGS striptracks_prelogmessage
 }

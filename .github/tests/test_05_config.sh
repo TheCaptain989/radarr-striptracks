@@ -50,6 +50,5 @@ test_api_bad_version() {
 
 teardown_suite() {
   rm -f "$striptracks_arr_config"
-  unset radarr_eventtype
-  unset striptracks_arr_config
+  unset radarr_eventtype striptracks_arr_config
 }

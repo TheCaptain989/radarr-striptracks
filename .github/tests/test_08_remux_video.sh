@@ -50,4 +50,5 @@ test_remove_all_subtitles() {
 
 teardown_suite() {
   rm -f "${test_video1%.webm}.mkv" "$test_video1" "$test_video2" "$test_video3" "./striptracks.txt"
+  unset striptracks_video striptracks_tempvideo test_video1 test_video2 test_video3
 }

@@ -28,4 +28,5 @@ test_set_temp_video() {
 
 teardown_suite() {
   rm -f "$striptracks_video"
+  unset striptracks_video striptracks_tempvideo
 }

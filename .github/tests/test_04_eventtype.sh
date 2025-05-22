@@ -43,7 +43,5 @@ test_test_event() {
 }
 
 teardown() {
-  unset radarr_eventtype
-  unset sonarr_eventtype
-  unset striptracks_video_type
+  unset radarr_eventtype sonarr_eventtype striptracks_video_type
 }

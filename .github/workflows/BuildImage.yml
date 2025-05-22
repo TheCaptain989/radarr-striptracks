@@ -10,15 +10,21 @@ jobs:
     name: Unit Test Job
     runs-on: ubuntu-latest
     steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install mkvtoolnix
+
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Unit testing with bash_unit
         run: |
-          sudo apt-get update
-          sudo apt-get install mkvtoolnix
           curl -s https://raw.githubusercontent.com/bash-unit/bash_unit/main/install.sh | bash
           FORCE_COLOR=true ./bash_unit .github/tests/test_*
+
+      - name: Print GitHub summary
+        run: echo "All Unit Tests PASSED" >> $GITHUB_STEP_SUMMARY
 
   lint:
     name: Lint Job

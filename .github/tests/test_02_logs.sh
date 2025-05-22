@@ -24,6 +24,5 @@ test_log_not_writable() {
 
 teardown() {
   rm -f "./striptracks.txt"
-  unset striptracks_log
-  unset striptracks_exitstatus
+  unset striptracks_log striptracks_exitstatus
 }
