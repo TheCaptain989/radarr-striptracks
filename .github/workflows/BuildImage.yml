@@ -17,7 +17,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install mkvtoolnix
-          ls /usr/bin/mkv*
           curl -s https://raw.githubusercontent.com/bash-unit/bash_unit/main/install.sh | bash
           FORCE_COLOR=true ./bash_unit .github/tests/test_*
 

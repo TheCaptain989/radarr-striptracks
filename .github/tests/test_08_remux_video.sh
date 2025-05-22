@@ -4,6 +4,7 @@
 # Remux video file
 
 setup_suite() {
+  ls /usr/bin/mkvmerge
   which mkvmerge >/dev/null || { printf "\t\e[0;91mmkvmerge not found\e[0m\n"; exit 1; }
   source ../../root/usr/local/bin/striptracks.sh
   initialize_variables
