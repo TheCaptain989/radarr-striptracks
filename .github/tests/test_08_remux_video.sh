@@ -24,7 +24,8 @@ setup() {
 test_get_media_info() {
   process_command_line -a :eng -f "$test_video1"
   get_mediainfo "$test_video1"
-  assert_equals "true" "$(echo $striptracks_json | jq --unbuffered -crM '.container.supported')"
+  result="$(echo "$striptracks_json" | jq -crM '.container.supported')"
+  assert_equals "true" "$result"
 }
 
 test_remux_video() {
@@ -45,7 +46,8 @@ test_remove_all_subtitles() {
   remux_video
   set_perms_and_owner
   replace_original_video
-  assert_equals "" "$(mkvmerge -J "$striptracks_video" | jq -scrM '.tracks[] | select(.type == "subtitles")')"
+  result="$(mkvmerge -J "$striptracks_video" | jq -crM '.tracks[] | select(.type == "subtitles")')"
+  assert_equals "" "$result"
 }
 
 teardown_suite() {
