@@ -31,11 +31,12 @@ jobs:
         run: |
           # Not sure why this is needed in a runner container, but it is
           mkdir -p $TMPDIR
-          ls -l /config
+          date
 
       - name: Install dependencies
         run: |
-          apk add --no-cache mkvtoolnix
+          apk add --no-cache mkvtoolnix tzdata
+          date
 
       - name: Unit testing with bash_unit
         run: |
