@@ -23,7 +23,9 @@ jobs:
     steps:
       - name: Testing
         run: |
-          echo "Id is: $(id)"
+          echo "id: $(id)"
+          echo "TMPDIR: $(ls -l $TMPDIR)"
+          echo "PWD: $(pwd)"
 
       - name: Checkout code
         uses: actions/checkout@v4
