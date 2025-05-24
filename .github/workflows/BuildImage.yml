@@ -24,8 +24,11 @@ jobs:
       - name: Testing
         run: |
           echo "id: $(id)"
+          echo "Run: $(ls -l /run)"
+          mkdir -p $TMPDIR
           echo "TMPDIR: $(ls -l $TMPDIR)"
           echo "PWD: $(pwd)"
+          echo "Permissions: $(ls -l .)"
 
       - name: Checkout code
         uses: actions/checkout@v4
