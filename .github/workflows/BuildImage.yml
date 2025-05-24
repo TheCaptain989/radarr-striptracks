@@ -9,11 +9,20 @@ jobs:
   unit_test:
     name: Unit Test Job
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: linuxserver/radarr:latest
+      options: --user root
+      env:
+        TZ: American/Chicago
+
     steps:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install mkvtoolnix
+          sudo apt-get install mkvtoolnix jq
 
       - name: Checkout code
         uses: actions/checkout@v4
