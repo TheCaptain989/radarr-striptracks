@@ -27,7 +27,7 @@ jobs:
       - name: Start Radarr
         run: |
           # Start Radarr in the background
-          /package/admin/s6/command/s6-svscan -d4 -- /run/service
+          /app/radarr/bin/Radarr -nobrowser -data=/config &
 
       - name: Create temp directory
         run: |
