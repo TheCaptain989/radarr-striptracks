@@ -10,7 +10,7 @@ setup_suite() {
 
 test_create_log() {
   check_log >/dev/null
-  assert_equals "./striptracks.txt" "$striptracks_log" && \
+  assert_equals "/config/logs/striptracks.txt" "$striptracks_log" && \
   assert "test -f $striptracks_log"
 }
 
