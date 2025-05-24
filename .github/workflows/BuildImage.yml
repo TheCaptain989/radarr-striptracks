@@ -21,17 +21,17 @@ jobs:
         INSTALL_PACKAGES: mkvtoolnix
         
     steps:
-      # - name: Install dependencies
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install mkvtoolnix
+      - name: Testing
+        run: |
+          echo "Id is: $id"
 
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Unit testing with bash_unit
         run: |
-          curl -s https://raw.githubusercontent.com/bash-unit/bash_unit/main/install.sh | sed -e s/tmpdir/tmpdir.XXX/ | bash
+          id
+          curl -s https://raw.githubusercontent.com/bash-unit/bash_unit/main/install.sh | bash
           FORCE_COLOR=true ./bash_unit .github/tests/test_*
 
       - name: Print GitHub summary
