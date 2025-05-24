@@ -16,7 +16,7 @@ jobs:
       image: linuxserver/radarr:latest
       options: --user root
       env:
-        TZ: American/Chicago
+        TZ: America/Chicago
         
     steps:
       - name: Checkout code

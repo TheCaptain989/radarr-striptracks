@@ -19,7 +19,7 @@ setup() {
 test_radarr_test_event() {
   export radarr_eventtype="Test"
   initialize_mode_variables
-  assert_equals "Info|Script was test executed successfully." "${striptracks_eventtype}"
+  assert_equals "Info|Script was test executed successfully." "$(check_eventtype)"
 }
 
 test_radarr_version() {
