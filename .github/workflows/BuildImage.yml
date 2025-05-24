@@ -24,6 +24,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Start Radarr
+        run: |
+          # Start Radarr in the background
+          /package/admin/s6/command/s6-svscan -d4 -- /run/service
+
       - name: Create temp directory
         run: |
           # Not sure why this is needed in a runner container, but it is
