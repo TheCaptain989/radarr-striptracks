@@ -30,7 +30,7 @@ jobs:
       - name: Create temp directory
         run: |
           # Not sure why this is needed in a runner container, but it is
-          # mkdir -p $TMPDIR
+          mkdir -p $TMPDIR
           ls -l /config
 
       - name: Install dependencies
