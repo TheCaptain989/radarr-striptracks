@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        shell: bash
+        shell: bash -e {0}
     container:
       image: linuxserver/radarr:latest
       options: --user root
@@ -21,21 +21,21 @@ jobs:
         INSTALL_PACKAGES: mkvtoolnix
         
     steps:
-      - name: Testing
-        run: |
-          echo "id: $(id)"
-          echo "Run: $(ls -l /run)"
-          mkdir -p $TMPDIR
-          echo "TMPDIR: $(ls -l $TMPDIR)"
-          echo "PWD: $(pwd)"
-          echo "Permissions: $(ls -l .)"
-
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create temp directory
+        run: |
+          # Not sure why this is needed in a runner container, but it is
+          mkdir -p $TMPDIR
+
+      - name: Install dependencies
+        run: |
+          apt-get update -qy
+          apt-get install -qy mkvtoolnix
+
       - name: Unit testing with bash_unit
         run: |
-          ls -l $TMPDIR
           curl -s https://raw.githubusercontent.com/bash-unit/bash_unit/main/install.sh | bash
           FORCE_COLOR=true ./bash_unit .github/tests/test_*
 
