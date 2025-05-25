@@ -19,6 +19,7 @@ test_api_url() {
 }
 
 test_api_curl_failure() {
+  fake get_version return 1
   assert_status_code 17 "check_config 2>/dev/null"
 }
 
