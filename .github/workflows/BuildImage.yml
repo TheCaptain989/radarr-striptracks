@@ -26,17 +26,16 @@ jobs:
         run: |
           # Start Radarr in the background
           /app/radarr/bin/Radarr -nobrowser -data=/config &
+          sleep 1  # Wait for Radarr to start
 
       - name: Create temp directory
         run: |
           # Not sure why this is needed in a runner container, but it is
           mkdir -p $TMPDIR
-          date
 
       - name: Install dependencies
         run: |
-          apk add --no-cache mkvtoolnix tzdata
-          date
+          apk add --no-cache mkvtoolnix
 
       - name: Unit testing with bash_unit
         run: |
