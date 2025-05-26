@@ -1,0 +1,65 @@
+{
+  "attachments": [],
+  "chapters": [],
+  "container": {
+    "properties": {
+      "container_type": 17,
+      "duration": 35454000000,
+      "is_providing_timestamps": true,
+      "muxing_application": "Lavf57.56.101",
+      "writing_application": "Lavf57.56.101"
+    },
+    "recognized": true,
+    "supported": true,
+    "type": "Matroska"
+  },
+  "errors": [],
+  "file_name": "Racism_is_evil.webm",
+  "global_tags": [],
+  "identification_format_version": 12,
+  "track_tags": [],
+  "tracks": [
+    {
+      "codec": "VP9",
+      "id": 0,
+      "properties": {
+        "codec_id": "V_VP9",
+        "codec_private_length": 0,
+        "default_duration": 40000000,
+        "default_track": true,
+        "display_dimensions": "426x240",
+        "display_unit": 0,
+        "enabled_track": true,
+        "forced_track": false,
+        "language": "eng",
+        "minimum_timestamp": 44000000,
+        "number": 1,
+        "pixel_dimensions": "426x240",
+        "uid": 1
+      },
+      "type": "video"
+    },
+    {
+      "codec": "Opus",
+      "id": 1,
+      "properties": {
+        "audio_bits_per_sample": 32,
+        "audio_channels": 2,
+        "audio_sampling_frequency": 48000,
+        "codec_delay": 6500000,
+        "codec_id": "A_OPUS",
+        "codec_private_data": "4f707573486561640102380180bb0000000000",
+        "codec_private_length": 19,
+        "default_track": true,
+        "enabled_track": true,
+        "forced_track": false,
+        "language": "eng",
+        "minimum_timestamp": 0,
+        "number": 2,
+        "uid": 2
+      },
+      "type": "audio"
+    }
+  ],
+  "warnings": []
+}
