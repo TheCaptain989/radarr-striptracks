@@ -29,5 +29,6 @@ test_radarr_version() {
 }
 
 teardown_suite() {
+  rm -f "./striptracks.txt"
   unset radarr_eventtype striptracks_arr_config
 }

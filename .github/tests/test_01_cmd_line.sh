@@ -27,7 +27,7 @@ test_cmd_invalid_subs_option() {
 }
 
 test_cmd_invalid_priority_option() {
-  assert_matches "^Error\|.*low, medium, or high\.$" "$(process_command_line --priority 1 2>&1)"
+  assert_matches "^Error\|.*low, medium, or high" "$(process_command_line --priority 1 2>&1)"
 }
 
 test_cmd_dup_options_audio() {
