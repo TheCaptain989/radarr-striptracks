@@ -26,6 +26,10 @@ test_cmd_invalid_subs_option() {
   assert_status_code 3 "process_command_line --subtitles eng 2>&1"
 }
 
+test_cmd_invalid_priority_option() {
+  assert_matches "^Error\|.*low, medium, or high\.$" "$(process_command_line --priority 1 2>&1)"
+}
+
 test_cmd_dup_options_audio() {
   assert_matches "^Warning\|Both positional.*audio" "$(process_command_line :eng -a :org 2>&1)"
 }

@@ -62,6 +62,7 @@ function initialize_variables {
   export striptracks_maxlogsize=512000
   export striptracks_maxlog=4
   export striptracks_debug=0
+  export striptracks_nice="nice"
   # If this were defined directly in Radarr or Sonarr this would not be needed here
   # shellcheck disable=SC2089
   export striptracks_isocodemap='{"languages":[{"language":{"name":"Any","iso639-2":["any"]}},{"language":{"name":"Afrikaans","iso639-2":["afr"]}},{"language":{"name":"Albanian","iso639-2":["sqi","alb"]}},{"language":{"name":"Arabic","iso639-2":["ara"]}},{"language":{"name":"Bengali","iso639-2":["ben"]}},{"language":{"name":"Bosnian","iso639-2":["bos"]}},{"language":{"name":"Bulgarian","iso639-2":["bul"]}},{"language":{"name":"Catalan","iso639-2":["cat"]}},{"language":{"name":"Chinese","iso639-2":["zho","chi"]}},{"language":{"name":"Croatian","iso639-2":["hrv"]}},{"language":{"name":"Czech","iso639-2":["ces","cze"]}},{"language":{"name":"Danish","iso639-2":["dan"]}},{"language":{"name":"Dutch","iso639-2":["nld","dut"]}},{"language":{"name":"English","iso639-2":["eng"]}},{"language":{"name":"Estonian","iso639-2":["est"]}},{"language":{"name":"Finnish","iso639-2":["fin"]}},{"language":{"name":"Flemish","iso639-2":["nld","dut"]}},{"language":{"name":"French","iso639-2":["fra","fre"]}},{"language":{"name":"German","iso639-2":["deu","ger"]}},{"language":{"name":"Greek","iso639-2":["ell","gre"]}},{"language":{"name":"Hebrew","iso639-2":["heb"]}},{"language":{"name":"Hindi","iso639-2":["hin"]}},{"language":{"name":"Hungarian","iso639-2":["hun"]}},{"language":{"name":"Icelandic","iso639-2":["isl","ice"]}},{"language":{"name":"Indonesian","iso639-2":["ind"]}},{"language":{"name":"Italian","iso639-2":["ita"]}},{"language":{"name":"Japanese","iso639-2":["jpn"]}},{"language":{"name":"Kannada","iso639-2":["kan"]}},{"language":{"name":"Korean","iso639-2":["kor"]}},{"language":{"name":"Latvian","iso639-2":["lav"]}},{"language":{"name":"Lithuanian","iso639-2":["lit"]}},{"language":{"name":"Macedonian","iso639-2":["mac","mkd"]}},{"language":{"name":"Malayalam","iso639-2":["mal"]}},{"language":{"name":"Marathi","iso639-2":["mar"]}},{"language":{"name":"Mongolian","iso639-2":["mon"]}},{"language":{"name":"Norwegian","iso639-2":["nno","nob","nor"]}},{"language":{"name":"Persian","iso639-2":["fas","per"]}},{"language":{"name":"Polish","iso639-2":["pol"]}},{"language":{"name":"Portuguese","iso639-2":["por"]}},{"language":{"name":"Portuguese (Brazil)","iso639-2":["por"]}},{"language":{"name":"Romansh","iso639-2":["roh"]}},{"language":{"name":"Romanian","iso639-2":["rum","ron"]}},{"language":{"name":"Russian","iso639-2":["rus"]}},{"language":{"name":"Serbian","iso639-2":["srp"]}},{"language":{"name":"Slovak","iso639-2":["slk","slo"]}},{"language":{"name":"Slovenian","iso639-2":["slv"]}},{"language":{"name":"Spanish","iso639-2":["spa"]}},{"language":{"name":"Spanish (Latino)","iso639-2":["spa"]}},{"language":{"name":"Swedish","iso639-2":["swe"]}},{"language":{"name":"Tagalog","iso639-2":["tgl"]}},{"language":{"name":"Tamil","iso639-2":["tam"]}},{"language":{"name":"Telugu","iso639-2":["tel"]}},{"language":{"name":"Thai","iso639-2":["tha"]}},{"language":{"name":"Turkish","iso639-2":["tur"]}},{"language":{"name":"Ukrainian","iso639-2":["ukr"]}},{"language":{"name":"Urdu","iso639-2":["urd"]}},{"language":{"name":"Vietnamese","iso639-2":["vie"]}},{"language":{"name":"Unknown","iso639-2":["und"]}}]}'
@@ -116,7 +117,7 @@ mode.
 Source: https://github.com/TheCaptain989/radarr-striptracks
 
 Usage:
-  $0 [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-d|--debug} [<level>]]
+  $0 [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-p|--priority} {low|medium|high}] [{-d|--debug} [<level>]]
 
   Options can also be set via the STRIPTRACKS_ARGS environment variable.
   Command-line arguments override the environment variable.
@@ -146,6 +147,8 @@ Options and Arguments:
                                    [default: /config/log/striptracks.txt]
   -c, --config <config_file>       Radarr/Sonarr XML configuration file
                                    [default: ./config/config.xml]
+  -p, --priority low|medium|high   CPU and I/O process priority for mkvmerge
+                                   [default: medium]
   -d, --debug [<level>]            Enable debug logging
                                    level is optional, between 1-3
                                    1 is lowest, 3 is highest
@@ -302,6 +305,24 @@ function process_command_line {
           usage
           exit 1
         fi
+      ;;
+      -p|--priority )
+        # Set process priority
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
+          echo "Error|Invalid option: $1 requires an argument." >&2
+          usage
+          exit 20
+        elif [[ ! "$2" =~ ^(low|medium|high)$ ]]; then
+          echo "Error|Invalid option: $1 argument must be low, medium, or high." >&2
+          usage
+          exit 20
+        fi
+        case "$2" in
+          low) export striptracks_nice="ionice -c 3 nice -n 19" ;; # Idle priority
+          medium) export striptracks_nice="nice -n 10" ;; # Normal priority
+          high) export striptracks_nice="ionice -c 2 -n 0 nice -n -10" ;; # High priority
+        esac
+        shift 2
       ;;
       --reorder )
         # Reorder audio and subtitles tracks
@@ -610,7 +631,7 @@ function get_mediainfo {
 
   local videofile="$1"
 
-  local mkvcommand="nice /usr/bin/mkvmerge -J \"$videofile\""
+  local mkvcommand="/usr/bin/mkvmerge -J \"$videofile\""
   [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $mkvcommand" | log
   unset striptracks_json
   export striptracks_json=$(eval $mkvcommand)
@@ -1534,7 +1555,7 @@ function remux_video {
   fi
 
   # Execute MKVmerge (remux then rename, see issue #46)
-  local mkvcommand="nice /usr/bin/mkvmerge --title \"$striptracks_title\" -q -o \"$striptracks_tempvideo\" $audioarg $subsarg $striptracks_neworder \"$striptracks_video\""
+  local mkvcommand="$striptracks_nice /usr/bin/mkvmerge --title \"$striptracks_title\" -q -o \"$striptracks_tempvideo\" $audioarg $subsarg $striptracks_neworder \"$striptracks_video\""
   [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $mkvcommand" | log
   local result=$(eval $mkvcommand)
   local return=$?
