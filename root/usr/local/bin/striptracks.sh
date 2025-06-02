@@ -1832,7 +1832,7 @@ function rescan_and_cleanup {
             }
             # Check if new video is in list of files that can be renamed
             if [ -n "$striptracks_result" -a "$striptracks_result" != "[]" ]; then
-              local renamedvideo="$(echo "$striptracks_result" | jq -crM "if type=="array" then .[] | select(.${striptracks_json_quality_root}Id == $striptracks_videofile_id) | .newPath") else error(\"Invalid input for renamedvideo: \(.)\") end"
+              local renamedvideo="$(echo "$striptracks_result" | jq -crM "if type==\"array\" then .[] | select(.${striptracks_json_quality_root}Id == $striptracks_videofile_id) | .newPath") else error(\"Invalid input for renamedvideo: \(.)\") end"
               # Rename video if needed
               if [ -n "$renamedvideo" ]; then
                 rename_videofile "$striptracks_videofile_id" "$renamedvideo"
