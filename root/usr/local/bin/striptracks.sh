@@ -318,9 +318,9 @@ function process_command_line {
           exit 20
         fi
         case "$2" in
-          low) export striptracks_nice="ionice -c 3 nice -n 19" ;; # Idle priority
-          medium) export striptracks_nice="nice -n 10" ;; # Normal priority
-          high) export striptracks_nice="ionice -c 2 -n 0 nice -n -10" ;; # High priority
+          low) export striptracks_nice="ionice -c 2 -n 7  nice -n 19" ;; # Idle priority
+          medium) export striptracks_nice="ionice -c 2 -n 4 nice -n 10" ;; # Normal priority
+          high) export striptracks_nice="ionice -c 2 -n 0 nice -n 0" ;; # High priority
         esac
         shift 2
       ;;
