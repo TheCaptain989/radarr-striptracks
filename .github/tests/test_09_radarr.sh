@@ -28,6 +28,20 @@ test_radarr_version() {
   assert_within_delta 5 ${striptracks_arr_version/.*/} 1
 }
 
+test_radarr_get_languages() {
+  check_eventtype
+  check_config
+  get_language_codes
+  assert_equals "English" "$(echo $striptracks_result | jq -crM '.[] | select(.id == 1) | .name')"
+}
+
+test_radarr_get_quality_profiles() {
+  check_eventtype
+  check_config
+  get_profiles quality
+  assert_equals "Any" "$(echo $striptracks_result | jq -crM '.[] | select(.id == 1) | .name')"
+}
+
 teardown_suite() {
   rm -f "./striptracks.txt"
   unset radarr_eventtype striptracks_arr_config

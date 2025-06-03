@@ -592,7 +592,7 @@ function delete_videofile {
   # # Adding a 'seriesId' to the Sonarr import causes the returned videos to have an 'Unknown' quality. Probably a bug.
   # striptracks_result=$(curl -s --fail-with-body -H "X-Api-Key: $striptracks_apikey" \
     # -H "Content-Type: application/json" \
-		# -H "Accept: application/json" \
+    # -H "Accept: application/json" \
     # --data-urlencode "${temp_id}" \
     # --data-urlencode "folder=$striptracks_video_folder" \
     # -d "filterExistingFiles=false" \
@@ -616,7 +616,7 @@ function set_metadata {
 
   local i=0
   for ((i=1; i <= 5; i++)); do
-    call_api 1 "Updating from quality '$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)' to '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' and release group '$(echo $striptracks_videofile_info | jq -crM '.releaseGroup | select(. != null)')' to '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'." "PUT" "$striptracks_videofile_api/bulk" "$(echo $striptracks_original_metadata | jq -crM "[{id:${striptracks_videofile_id}, quality, releaseGroup}]")"
+    call_api 0 "Updating from quality '$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)' to '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' and release group '$(echo $striptracks_videofile_info | jq -crM '.releaseGroup | select(. != null)')' to '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'." "PUT" "$striptracks_videofile_api/bulk" "$(echo $striptracks_original_metadata | jq -crM "[{id:${striptracks_videofile_id}, quality, releaseGroup}]")"
 
     # Exit loop if database is not locked, else wait
     if wait_if_locked; then
@@ -635,7 +635,8 @@ function get_mediainfo {
   [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $mkvcommand" | log
   unset striptracks_json
   # This must be a declare statement to avoid the 'Argument list too long' error with some large returned JSON
-  declare -g striptracks_json=$(eval $mkvcommand)
+  declare -g striptracks_json
+  striptracks_json=$(eval $mkvcommand)
   local return=$?
   [ $striptracks_debug -ge 1 ] && echo "Debug|mkvmerge returned ${#striptracks_json} bytes" | log
   [ $striptracks_debug -ge 2 ] && [ ${#striptracks_json} -ne 0 ] && echo "mkvmerge returned: $striptracks_json" | awk '{print "Debug|"$0}' | log
@@ -673,7 +674,7 @@ function get_mediainfo {
 function get_rename {
   # Get a list of video files from Radarr/Sonarr that need to be renamed
 
-  call_api 1 "Getting list of videos that could be renamed." "GET" "rename" "${striptracks_video_type}Id=$striptracks_rescan_id"
+  call_api 0 "Getting list of videos that could be renamed." "GET" "rename" "${striptracks_video_type}Id=$striptracks_rescan_id"
   [ "$striptracks_result" != "null" ] && [ "$striptracks_result" != "" ]
   return
 }
@@ -1003,13 +1004,19 @@ function call_api {
 
   local url="$striptracks_api_url/$endpoint"
   [ $striptracks_debug -ge 1 ] && echo "Debug|$message Calling ${striptracks_type^} API using $method and URL '$url'${data:+ with data $data}" | log
+  if [ "$method" = "GET" ]; then
+    method="-G"
+  else
+    method="-X $method"
+  fi
   unset striptracks_result
-  declare -g striptracks_result=$(curl -s --fail-with-body \
+  declare -g striptracks_result
+  striptracks_result=$(curl -s --fail-with-body \
     -H "X-Api-Key: $striptracks_apikey" \
     -H "Content-Type: application/json" \
-		-H "Accept: application/json" \
+    -H "Accept: application/json" \
     ${data:+ -d "$data"} \
-    -X $method \
+    $method \
     "$url")
   local curl_return=$?; [ $curl_return -ne 0 ] && {
     local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with data $data}\nWeb server returned: $(echo $striptracks_result | jq -jcM '.message?')" | awk '{print "Error|"$0}')
@@ -1505,7 +1512,8 @@ function set_title_and_exit_if_nothing_removed {
         echo "$message" | log
         local mkvcommand="/usr/bin/mkvpropedit -q --edit info --set \"title=$striptracks_title\" \"$striptracks_video\""
         [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $mkvcommand" | log
-        local result=$(eval $mkvcommand)
+        local result
+        result=$(eval $mkvcommand)
         local return=$?
         [ $striptracks_debug -ge 1 ] && echo "Debug|mkvpropedit returned ${#result} bytes" | log
         [ $striptracks_debug -ge 2 ] && [ ${#result} -ne 0 ] && echo "mkvpropedit returned: $result" | awk '{print "Debug|"$0}' | log
@@ -1558,7 +1566,8 @@ function remux_video {
   # Execute MKVmerge (remux then rename, see issue #46)
   local mkvcommand="$striptracks_nice /usr/bin/mkvmerge --title \"$striptracks_title\" -q -o \"$striptracks_tempvideo\" $audioarg $subsarg $striptracks_neworder \"$striptracks_video\""
   [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $mkvcommand" | log
-  local result=$(eval $mkvcommand)
+  local result
+  result=$(eval $mkvcommand)
   local return=$?
   [ $striptracks_debug -ge 1 ] && echo "Debug|mkvmerge returned ${#result} bytes" | log
   [ $striptracks_debug -ge 2 ] && [ ${#result} -ne 0 ] && echo "mkvmerge returned: $result" | awk '{print "Debug|"$0}' | log
@@ -1588,7 +1597,8 @@ function set_perms_and_owner {
   if [ "$(id -u)" -eq 0 ]; then
     # Set owner
     [ $striptracks_debug -ge 1 ] && echo "Debug|Changing owner of file \"$striptracks_tempvideo\"" | log
-    local result=$(chown --reference="$striptracks_video" "$striptracks_tempvideo")
+    local result
+    result=$(chown --reference="$striptracks_video" "$striptracks_tempvideo")
     local return=$?; [ $return -ne 0 ] && {
       local message=$(echo -e "[$return] Error when changing owner of file: \"$striptracks_tempvideo\"\nchown returned: $result" | awk '{print "Error|"$0}')
       echo "$message" | log
@@ -1600,7 +1610,8 @@ function set_perms_and_owner {
     [ $striptracks_debug -ge 1 ] && echo "Debug|Unable to change owner of file when running as user '$(id -un)'" | log
   fi
   # Set permissions
-  local result=$(chmod --reference="$striptracks_video" "$striptracks_tempvideo")
+  local result
+  result=$(chmod --reference="$striptracks_video" "$striptracks_tempvideo")
   local return=$?; [ $return -ne 0 ] && {
     local message=$(echo -e "[$return] Error when changing permissions of file: \"$striptracks_tempvideo\"\nchmod returned: $result" | awk '{print "Error|"$0}')
     echo "$message" | log
@@ -1614,7 +1625,8 @@ function replace_original_video {
   # Just delete the original video if running in batch mode or if configured to do so (see issue #99)
   if [ "$striptracks_type" = "batch" -o "$striptracks_recycle" = "false" ]; then
     [ $striptracks_debug -ge 1 ] && echo "Debug|Deleting: \"$striptracks_video\"" | log
-    local result=$(rm "$striptracks_video")
+    local result
+    result=$(rm "$striptracks_video")
     local return=$?; [ $return -ne 0 ] && {
       local message=$(echo -e "[$return] Error when deleting video: \"$striptracks_video\"\nrm returned: $result" | awk '{print "Error|"$0}')
       echo "$message" | log
@@ -1642,7 +1654,8 @@ function replace_original_video {
 
   # Rename the temporary video file to MKV
   [ $striptracks_debug -ge 1 ] && echo "Debug|Renaming \"$striptracks_tempvideo\" to \"$striptracks_newvideo\"" | log
-  local result=$(mv -f "$striptracks_tempvideo" "$striptracks_newvideo")
+  local result
+  result=$(mv -f "$striptracks_tempvideo" "$striptracks_newvideo")
   local return=$?; [ $return -ne 0 ] && {
     local message=$(echo -e "[$return] Unable to rename temp video: \"$striptracks_tempvideo\" to: \"$striptracks_newvideo\".  Halting.\nmv returned: $result" | awk '{print "Error|"$0}')
     echo "$message" | log
@@ -1832,7 +1845,7 @@ function rescan_and_cleanup {
             }
             # Check if new video is in list of files that can be renamed
             if [ -n "$striptracks_result" -a "$striptracks_result" != "[]" ]; then
-              local renamedvideo="$(echo "$striptracks_result" | jq -crM "if type==\"array\" then .[] | select(.${striptracks_json_quality_root}Id == $striptracks_videofile_id) | .newPath") else error(\"Invalid input for renamedvideo: \(.)\") end"
+              local renamedvideo="$(echo "$striptracks_result" | jq -crM ".[] | select(.${striptracks_json_quality_root}Id == $striptracks_videofile_id) | .newPath")"
               # Rename video if needed
               if [ -n "$renamedvideo" ]; then
                 rename_videofile "$striptracks_videofile_id" "$renamedvideo"
