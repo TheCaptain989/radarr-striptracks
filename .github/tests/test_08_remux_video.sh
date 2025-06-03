@@ -47,6 +47,17 @@ test_remux_video_replace() {
   assert "test -f \"$striptracks_newvideo\""
 }
 
+test_mkvmerge_idle_priority() {
+  process_command_line -a :eng --priority idle -f "$test_video1"
+  initialize_mode_variables
+  check_video
+  get_mediainfo "$striptracks_video"
+  process_mkvmerge_json
+  remux_video
+  replace_original_video
+  assert "test -f \"$striptracks_newvideo\""
+}
+
 test_mkvmerge_low_priority() {
   process_command_line -a :eng --priority low -f "$test_video1"
   initialize_mode_variables

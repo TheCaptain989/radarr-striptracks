@@ -117,7 +117,7 @@ mode.
 Source: https://github.com/TheCaptain989/radarr-striptracks
 
 Usage:
-  $0 [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-p|--priority} {low|medium|high}] [{-d|--debug} [<level>]]
+  $0 [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-p|--priority} {idle|low|medium|high}] [{-d|--debug} [<level>]]
 
   Options can also be set via the STRIPTRACKS_ARGS environment variable.
   Command-line arguments override the environment variable.
@@ -147,7 +147,8 @@ Options and Arguments:
                                    [default: /config/log/striptracks.txt]
   -c, --config <config_file>       Radarr/Sonarr XML configuration file
                                    [default: ./config/config.xml]
-  -p, --priority low|medium|high   CPU and I/O process priority for mkvmerge
+  -p, --priority idle|low|medium|high
+                                   CPU and I/O process priority for mkvmerge
                                    [default: medium]
   -d, --debug [<level>]            Enable debug logging
                                    level is optional, between 1-3
@@ -312,13 +313,14 @@ function process_command_line {
           echo "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 20
-        elif [[ ! "$2" =~ ^(low|medium|high)$ ]]; then
-          echo "Error|Invalid option: $1 argument must be low, medium, or high." >&2
+        elif [[ ! "$2" =~ ^(idle|low|medium|high)$ ]]; then
+          echo "Error|Invalid option: $1 argument must be idle, low, medium, or high." >&2
           usage
           exit 20
         fi
         case "$2" in
-          low) export striptracks_nice="ionice -c 2 -n 7  nice -n 19" ;; # Idle priority
+          idle) export striptracks_nice="ionice -c 3 nice -n 19" ;; # Idle priority
+          low) export striptracks_nice="ionice -c 2 -n 7  nice -n 19" ;; # Low priority
           medium) export striptracks_nice="ionice -c 2 -n 4 nice -n 10" ;; # Normal priority
           high) export striptracks_nice="ionice -c 2 -n 0 nice -n 0" ;; # High priority
         esac
