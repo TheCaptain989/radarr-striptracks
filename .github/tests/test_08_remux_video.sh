@@ -16,9 +16,9 @@ setup_suite() {
 }
 
 setup() {
-  [ -f "$test_video1" ] || wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "$test_video1"
-  [ -f "$test_video2" ] || wget -q "https://mkvtoolnix.download/samples/vsshort-vorbis-subs.mkv"
-  [ -f "$test_video3" ] || wget -q "https://github.com/ietf-wg-cellar/matroska-test-files/raw/refs/heads/master/test_files/test5.mkv"
+  [ -f "$test_video1" ] || { wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "$test_video1" && mkvmerge -J "$test_video1" >"${test_video1%.webm}.json"; }
+  [ -f "$test_video2" ] || { wget -q "https://mkvtoolnix.download/samples/vsshort-vorbis-subs.mkv" && mkvmerge -J "$test_video2" >"${test_video2%.mkv}.json"; }
+  [ -f "$test_video3" ] || { wget -q "https://github.com/ietf-wg-cellar/matroska-test-files/raw/refs/heads/master/test_files/test5.mkv" && mkvmerge -J "$test_video3" >"${test_video3%.mkv}.json"; }
 }
 
 test_get_media_info() {
@@ -38,6 +38,50 @@ test_remux_video() {
 
 test_remux_video_replace() {
   process_command_line -a :eng -f "$test_video1"
+  initialize_mode_variables
+  check_video
+  get_mediainfo "$striptracks_video"
+  process_mkvmerge_json
+  remux_video
+  replace_original_video
+  assert "test -f \"$striptracks_newvideo\""
+}
+
+test_mkvmerge_idle_priority() {
+  process_command_line -a :eng --priority idle -f "$test_video1"
+  initialize_mode_variables
+  check_video
+  get_mediainfo "$striptracks_video"
+  process_mkvmerge_json
+  remux_video
+  replace_original_video
+  assert "test -f \"$striptracks_newvideo\""
+}
+
+test_mkvmerge_low_priority() {
+  process_command_line -a :eng --priority low -f "$test_video1"
+  initialize_mode_variables
+  check_video
+  get_mediainfo "$striptracks_video"
+  process_mkvmerge_json
+  remux_video
+  replace_original_video
+  assert "test -f \"$striptracks_newvideo\""
+}
+
+test_mkvmerge_medium_priority() {
+  process_command_line -a :eng --priority medium -f "$test_video1"
+  initialize_mode_variables
+  check_video
+  get_mediainfo "$striptracks_video"
+  process_mkvmerge_json
+  remux_video
+  replace_original_video
+  assert "test -f \"$striptracks_newvideo\""
+}
+
+test_mkvmerge_high_priority() {
+  process_command_line -a :eng --priority high -f "$test_video1"
   initialize_mode_variables
   check_video
   get_mediainfo "$striptracks_video"
@@ -69,6 +113,7 @@ test_set_title_only() {
 }
 
 todo_mkvmerge_error() {
+  # Must find an invalid video file that mkvmerge will error on
   process_command_line -a :eng -f "bear-1280x720-a_frag-cenc.mp4"
   initialize_mode_variables
   check_video
@@ -89,6 +134,6 @@ test_temp_file_deleted() {
 }
 
 teardown_suite() {
-  rm -f "${test_video1%.webm}.mkv" "$test_video1" "$test_video2" "$test_video3" "./striptracks.txt"
+  rm -f "${test_video1%.webm}.mkv" "$test_video1" "$test_video2" "$test_video3" "${test_video2:0:5}.tmp".* "./striptracks.txt" "${test_video1%.webm}.json" "${test_video2%.mkv}.json" "${test_video3%.mkv}.json"
   unset striptracks_video test_video1 test_video2 test_video3
 }
