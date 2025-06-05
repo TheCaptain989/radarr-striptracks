@@ -308,7 +308,7 @@ function process_command_line {
         fi
       ;;
       -p|--priority )
-        # Set process priority
+        # Set process priority (see issue #102)
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
           echo "Error|Invalid option: $1 requires an argument." >&2
           usage
@@ -327,12 +327,12 @@ function process_command_line {
         shift 2
       ;;
       --reorder )
-        # Reorder audio and subtitles tracks
+        # Reorder audio and subtitles tracks (see issue #92)
         export striptracks_reorder="true"
         shift
       ;;
       --disable-recycle )
-        # Disable recycle bin use
+        # Disable recycle bin use (see issue #99)
         export striptracks_recycle="false"
         shift
       ;;
@@ -614,7 +614,7 @@ function delete_videofile {
   # return $return
 # }
 function set_metadata {
-  # Update file metadata in Radarr/Sonarr
+  # Update file metadata in Radarr/Sonarr (see issue #97)
 
   local i=0
   for ((i=1; i <= 5; i++)); do
@@ -636,7 +636,7 @@ function get_mediainfo {
   local mkvcommand="/usr/bin/mkvmerge -J \"$videofile\""
   [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $mkvcommand" | log
   unset striptracks_json
-  # This must be a declare statement to avoid the 'Argument list too long' error with some large returned JSON
+  # This must be a declare statement to avoid the 'Argument list too long' error with some large returned JSON (see issue #104)
   declare -g striptracks_json
   striptracks_json=$(eval $mkvcommand)
   local return=$?
@@ -692,7 +692,7 @@ function rename_videofile {
   return
 }
 function set_language {
-  # Set videofile language
+  # Set videofile language (see issue #97)
 
   local json_languages="$1" # JSON array of languages
   local videofile_id="$2" # ID of the video file to update
@@ -1012,6 +1012,7 @@ function call_api {
     method="-X $method"
   fi
   unset striptracks_result
+  # (See issue #104)
   declare -g striptracks_result
   striptracks_result=$(curl -s --fail-with-body \
     -H "X-Api-Key: $striptracks_apikey" \
