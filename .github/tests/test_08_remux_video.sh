@@ -10,15 +10,15 @@ setup_suite() {
   initialize_variables
   check_log >/dev/null
   export test_video1="Racism_is_evil.webm"
-  export test_video2="vsshort-vorbis-subs.mkv"
+  export test_video2="vsshort - vorbis  -  subs.mkv"
   export test_video3="test5.mkv"
   fake log :
 }
 
 setup() {
   [ -f "$test_video1" ] || { wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "$test_video1" && mkvmerge -J "$test_video1" >"${test_video1%.webm}.json"; }
-  [ -f "$test_video2" ] || { wget -q "https://mkvtoolnix.download/samples/vsshort-vorbis-subs.mkv" && mkvmerge -J "$test_video2" >"${test_video2%.mkv}.json"; }
-  [ -f "$test_video3" ] || { wget -q "https://github.com/ietf-wg-cellar/matroska-test-files/raw/refs/heads/master/test_files/test5.mkv" && mkvmerge -J "$test_video3" >"${test_video3%.mkv}.json"; }
+  [ -f "$test_video2" ] || { wget -q "https://mkvtoolnix.download/samples/vsshort-vorbis-subs.mkv" -O "$test_video2" && mkvmerge -J "$test_video2" >"${test_video2%.mkv}.json"; }
+  [ -f "$test_video3" ] || { wget -q "https://github.com/ietf-wg-cellar/matroska-test-files/raw/refs/heads/master/test_files/test5.mkv" -O "$test_video3" && mkvmerge -J "$test_video3" >"${test_video3%.mkv}.json"; }
 }
 
 test_get_media_info() {
@@ -109,7 +109,7 @@ test_set_title_only() {
   get_mediainfo "$striptracks_video"
   process_mkvmerge_json
   set_title_and_exit_if_nothing_removed
-  assert_equals "vsshort-vorbis-subs" "$(mkvmerge -J "$striptracks_video" | jq -crM '.container.properties.title')"
+  assert_equals "vsshort - vorbis  -  subs" "$(mkvmerge -J "$striptracks_video" | jq -crM '.container.properties.title')"
 }
 
 todo_mkvmerge_error() {
