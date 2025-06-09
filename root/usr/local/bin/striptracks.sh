@@ -633,6 +633,7 @@ function get_mediainfo {
 
   local videofile="$1"
 
+  # shellcheck disable=SC2016
   local mkvcommand='/usr/bin/mkvmerge -J "$videofile"'
   [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $mkvcommand" | log
   unset striptracks_json
@@ -1513,6 +1514,7 @@ function set_title_and_exit_if_nothing_removed {
         # Remuxing not performed
         local message="Info|No tracks would be removed from video$( [ "$striptracks_reorder" = "true" ] && echo " or reordered"). Setting Title only and exiting."
         echo "$message" | log
+        # shellcheck disable=SC2016
         local mkvcommand='/usr/bin/mkvpropedit -q --edit info --set "title=$striptracks_title" "$striptracks_video"'
         [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $mkvcommand" | log
         local result
@@ -1567,6 +1569,7 @@ function remux_video {
   fi
 
   # Execute MKVmerge (remux then rename, see issue #46)
+  # shellcheck disable=SC2016
   local mkvcommand='$striptracks_nice /usr/bin/mkvmerge --title "$striptracks_title" -q -o "$striptracks_tempvideo" $audioarg $subsarg $striptracks_neworder "$striptracks_video"'
   [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $mkvcommand" | log
   local result
