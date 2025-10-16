@@ -190,15 +190,17 @@ graph LR
   A[Command-Line]
   B["Environment
   Variable"]
-  C["Quality
-  Profile"] 
+  C{"Quality
+  Profile"}
   D["Custom
   Formats"]
   E["Language Profile
   (Sonarr only)"]
+  F(["Exit"])
   A-->B
   B-->C
   C-- 'Any' -->D
+  C-- "--skip-profile" -->F
   D-->E
 ```
 
@@ -206,12 +208,13 @@ Descriptively, these steps are:
 1. Command-line arguments override all automatic language selection.
 2. Environment variable is checked for arguments.
 3. If there are no command-line or environment variable arguments, the video's *Quality Profile* is examined for a language configuration (only supported in Radarr).
-4. If there is no *Quality Profile* language **or** it is set to 'Any', then examine the *Custom Formats* and scores associated with the quality profile.  
+    1. If the *Quality Profile* name matches one of the names specified with the `--skip-profile` option, stop processing and exit.
+    2. If there is no *Quality Profile* language **or** it is set to 'Any', then examine the *Custom Formats* and scores associated with the quality profile.  
 All language conditions with positive scores *and* Negated conditions with negative scores *and* non-Negated Except Language conditions with negative scores are selected.
-5. If the *Custom Format* scores are zero (0) or there are none with configured language conditions, use the *Language Profile* (only supported in Sonarr v3)
+4. If the *Custom Format* scores are zero (0) or there are none with configured language conditions, use the *Language Profile* (only supported in Sonarr v3)
 
 > [!NOTE]
-> For step 4 above, using *Custom Formats* when 'Any' is in the *Quality Profile* is consistent with the behavior described in [TRaSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/ "TraSH Guides: How to setup Language Custom Formats").
+> For step 3.ii above, using *Custom Formats* when 'Any' is in the *Quality Profile* is consistent with the behavior described in [TRaSH Guides](https://trash-guides.info/Radarr/Tips/How-to-setup-language-custom-formats/ "TraSH Guides: How to setup Language Custom Formats").
 
 ## Command-Line Syntax
 
