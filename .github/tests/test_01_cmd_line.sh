@@ -57,12 +57,12 @@ test_set_reorder(){
 }
 
 test_set_disable_recycle(){
-  process_command_line --disable_recycle
+  process_command_line --disable-recycle
   assert_equals "false" "$striptracks_recycle"
 }
 
 test_multiple_skips() {
-  process_command_line --skip_profile 123 --skip_profile 456
+  process_command_line --skip-profile 123 --skip-profile 456
   local IFS=,
   assert_equals "123,456" "${striptracks_skip_profile[*]}"
 }
