@@ -11,7 +11,8 @@ setup_suite() {
 test_cmd_options_require_argument() {
   assert_status_code 1 "process_command_line --log" && \
   assert_status_code 1 "process_command_line --file" && \
-  assert_status_code 1 "process_command_line --config"
+  assert_status_code 1 "process_command_line --config" && \
+  assert_status_code 1 "process_command_line --skip_profile"
 }
 
 test_cmd_unknown_option() {
@@ -48,6 +49,22 @@ test_env_usage() {
   local STRIPTRACKS_ARGS="-a :org"
   process_command_line
   assert_equals "Info|Using settings from environment variable." "$striptracks_prelogmessage"
+}
+
+test_set_reorder(){
+  process_command_line --reorder
+  assert_equals "true" "$striptracks_reorder"
+}
+
+test_set_disable_recycle(){
+  process_command_line --disable_recycle
+  assert_equals "false" "$striptracks_recycle"
+}
+
+test_multiple_skips() {
+  process_command_line --skip_profile 123 --skip_profile 456
+  local IFS=,
+  assert_equals "123,456" "${striptracks_skip_profile[*]}"
 }
 
 teardown() {
