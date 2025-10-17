@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # bash_unit tests
-# Command line options
+# Basic command line options
 
 setup_suite() {
   source ../../root/usr/local/bin/striptracks.sh
