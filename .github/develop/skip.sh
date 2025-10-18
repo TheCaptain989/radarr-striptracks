@@ -11,7 +11,7 @@ striptracks_skip_profile+=("SD")
 if [ ${#striptracks_skip_profile[@]} -gt 0 ]; then
     for skip_profile in "${striptracks_skip_profile[@]}"; do
         if [ "$skip_profile" = "$profileName" ]; then
-            message="Info|Skipping processing because quality profile '$profileName' matches skip-profile '$skip_profile'."
+            message="Info|Skipping processing because quality profile '$profileName' is configured to be skipped."
             echo "$message"
             exit 0
         fi

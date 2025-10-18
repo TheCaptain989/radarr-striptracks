@@ -465,7 +465,7 @@ Because the script is not called from within Radarr or Sonarr, their database is
 * *The filename must be specified on the command-line.*<br/>The `-f` option places the script in Batch Mode
 * *No audio or subtitles language detection occurs.*<br/>Both the audio and subtitles languages must be specified on the command-line.
 * *The `:org` language code is meaningless.*<br/>The original video language cannot be determined.
-* *Profile skipping is not available*
+* *Profile skipping is not available.*
 * *The resultant MKV embedded title attribute is set to the basename of the file minus the extension.*<br/>The canonical name of the movie/TV show cannot otherwise be determined.
 * *Radarr or Sonarr APIs are not called and their database is not updated.*<br/>This may require a manual rescan of converted videos.
 * *Original video files are deleted.*<br/>The Recycle Bin function is not available.
