@@ -1132,7 +1132,7 @@ function detect_languages {
                   end_script 0
                 fi
               done
-              [ $striptracks_debug -ge 1 ] && echo "Debug|Quality profile '$profileName' does not match any configured to skip: '$(printf "%s," "${striptracks_skip_profile[@]}" | sed -e 's/,$//')'." | log
+              [ $striptracks_debug -ge 1 ] && echo "Debug|Quality profile '$profileName' does not match any configured to skip: '$(printf "%s," "${striptracks_skip_profile[@]}" | sed -e 's/,$//')'" | log
             fi            
 
             # Query custom formats if returned language from quality profile is null or -1 (Any)
