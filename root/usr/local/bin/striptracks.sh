@@ -1126,7 +1126,7 @@ function detect_languages {
             if [ ${#striptracks_skip_profile[@]} -gt 0 ]; then
               for skip_profile in "${striptracks_skip_profile[@]}"; do
                 if [ "$skip_profile" = "$profileName" ]; then
-                  local message="Info|Skipping processing because quality profile '$profileName' matches skipped profile '$skip_profile'."
+                  local message="Info|Skipping processing because quality profile '$profileName' matches skipped profile '$skip_profile'"
                   echo "$message" | log
                   echo "$message"
                   end_script 0
