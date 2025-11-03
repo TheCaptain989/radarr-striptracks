@@ -1033,7 +1033,7 @@ function call_api {
   else
     method="-X $method"
   fi
-  local curl_cmd="curl -s --fail-with-body -H \"X-Api-Key: $flac2mp3_apikey\" -H \"Content-Type: application/json\" -H \"Accept: application/json\" ${data:+$data} $method \"$url\""
+  local curl_cmd="curl -s --fail-with-body -H \"X-Api-Key: $striptracks_apikey\" -H \"Content-Type: application/json\" -H \"Accept: application/json\" ${data:+$data} $method \"$url\""
   unset striptracks_result
   # (See issue #104)
   declare -g striptracks_result
