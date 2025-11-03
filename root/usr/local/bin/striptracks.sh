@@ -601,35 +601,21 @@ function delete_videofile {
   return $return
 }
 # function get_import_info {
-  # # Get file details on possible files to import into Radarr/Sonarr
-  #
-  # local url="$striptracks_api_url/manualimport"
-  # if [[ "${striptracks_type,,}" = "radarr" ]]; then
-    # local temp_id="${striptracks_video_type}Id=$striptracks_rescan_id"
-  # fi
-  # [ $striptracks_debug -ge 1 ] && echo "Debug|Getting list of files that can be imported. Calling ${striptracks_type^} API using GET and URL '$url?${temp_id:+$temp_id&}folder=$striptracks_video_folder&filterExistingFiles=false'" | log
-  # unset result
-  # # Adding a 'seriesId' to the Sonarr import causes the returned videos to have an 'Unknown' quality. Probably a bug.
-  # striptracks_result=$(curl -s --fail-with-body -H "X-Api-Key: $striptracks_apikey" \
-    # -H "Content-Type: application/json" \
-    # -H "Accept: application/json" \
-    # --data-urlencode "${temp_id}" \
-    # --data-urlencode "folder=$striptracks_video_folder" \
-    # -d "filterExistingFiles=false" \
-    # --get "$url")
-  # local curl_return=$?; [ $curl_return -ne 0 ] && {
-    # local message=$(echo -e "[$curl_return] curl error when calling: \"$url?${temp_id:+$temp_id&}folder=$striptracks_video_folder&filterExistingFiles=false\"\nWeb server returned: $(echo $striptracks_result | jq -jcM .message?)" | awk '{print "Error|"$0}')
-    # echo "$message" | log
-    # echo "$message" >&2
-  # }
-  # [ $striptracks_debug -ge 2 ] && echo "Debug|API returned ${#result} bytes." | log
-  # [ $striptracks_debug -ge 3 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
-  # if [ $curl_return -eq 0 -a "${#result}" != 0 ]; then
-    # local return=0
-  # else
-    # local return=1
-  # fi
-  # return $return
+#   # Get file details on possible files to import into Radarr/Sonarr
+#
+#   if [[ "${striptracks_type,,}" = "radarr" ]]; then
+#     local temp_id="${striptracks_video_type}Id=$striptracks_rescan_id"
+#   fi
+#   local i=0
+#   for ((i=1; i <= 5; i++)); do
+#     call_api 1 "Getting list of files that can be imported." "GET" "manualimport" "folder=$striptracks_video_folder" "filterExistingFiles=false" "${temp_id:+$temp_id}"
+#     # Exit loop if database is not locked, else wait
+#     if wait_if_locked; then
+#       break
+#     fi
+#   done
+#   [ "${#striptracks_result}" != 0 ]
+#   return
 # }
 function set_metadata {
   # Update file metadata in Radarr/Sonarr (see issue #97)
@@ -637,13 +623,12 @@ function set_metadata {
   local i=0
   for ((i=1; i <= 5; i++)); do
     call_api 0 "Updating from quality '$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)' to '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' and release group '$(echo $striptracks_videofile_info | jq -crM '.releaseGroup | select(. != null)')' to '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'." "PUT" "$striptracks_videofile_api/bulk" "$(echo $striptracks_original_metadata | jq -crM "[{id:${striptracks_videofile_id}, quality, releaseGroup}]")"
-
     # Exit loop if database is not locked, else wait
     if wait_if_locked; then
       break
     fi
   done
-  [ "${#result}" != 0 ]
+  [ "${#striptracks_result}" != 0 ]
   return
 }
 function get_mediainfo {
@@ -790,7 +775,7 @@ function set_video_info {
       break
     fi
   done
-  [ "${#result}" != 0 ]
+  [ "${#striptracks_result}" != 0 ]
   return
 }
 function wait_if_locked {
@@ -1020,27 +1005,41 @@ function call_api {
   local message="$2" # Message to log
   local method="$3" # HTTP method to use (GET, POST, PUT, DELETE)
   local endpoint="$4" # API endpoint to call
-  local data="$5" # Data to send with the request
+  local data # Data to send with the request. All subsequent arguments are treated as data.
+
+  # Process remaining data values
+  shift 4
+  while (( "$#" )); do
+    case "$1" in
+      "{"*)
+        data+=" --json \"${1//\"/\\\"}\""
+        shift
+      ;;
+      *=*)
+        data+=" --data-urlencode \"$1\""
+        shift
+      ;;
+      *)
+        data+=" -d \"$1\""
+        shift
+      ;;
+    esac
+  done
 
   local url="$striptracks_api_url/$endpoint"
-  [ $striptracks_debug -ge 1 ] && echo "Debug|$message Calling ${striptracks_type^} API using $method and URL '$url'${data:+ with data $data}" | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|$message Calling ${striptracks_type^} API using $method and URL '$url'${data:+ with$data}" | log
   if [ "$method" = "GET" ]; then
     method="-G"
   else
     method="-X $method"
   fi
+  local curl_cmd="curl -s --fail-with-body -H \"X-Api-Key: $flac2mp3_apikey\" -H \"Content-Type: application/json\" -H \"Accept: application/json\" ${data:+$data} $method \"$url\""
   unset striptracks_result
   # (See issue #104)
   declare -g striptracks_result
-  striptracks_result=$(curl -s --fail-with-body \
-    -H "X-Api-Key: $striptracks_apikey" \
-    -H "Content-Type: application/json" \
-    -H "Accept: application/json" \
-    ${data:+ -d "$data"} \
-    $method \
-    "$url")
+  striptracks_result=$(eval "$curl_cmd")
   local curl_return=$?; [ $curl_return -ne 0 ] && {
-    local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with data $data}\nWeb server returned: $(echo $striptracks_result | jq -jcM '.message?')" | awk '{print "Error|"$0}')
+    local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with$data}\nWeb server returned: $(echo $striptracks_result | jq -jcM 'if has("title") then "[HTTP \(.status?)] \(.title?) \(.errors?)" else .message? end')" | awk '{print "Error|"$0}')
     echo "$message" | log
     echo "$message" >&2
   }
