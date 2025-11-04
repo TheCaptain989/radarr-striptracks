@@ -343,7 +343,7 @@ function process_command_line {
         shift
       ;;
       --skip-profile )
-        # Skip processing if the video was downloaded using the specified quality profile name.
+        # Skip processing if the video was downloaded using the specified quality profile name. (see issue #108)
         # May be specified multiple times to skip multiple profiles.
         if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
           striptracks_skip_profile+=("$2")
@@ -1121,7 +1121,7 @@ function detect_languages {
             local languageSource="quality profile"
             [ $striptracks_debug -ge 1 ] && echo "Debug|Found quality profile '${profileName} (${profileId})'$(check_compat qualitylanguage && echo " with language '$(echo $profileLanguages | jq -crM '[.[] | "\(.name) (\(.id | tostring))"] | join(",")')'")" | log
 
-            # Skip processing if profile name matches any --skip-profile entries
+            # Skip processing if profile name matches any --skip-profile entries (see issue #108)
             if [ ${#striptracks_skip_profile[@]} -gt 0 ]; then
               for skip_profile in "${striptracks_skip_profile[@]}"; do
                 if [ "$skip_profile" = "$profileName" ]; then
