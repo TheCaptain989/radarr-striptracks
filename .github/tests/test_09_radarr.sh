@@ -45,6 +45,20 @@ test_radarr_get_quality_profiles() {
   assert_equals "Any" "$(echo $striptracks_result | jq -crM '.[] | select(.id == 1) | .name')"
 }
 
+test_radarr_call_api_with_json() {
+  check_eventtype
+  check_config
+  call_api 0 "Creating a test tag." "POST" "tag" '{"label":"test"}'
+  assert_equals '{"label":"test","id":0}' "$(echo $striptracks_result | jq -jcM)"
+}
+
+test_radarr_call_api_with_urlencode() {
+  check_eventtype
+  check_config
+  call_api 0 "Creating a test tag." "GET" "filesystem" "path=/tmp/"
+  assert_equals '{"parent":"/","directories":[],"files":[]}' "$(echo $striptracks_result | jq -jcM)"
+}
+
 todo_radarr_detect_languages() {
   # Must load the video into Radarr first
   # Bad assert
