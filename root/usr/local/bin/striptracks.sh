@@ -1011,7 +1011,7 @@ function call_api {
   shift 4
   while (( "$#" )); do
     case "$1" in
-      "{"|"["*)
+      "{"*|"["*)
         data+=" --json \"${1//\"/\\\"}\""
         shift
       ;;
