@@ -1524,7 +1524,7 @@ function process_mkvmerge_json {
   # Output ordered track string compatible with the mkvmerge --track-order option
   # Video tracks are always first, followed by audio tracks, then subtitles
   # NOTE: If there is only one audio track and it does not match a code in AudioKeep, it will not appear in the new track order string
-  # NOTE: Other track types are still preserved as mkvmerge will automatically place any missing tracks after those listed per https://mkvtoolnix.download/doc/mkvmerge.html#d4e544
+  # NOTE: Other track types are still preserved as mkvmerge will automatically place any missing tracks after those listed per https://mkvtoolnix.download/doc/mkvmerge.html#mkvmerge.description.track_order
   $tracks | map(select(.type == "video") | .id) + $audioOrder + $subsOrder | map("0:" + tostring) | join(",")
   ')
     [ $striptracks_debug -ge 1 ] && echo "Debug|New mkvmerge track order: $striptracks_neworder" | log
