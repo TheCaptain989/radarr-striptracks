@@ -1136,7 +1136,7 @@ function detect_languages {
             local profileName="$(echo $qualityProfiles | jq -crM ".[] | select(.id == $profileId).name")"
             local profileLanguages="$(echo $qualityProfiles | jq -cM "[.[] | select(.id == $profileId) | .language]")"
             local languageSource="quality profile"
-            check_compat qualitylanguage && local qualityLanguage="$(echo " with language '$(echo $profileLanguages | jq -crM '[.[] | "\(.name) (\(.id | tostring))"] | join(",")')'")"
+            check_compat qualitylanguage && local qualityLanguage=" with language '$(echo $profileLanguages | jq -crM '[.[] | "\(.name) (\(.id | tostring))"] | join(",")')'"
             [ $striptracks_debug -ge 1 ] && echo "Debug|Found quality profile '${profileName} (${profileId})'$qualityLanguage" | log
 
             # Skip processing if profile name matches any --skip-profile entries (see issue #108)

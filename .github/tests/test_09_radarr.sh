@@ -5,7 +5,7 @@
 # Radarr installed from BuildImage.yml
 
 # Used for debugging unit tests
-_log() {( while read -r; do echo $(date +"%Y-%m-%d %H:%M:%S.%1N")"|[$striptracks_pid]$REPLY"; done; )}
+_log() {( while read -r; do echo "$(date +"%Y-%m-%d %H:%M:%S.%1N")|[$striptracks_pid]$REPLY"; done; )}
 
 setup_suite() {
   source ../../root/usr/local/bin/striptracks.sh
