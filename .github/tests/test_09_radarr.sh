@@ -4,10 +4,16 @@
 # Radarr API
 # Radarr installed from BuildImage.yml
 
+# Used for debugging unit tests
+_log() {( while read -r; do echo $(date +"%Y-%m-%d %H:%M:%S.%1N")"|[$striptracks_pid]$REPLY"; done; )}
+
 setup_suite() {
   source ../../root/usr/local/bin/striptracks.sh
   fake log :
   export test_video1="Racism_is_evil.webm"
+  export video_dir="Carmencita (1894)"
+  [ -d "$video_dir" ] || mkdir "$video_dir"
+  [ -f "$test_video1" ] || { wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "$video_dir/$test_video1"; }
 }
 
 setup() {
@@ -16,7 +22,6 @@ setup() {
   initialize_mode_variables
   check_log >/dev/null
   check_required_binaries
-  [ -f "$test_video1" ] || { wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "$test_video1"; }
 }
 
 test_radarr_test_event() {
@@ -55,23 +60,80 @@ test_radarr_call_api_with_json() {
 test_radarr_call_api_with_urlencode() {
   check_eventtype
   check_config
-  call_api 0 "Creating a test tag." "GET" "filesystem" "path=/tmp/"
+  call_api 0 "Getting tmp filesystem info." "GET" "filesystem" "path=/tmp/"
   assert_equals '{"parent":"/","directories":[],"files":[]}' "$(echo $striptracks_result | jq -jcM)"
 }
 
-todo_radarr_detect_languages() {
-  # Must load the video into Radarr first
-  # Bad assert
-  radarr_moviefile_path="$test_video1"
-  process_command_line -a :eng --skip-profile "Any"
+
+
+test_radarr_video_01_load() {
+  load_video
+  radarr_movie_id=$(echo $striptracks_result | jq -crM '.id?')
+  initialize_mode_variables
+  rescan
+  sleep 1
+  while ! check_job $striptracks_jobid; do
+    echo -n "Waiting for Radarr job $striptracks_jobid to complete..."
+    sleep 1
+  done
+  get_video_info
+  # Needed for next test
+  echo $striptracks_result | jq -r >"$video_dir/${test_video1%.webm}.json"
+  assert_equals "Carmencita" "$(echo $striptracks_result | jq -crM '.title')"
+}
+
+test_radarr_video_02_convert() {
+  export striptracks_exitstatus=0
+  # Read in values from first test
+  striptracks_result="$(cat "$video_dir/${test_video1%.webm}.json")"
+  radarr_moviefile_path="$(echo $striptracks_result | jq -crM '.movieFile.path')"
+  radarr_moviefile_id="$(echo $striptracks_result | jq -crM '.movieFile.id')"
+  radarr_movie_id="$(echo $striptracks_result | jq -crM '.id')"
+  radarr_movie_path="$(echo $striptracks_result | jq -crM '.path')"
+  radarr_movie_title="$(echo $striptracks_result | jq -crM '.title')"
+  radarr_movie_year="$(echo $striptracks_result | jq -crM '.year')"
+  process_command_line -a :eng
+  initialize_mode_variables
   check_eventtype
+  log_script_start
   check_config
   check_video
   detect_languages
-  # assert_equals "1" "$striptracks_detected_language"
+  get_mediainfo "$striptracks_video"
+  process_mkvmerge_json
+  remux_video
+  replace_original_video
+  rescan_and_cleanup
+  assert_equals 0 $striptracks_exitstatus
+}
+
+test_radarr_video_03_delete() {
+  # Read in values from first test
+  striptracks_result="$(cat "$video_dir/${test_video1%.webm}.json")"
+  radarr_moviefile_path="$(echo $striptracks_result | jq -crM '.movieFile.path')"
+  radarr_moviefile_id="$(echo $striptracks_result | jq -crM '.movieFile.id')"
+  radarr_movie_id="$(echo $striptracks_result | jq -crM '.id')"
+  radarr_movie_path="$(echo $striptracks_result | jq -crM '.path')"
+  radarr_movie_title="$(echo $striptracks_result | jq -crM '.title')"
+  radarr_movie_year="$(echo $striptracks_result | jq -crM '.year')"
+  assert_status_code 0 "delete_video"
+}
+
+load_video() {
+  check_config
+  call_api 0 "Loading video file into Radarr." "POST" "movie" "{\"QualityProfileId\":1, \"TmdbId\":16612, \"Title\":\"Carmencita\", \"path\":\"$PWD/$video_dir\", \"monitored\":true, \"rootFolderPath\":\"$PWD/\", \"movieFile\":{\"id\":1, \"path\":\"$PWD/$video_dir/$test_video1\", \"quality\":{\"quality\":{\"id\":1,\"name\":\"Any\"},\"revision\":{\"version\":1,\"real\":1}}}}"
+}
+
+delete_video() {
+  check_config
+  call_api 0 "Deleting video file from Radarr." "DELETE" "movie/$radarr_movie_id" "deleteFiles=true"
+}
+
+get_video_info() {
+  call_api 0 "Getting video info from Radarr." "GET" "movie/$radarr_movie_id"
 }
 
 teardown_suite() {
-  rm -f "./striptracks.txt"
+  rm -f -d "./striptracks.txt" "$video_dir/${test_video1%.webm}.mkv" "$video_dir/${test_video1%.webm}.json" "$video_dir/$test_video1" "$video_dir"
   unset radarr_eventtype striptracks_arr_config
 }

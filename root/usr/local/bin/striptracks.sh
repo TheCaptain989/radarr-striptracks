@@ -39,7 +39,7 @@
 #  6 - unable to rename temp video to MKV
 #  7 - unknown eventtype environment variable
 #  8 - unsupported Radarr/Sonarr version (v2)
-#  9 - mkvmerge get media info produced an error or warning
+#  9 - mkvmerge returned an unsupported container format
 # 10 - remuxing completed, but no output file found
 # 11 - source video had no audio tracks
 # 12 - log file is not writable
@@ -601,21 +601,21 @@ function delete_videofile {
   return $return
 }
 # function get_import_info {
-#   # Get file details on possible files to import into Radarr/Sonarr
-#
-#   if [[ "${striptracks_type,,}" = "radarr" ]]; then
-#     local temp_id="${striptracks_video_type}Id=$striptracks_rescan_id"
-#   fi
-#   local i=0
-#   for ((i=1; i <= 5; i++)); do
-#     call_api 1 "Getting list of files that can be imported." "GET" "manualimport" "folder=$striptracks_video_folder" "filterExistingFiles=false" "${temp_id:+$temp_id}"
-#     # Exit loop if database is not locked, else wait
-#     if wait_if_locked; then
-#       break
-#     fi
-#   done
-#   [ "${#striptracks_result}" != 0 ]
-#   return
+  # # Get file details on possible files to import into Radarr/Sonarr
+  #
+  # if [[ "${striptracks_type,,}" = "radarr" ]]; then
+  #   local temp_id="${striptracks_video_type}Id=$striptracks_rescan_id"
+  # fi
+  # local i=0
+  # for ((i=1; i <= 5; i++)); do
+  #   call_api 1 "Getting list of files that can be imported." "GET" "manualimport" "folder=$striptracks_video_folder" "filterExistingFiles=false" "${temp_id:+$temp_id}"
+  #   # Exit loop if database is not locked, else wait
+  #   if wait_if_locked; then
+  #     break
+  #   fi
+  # done
+  # [ "${#striptracks_result}" != 0 ]
+  # return
 # }
 function set_metadata {
   # Update file metadata in Radarr/Sonarr (see issue #97)
@@ -634,39 +634,16 @@ function set_metadata {
 function get_mediainfo {
   # Read in the output of mkvmerge info extraction (see issue #87)
 
-  local videofile="$1"
+  local videofile="$1"  # Video file to inspect
 
   local mkvcommand="/usr/bin/mkvmerge -J \"$videofile\""
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $mkvcommand" | log
+  execute_mkv_command "$mkvcommand" "inspecting video"
+
   unset striptracks_json
   # This must be a declare statement to avoid the 'Argument list too long' error with some large returned JSON (see issue #104)
   declare -g striptracks_json
-  striptracks_json=$(eval "$mkvcommand")
-  local return=$?
-  [ $striptracks_debug -ge 1 ] && echo "Debug|mkvmerge returned ${#striptracks_json} bytes" | log
-  [ $striptracks_debug -ge 2 ] && [ ${#striptracks_json} -ne 0 ] && echo "mkvmerge returned: $striptracks_json" | awk '{print "Debug|"$0}' | log
-  case $return in
-    0)
-      # Check for unsupported container.
-      if [ "$(echo "$striptracks_json" | jq -crM '.container.supported')" = "false" ]; then
-        local message="Error|Video format for '$videofile' is unsupported. Unable to continue. mkvmerge returned container info: $(echo $striptracks_json | jq -crM .container)"
-        echo "$message" | log
-        echo "$message" >&2
-        end_script 9
-      fi
-    ;;
-    1)
-      local message=$(echo -e "[$return] Warning when inspecting video.\nmkvmerge returned: $(echo "$striptracks_json" | jq -crM '.warnings[]')" | awk '{print "Warn|"$0}')
-      echo "$message" | log
-    ;;
-    2)
-      local message=$(echo -e "[$return] Error when inspecting video.\nmkvmerge returned: $(echo "$striptracks_json" | jq -crM '.errors[]')" | awk '{print "Error|"$0}')
-      echo "$message" | log
-      echo "$message" >&2
-      end_script 9
-    ;;
-  esac
-  return $return
+  striptracks_json="$striptracks_mkvresult"
+  return
 }
 # function import_video {
   # # Import new video into Radarr/Sonarr
@@ -1036,12 +1013,13 @@ function call_api {
     method="-X $method"
   fi
   local curl_cmd="curl -s --fail-with-body -H \"X-Api-Key: $striptracks_apikey\" -H \"Content-Type: application/json\" -H \"Accept: application/json\" ${data:+$data} $method \"$url\""
+  [ $striptracks_debug -ge 2 ] && echo "Debug|Executing: $curl_cmd" | sed -E 's/(X-Api-Key: )[^"]+/\1[REDACTED]/' | log
   unset striptracks_result
   # (See issue #104)
   declare -g striptracks_result
   striptracks_result=$(eval "$curl_cmd")
   local curl_return=$?; [ $curl_return -ne 0 ] && {
-    local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with$data}\nWeb server returned: $(echo $striptracks_result | jq -jcM 'if has("title") then "[HTTP \(.status?)] \(.title?) \(.errors?)" else .message? end')" | awk '{print "Error|"$0}')
+    local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with$data}\nWeb server returned: $(echo $striptracks_result | jq -jcM 'if type=="array" then map(.errorMessage) | join(", ") else (if has("title") then "[HTTP \(.status?)] \(.title?) \(.errors?)" elif has("message") then .message else "Unknown JSON format." end) end')" | awk '{print "Error|"$0}')
     echo "$message" | log
     echo "$message" >&2
   }
@@ -1049,6 +1027,43 @@ function call_api {
   [ $striptracks_debug -ge 2 ] && echo "Debug|API returned ${#striptracks_result} bytes." | log
   [ $striptracks_debug -ge $((2 + debug_add)) -a ${#striptracks_result} -gt 0 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
   return $curl_return
+}
+function execute_mkv_command {
+  # Execute mkvmerge or mkvpropedit command
+
+  local command="$1" # Full mkvmerge or mkvpropedit command to execute
+  local action="$2" # Action being performed (for logging purposes)
+
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $command" | log
+  local shortcommand="$(echo $command | sed -E 's/(nice )?([^ ]+).*$/\2/')"
+  shortcommand=$(basename "$shortcommand")
+  unset striptracks_mkvresult
+  # This must be a declare statement to avoid the 'Argument list too long' error with some large returned JSON (see issue #104)
+  declare -g striptracks_mkvresult
+  striptracks_mkvresult=$(eval "$command")
+  local return=$?
+  [ $striptracks_debug -ge 1 ] && echo "Debug|$shortcommand returned ${#striptracks_mkvresult} bytes" | log
+  [ $striptracks_debug -ge 2 ] && [ ${#striptracks_mkvresult} -ne 0 ] && echo "$shortcommand returned: $striptracks_mkvresult" | awk '{print "Debug|"$0}' | log
+  case $return in
+    1)
+      local message=$(echo -e "[$return] Warning when $action.\n$shortcommand returned: $(echo "$striptracks_mkvresult" | jq -crM '.warnings[]')" | awk '{print "Warn|"$0}')
+      echo "$message" | log
+    ;;
+    2)
+      local message=$(echo -e "[$return] Error when $action.\n$shortcommand returned: $(echo "$striptracks_mkvresult" | jq -crM '.errors[]')" | awk '{print "Error|"$0}')
+      echo "$message" | log
+      echo "$message" >&2
+      end_script 13
+    ;;
+  esac
+  # Check for unsupported container
+  if [ "$(echo "$striptracks_mkvresult" | jq -crM '.container.supported')" = "false" ]; then
+    local message="Error|Video format for '$videofile' is unsupported. Unable to continue. $shortcommand returned container info: $(echo $striptracks_mkvresult | jq -crM .container)"
+    echo "$message" | log
+    echo "$message" >&2
+    end_script 9
+  fi
+  return $return
 }
 function check_video {
   # Video file checks
@@ -1121,7 +1136,8 @@ function detect_languages {
             local profileName="$(echo $qualityProfiles | jq -crM ".[] | select(.id == $profileId).name")"
             local profileLanguages="$(echo $qualityProfiles | jq -cM "[.[] | select(.id == $profileId) | .language]")"
             local languageSource="quality profile"
-            [ $striptracks_debug -ge 1 ] && echo "Debug|Found quality profile '${profileName} (${profileId})'$(check_compat qualitylanguage && echo " with language '$(echo $profileLanguages | jq -crM '[.[] | "\(.name) (\(.id | tostring))"] | join(",")')'")" | log
+            check_compat qualitylanguage && local qualityLanguage="$(echo " with language '$(echo $profileLanguages | jq -crM '[.[] | "\(.name) (\(.id | tostring))"] | join(",")')'")"
+            [ $striptracks_debug -ge 1 ] && echo "Debug|Found quality profile '${profileName} (${profileId})'$qualityLanguage" | log
 
             # Skip processing if profile name matches any --skip-profile entries (see issue #108)
             if [ ${#striptracks_skip_profile[@]} -gt 0 ]; then
@@ -1546,26 +1562,7 @@ function set_title_and_exit_if_nothing_removed {
         local message="Info|No tracks would be removed from video$( [ "$striptracks_reorder" = "true" ] && echo " or reordered"). Setting Title only and exiting."
         echo "$message" | log
         local mkvcommand="/usr/bin/mkvpropedit -q --edit info --set \"title=$striptracks_title\" \"$striptracks_video\""
-        [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $mkvcommand" | log
-        local result
-        result=$(eval "$mkvcommand")
-        local return=$?
-        [ $striptracks_debug -ge 1 ] && echo "Debug|mkvpropedit returned ${#result} bytes" | log
-        [ $striptracks_debug -ge 2 ] && [ ${#result} -ne 0 ] && echo "mkvpropedit returned: $result" | awk '{print "Debug|"$0}' | log
-        [ $return -ne 0 ] && {
-          case $return in
-            1)
-              local message=$(echo -e "[$return] Warning when setting video title: \"$striptracks_tempvideo\"\nmkvpropedit returned: $result" | awk '{print "Warn|"$0}')
-              echo "$message" | log
-            ;;
-            2)
-              local message=$(echo -e "[$return] Error when setting video title: \"$striptracks_tempvideo\"\nmkvpropedit returned: $result" | awk '{print "Error|"$0}')
-              echo "$message" | log
-              echo "$message" >&2
-              change_exit_status 13
-            ;;
-          esac
-        }
+        execute_mkv_command "$mkvcommand" "setting video title"
         end_script
       else
         # Reorder tracks anyway
@@ -1600,22 +1597,7 @@ function remux_video {
 
   # Execute MKVmerge (remux then rename, see issue #46)
   local mkvcommand="$striptracks_nice /usr/bin/mkvmerge --title \"$striptracks_title\" -q -o \"$striptracks_tempvideo\" $audioarg $subsarg $striptracks_neworder \"$striptracks_video\""
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $mkvcommand" | log
-  local result
-  result=$(eval "$mkvcommand")
-  local return=$?
-  [ $striptracks_debug -ge 1 ] && echo "Debug|mkvmerge returned ${#result} bytes" | log
-  [ $striptracks_debug -ge 2 ] && [ ${#result} -ne 0 ] && echo "mkvmerge returned: $result" | awk '{print "Debug|"$0}' | log
-  case $return in
-    1) local message=$(echo -e "[$return] Warning when remuxing video: \"$striptracks_video\"\nmkvmerge returned: $result" | awk '{print "Warn|"$0}')
-      echo "$message" | log
-    ;;
-    2) local message=$(echo -e "[$return] Error when remuxing video: \"$striptracks_video\"\nmkvmerge returned: $result" | awk '{print "Error|"$0}')
-      echo "$message" | log
-      echo "$message" >&2
-      end_script 13
-    ;;
-  esac
+  execute_mkv_command "$mkvcommand" "remuxing video"
 
   # Check for non-empty file
   if [ ! -s "$striptracks_tempvideo" ]; then
