@@ -3,7 +3,7 @@
 striptracks_type=Radarr
 striptracks_pid=0
 striptracks_api_url="http://localhost:7878/api/v3"
-striptracks_apikey="0123456789abcdef0123456789abcdef"
+striptracks_apikey="NOT_A_REAL_API_KEY"
 striptracks_video="test_video.mkv"
 striptracks_videofile_api="movie"
 striptracks_debug=2
@@ -71,8 +71,10 @@ function call_api {
   # (See issue #104)
   declare -g striptracks_result
   #striptracks_result=$(eval "$curl_cmd")
+  # shellcheck disable=SC2089
   striptracks_result='{"message":"database is locked"}' # For testing wait_if_locked
   local curl_return=22; [ $curl_return -ne 0 ] && {
+    # shellcheck disable=SC2090
     local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with$data}\nWeb server returned: $(echo $striptracks_result | jq -jcM 'if type=="array" then map(.errorMessage) | join(", ") else (if has("title") then "[HTTP \(.status?)] \(.title?) \(.errors?)" elif has("message") then .message else "Unknown JSON format." end) end')" | awk '{print "Error|"$0}')
     echo "$message" | log
     echo "$message" >&2
@@ -89,6 +91,7 @@ function wait_if_locked {
   #  0 - Database is locked
   #  1 - Database is not locked
 
+  # shellcheck disable=SC2090
   if [[ "$(echo $striptracks_result | jq -jcM '.message?')" =~ database\ is\ locked ]]; then
     local return=1
     echo "Warn|Database is locked; system is likely overloaded. Sleeping 1 minute." | log
