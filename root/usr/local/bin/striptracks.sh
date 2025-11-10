@@ -589,14 +589,13 @@ function delete_videofile {
   for ((i=1; i <= 5; i++)); do
     call_api 0 "Deleting or recycling \"$striptracks_video\"." "DELETE" "$striptracks_videofile_api/$videofile_id"
     local api_return=$?; [ $api_return -ne 0 ] && {
-      local return=1
-      break
+      # Exit loop if database is not locked, else wait
+      if wait_if_locked; then
+        local return=1
+        break
+      fi
     }
 
-    # Exit loop if database is not locked, else wait
-    if wait_if_locked; then
-      break
-    fi
   done
   return $return
 }
@@ -758,6 +757,10 @@ function set_video_info {
 function wait_if_locked {
   # Wait 1 minute if database is locked
 
+  # Exit codes:
+  #  0 - Database is not locked
+  #  1 - Database is locked
+  
   if [[ "$(echo $striptracks_result | jq -jcM '.message?')" =~ database\ is\ locked ]]; then
     local return=1
     echo "Warn|Database is locked; system is likely overloaded. Sleeping 1 minute." | log
