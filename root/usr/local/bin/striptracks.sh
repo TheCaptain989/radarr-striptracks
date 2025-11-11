@@ -714,22 +714,6 @@ function set_video_info {
   [ "${#striptracks_result}" != 0 ]
   return
 }
-function wait_if_locked {
-  # Wait 1 minute if database is locked
-
-  # Exit codes:
-  #  0 - Database is not locked
-  #  1 - Database is locked
-  
-  if [[ "$(echo $striptracks_result | jq -jcM '.message?')" =~ database\ is\ locked ]]; then
-    local return=1
-    echo "Warn|Database is locked; system is likely overloaded. Sleeping 1 minute." | log
-    sleep 60
-  else 
-    local return=0
-  fi
-  return $return
-}
 function process_org_code {
   # Handle :org language code
 
@@ -1002,6 +986,22 @@ function call_api {
   [ $striptracks_debug -ge 2 ] && echo "Debug|API returned ${#striptracks_result} bytes." | log
   [ $striptracks_debug -ge $((2 + debug_add)) -a ${#striptracks_result} -gt 0 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
   return $curl_return
+}
+function wait_if_locked {
+  # Wait 1 minute if database is locked
+
+  # Exit codes:
+  #  0 - Database is not locked
+  #  1 - Database is locked
+  
+  if [[ "$(echo $striptracks_result | jq -jcM '.message?')" =~ database\ is\ locked ]]; then
+    local return=1
+    echo "Warn|Database is locked; system is likely overloaded. Sleeping 1 minute." | log
+    sleep 60
+  else 
+    local return=0
+  fi
+  return $return
 }
 function execute_mkv_command {
   # Execute mkvmerge or mkvpropedit command
