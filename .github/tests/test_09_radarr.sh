@@ -83,7 +83,6 @@ test_radarr_z01_video_load() {
 test_radarr_z02_video_convert() {
   # fake log _log
   # striptracks_debug=1
-  export striptracks_exitstatus=0
   # Read in values from first test
   striptracks_result="$(cat "$video_dir/${test_video1%.webm}.json")"
   radarr_moviefile_path="$(echo $striptracks_result | jq -crM '.movieFile.path')"
@@ -104,7 +103,7 @@ test_radarr_z02_video_convert() {
   remux_video
   replace_original_video
   rescan_and_cleanup
-  assert_equals 0 $striptracks_exitstatus
+  assert_equals 0 ${striptracks_exitstatus:-0}
 }
 
 test_radarr_z03_video_delete() {
