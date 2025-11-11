@@ -981,6 +981,7 @@ function call_api {
   # (See issue #104)
   declare -g striptracks_result
 
+  # Retry up to five times if database is locked
   local i=0
   for ((i=1; i <= 5; i++)); do
     striptracks_result=$(eval "$curl_cmd")
