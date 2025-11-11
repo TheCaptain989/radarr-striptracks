@@ -5,7 +5,7 @@
 # Radarr installed from BuildImage.yml
 
 # Used for debugging unit tests
-_log() {( while read -r; do echo "$(date +"%Y-%m-%d %H:%M:%S.%1N")|[$striptracks_pid]$REPLY"; done; )}
+_log() {( while read -r; do echo "$(date +"%Y-%m-%d %H:%M:%S.%1N")|[$striptracks_pid]$REPLY" >>striptracks.txt; done; )}
 
 setup_suite() {
   source ../../root/usr/local/bin/striptracks.sh
@@ -64,9 +64,7 @@ test_radarr_call_api_with_urlencode() {
   assert_equals '{"parent":"/","directories":[],"files":[]}' "$(echo $striptracks_result | jq -jcM)"
 }
 
-
-
-test_radarr_video_01_load() {
+test_radarr_z01_video_load() {
   load_video
   radarr_movie_id=$(echo $striptracks_result | jq -crM '.id?')
   initialize_mode_variables
@@ -82,7 +80,9 @@ test_radarr_video_01_load() {
   assert_equals "Carmencita" "$(echo $striptracks_result | jq -crM '.title')"
 }
 
-test_radarr_video_02_convert() {
+test_radarr_z02_video_convert() {
+  # fake log _log
+  # striptracks_debug=1
   export striptracks_exitstatus=0
   # Read in values from first test
   striptracks_result="$(cat "$video_dir/${test_video1%.webm}.json")"
@@ -107,7 +107,7 @@ test_radarr_video_02_convert() {
   assert_equals 0 $striptracks_exitstatus
 }
 
-test_radarr_video_03_delete() {
+test_radarr_z03_video_delete() {
   # Read in values from first test
   striptracks_result="$(cat "$video_dir/${test_video1%.webm}.json")"
   radarr_moviefile_path="$(echo $striptracks_result | jq -crM '.movieFile.path')"

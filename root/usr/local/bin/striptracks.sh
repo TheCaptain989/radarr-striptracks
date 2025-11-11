@@ -501,14 +501,7 @@ function rescan {
   # Initiate Rescan request
 
   echo "Info|Calling ${striptracks_type^} API to rescan ${striptracks_video_type}" | log
-  local i=0
-  for ((i=1; i <= 5; i++)); do
-    call_api 0 "Forcing rescan of $striptracks_video_type '$striptracks_rescan_id'." "POST" "command" "{\"name\":\"$striptracks_rescan_api\",\"${striptracks_video_type}Id\":$striptracks_rescan_id}"
-    # Exit loop if database is not locked, else wait
-    if wait_if_locked; then
-      break
-    fi
-  done
+  call_api 0 "Forcing rescan of $striptracks_video_type '$striptracks_rescan_id'." "POST" "command" "{\"name\":\"$striptracks_rescan_api\",\"${striptracks_video_type}Id\":$striptracks_rescan_id}"
   export striptracks_jobid="$(echo $striptracks_result | jq -crM '.id?')"
   [ "$striptracks_jobid" != "null" ] && [ "$striptracks_jobid" != "" ]
   return
@@ -582,22 +575,10 @@ function get_custom_formats {
 function delete_videofile {
   # Delete video file
 
-  local videofile_id="$1"
+  local videofile_id="$1"  # ID of video file to inspect
 
-  local return=0
-  local i=0
-  for ((i=1; i <= 5; i++)); do
-    call_api 0 "Deleting or recycling \"$striptracks_video\"." "DELETE" "$striptracks_videofile_api/$videofile_id"
-    local api_return=$?; [ $api_return -ne 0 ] && {
-      # Exit loop if database is not locked, else wait
-      if wait_if_locked; then
-        local return=1
-        break
-      fi
-    }
-
-  done
-  return $return
+  call_api 0 "Deleting or recycling \"$striptracks_video\"." "DELETE" "$striptracks_videofile_api/$videofile_id"
+  return
 }
 # function get_import_info {
   # # Get file details on possible files to import into Radarr/Sonarr
@@ -605,28 +586,14 @@ function delete_videofile {
   # if [[ "${striptracks_type,,}" = "radarr" ]]; then
   #   local temp_id="${striptracks_video_type}Id=$striptracks_rescan_id"
   # fi
-  # local i=0
-  # for ((i=1; i <= 5; i++)); do
-  #   call_api 1 "Getting list of files that can be imported." "GET" "manualimport" "folder=$striptracks_video_folder" "filterExistingFiles=false" "${temp_id:+$temp_id}"
-  #   # Exit loop if database is not locked, else wait
-  #   if wait_if_locked; then
-  #     break
-  #   fi
-  # done
+  # call_api 1 "Getting list of files that can be imported." "GET" "manualimport" "folder=$striptracks_video_folder" "filterExistingFiles=false" "${temp_id:+$temp_id}"
   # [ "${#striptracks_result}" != 0 ]
   # return
 # }
 function set_metadata {
   # Update file metadata in Radarr/Sonarr (see issue #97)
 
-  local i=0
-  for ((i=1; i <= 5; i++)); do
-    call_api 0 "Updating from quality '$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)' to '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' and release group '$(echo $striptracks_videofile_info | jq -crM '.releaseGroup | select(. != null)')' to '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'." "PUT" "$striptracks_videofile_api/bulk" "$(echo $striptracks_original_metadata | jq -crM "[{id:${striptracks_videofile_id}, quality, releaseGroup}]")"
-    # Exit loop if database is not locked, else wait
-    if wait_if_locked; then
-      break
-    fi
-  done
+  call_api 0 "Updating from quality '$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)' to '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' and release group '$(echo $striptracks_videofile_info | jq -crM '.releaseGroup | select(. != null)')' to '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'." "PUT" "$striptracks_videofile_api/bulk" "$(echo $striptracks_original_metadata | jq -crM "[{id:${striptracks_videofile_id}, quality, releaseGroup}]")"
   [ "${#striptracks_result}" != 0 ]
   return
 }
@@ -743,14 +710,7 @@ function get_media_config {
 function set_video_info {
   # Update file metadata in Radarr/Sonarr
 
-  local i=0
-  for ((i=1; i <= 5; i++)); do
-    call_api 1 "Updating monitored to '$striptracks_videomonitored'." "PUT" "$striptracks_video_api/$striptracks_video_id" "$(echo $striptracks_videoinfo | jq -crM .monitored="$striptracks_videomonitored")"
-    # Exit loop if database is not locked, else wait
-    if wait_if_locked; then
-      break
-    fi
-  done
+  call_api 1 "Updating monitored to '$striptracks_videomonitored'." "PUT" "$striptracks_video_api/$striptracks_video_id" "$(echo $striptracks_videoinfo | jq -crM .monitored="$striptracks_videomonitored")"
   [ "${#striptracks_result}" != 0 ]
   return
 }
@@ -1020,12 +980,23 @@ function call_api {
   unset striptracks_result
   # (See issue #104)
   declare -g striptracks_result
-  striptracks_result=$(eval "$curl_cmd")
-  local curl_return=$?; [ $curl_return -ne 0 ] && {
-    local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with$data}\nWeb server returned: $(echo $striptracks_result | jq -jcM 'if type=="array" then map(.errorMessage) | join(", ") else (if has("title") then "[HTTP \(.status?)] \(.title?) \(.errors?)" elif has("message") then .message else "Unknown JSON format." end) end')" | awk '{print "Error|"$0}')
-    echo "$message" | log
-    echo "$message" >&2
-  }
+
+  local i=0
+  for ((i=1; i <= 5; i++)); do
+    striptracks_result=$(eval "$curl_cmd")
+    local curl_return=$?
+    if [ $curl_return -ne 0 ]; then
+      local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"${data:+ with$data}\nWeb server returned: $(echo $striptracks_result | jq -jcM 'if type=="array" then map(.errorMessage) | join(", ") else (if has("title") then "[HTTP \(.status?)] \(.title?) \(.errors?)" elif has("message") then .message else "Unknown JSON format." end) end')" | awk '{print "Error|"$0}')
+      echo "$message" | log
+      echo "$message" >&2
+      break
+    fi
+    # Exit loop if database is not locked, else wait
+    if wait_if_locked; then
+      break
+    fi
+  done
+
   # APIs can return A LOT of data, and it is not always needed for debugging
   [ $striptracks_debug -ge 2 ] && echo "Debug|API returned ${#striptracks_result} bytes." | log
   [ $striptracks_debug -ge $((2 + debug_add)) -a ${#striptracks_result} -gt 0 ] && echo "API returned: $striptracks_result" | awk '{print "Debug|"$0}' | log
