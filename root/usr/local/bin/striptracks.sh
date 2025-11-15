@@ -91,10 +91,14 @@ function main {
   # Special handling for ':org' code from command line.
   process_org_code "audio" "striptracks_audiokeep"
   process_org_code "subtitles" "striptracks_subskeep"
+  process_org_code "audio" "striptracks_default_audio"
+  process_org_code "subtitles" "striptracks_default_subtitles"
   resolve_code_conflict
   # Read in the output of mkvmerge info extraction
   get_mediainfo "$striptracks_video"
   process_mkvmerge_json
+  determine_track_order
+  select_default_tracks
   set_title_and_exit_if_nothing_removed
   remux_video
   set_perms_and_owner
@@ -118,18 +122,20 @@ mode.
 Source: https://github.com/TheCaptain989/radarr-striptracks
 
 Usage:
-  $0 [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [--skip-profile <profile_name>]... [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-p|--priority} {idle|low|medium|high}] [{-d|--debug} [<level>]]
+  $0 [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [--skip-profile <profile_name>]... [--set-default-audio <language_code[=name]>] [--set-default-subs <language_code[=name]>] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-p|--priority} {idle|low|medium|high}] [{-d|--debug} [<level>]]
 
   Options can also be set via the STRIPTRACKS_ARGS environment variable.
   Command-line arguments override the environment variable.
 
 Options and Arguments:
-  -a, --audio <audio_languages>    Audio languages to keep
+  -a, --audio <audio_languages[+modifier]>
+                                   Audio languages to keep
                                    ISO639-2 code(s) prefixed with a colon \`:\`
                                    multiple codes may be concatenated.
                                    Each code may optionally be followed by a
                                    plus \`+\` and one or more modifiers.
-  -s, --subs <subtitle_languages>  Subtitles languages to keep
+  -s, --subs <subtitle_languages[+modifier]>
+                                   Subtitles languages to keep
                                    ISO639-2 code(s) prefixed with a colon \`:\`
                                    multiple codes may be concatenated.
                                    Each code may optionally be followed by a
@@ -149,6 +155,16 @@ Options and Arguments:
                                    using the specified quality profile name.
                                    May be specified multiple times to skip
                                    multiple profiles.
+      --set-default-audio <language_code[=name]>
+                                   Set the default audio track to the first
+                                   track of the specified language.
+                                   The code may optionally be followed by an
+                                   equals \`=\` and a track name.
+      --set-default-subs <language_code[=name]>
+                                   Set the default subtitles track to the first
+                                   track of the specified language.
+                                   The code may optionally be followed by an
+                                   equals \`+\` and a track name.
   -l, --log <log_file>             Log filename
                                    [default: /config/log/striptracks.txt]
   -c, --config <config_file>       Radarr/Sonarr XML configuration file
@@ -170,6 +186,10 @@ accepted as positional parameters for backwards compatibility.
 
 Language modifiers may be \`f\` or \`d\` which select Forced or Default tracks
 respectively, or a number which specifies the maximum tracks to keep.
+
+Track name modifiers are a string. The string is used to match against the
+track name, with the first track that matches the specified language and name
+being set as default.
 
 Batch Mode:
   In batch mode the script acts as if it were not called from within Radarr
@@ -241,14 +261,13 @@ function process_command_line {
       ;;
       -l|--log )
         # Log file
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-          export striptracks_log="$2"
-          shift 2
-        else
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
           echo "Error|Invalid option: $1 requires an argument." >&2
           usage
-          exit 1
+          exit 20
         fi
+        export striptracks_log="$2"
+        shift 2
       ;;
       --help )
         # Display full usage
@@ -262,16 +281,15 @@ function process_command_line {
       ;;
       -f|--file )
         # Batch Mode
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-          # Overrides detected *_eventtype
-          export striptracks_type="batch"
-          export striptracks_video="$2"
-          shift 2
-        else
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
           echo "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 1
         fi
+        # Overrides detected *_eventtype
+        export striptracks_type="batch"
+        export striptracks_video="$2"
+        shift 2
       ;;
       -a|--audio )
         # Audio languages to keep
@@ -303,15 +321,14 @@ function process_command_line {
       ;;
       -c|--config )
         # *arr XML configuration file
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-          # Overrides default /config/config.xml
-          export striptracks_arr_config="$2"
-          shift 2
-        else
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
           echo "Error|Invalid option: $1 requires an argument." >&2
           usage
-          exit 1
+          exit 20
         fi
+        # Overrides default /config/config.xml
+        export striptracks_arr_config="$2"
+        shift 2
       ;;
       -p|--priority )
         # Set process priority (see issue #102)
@@ -345,14 +362,41 @@ function process_command_line {
       --skip-profile )
         # Skip processing if the video was downloaded using the specified quality profile name. (see issue #108)
         # May be specified multiple times to skip multiple profiles.
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-          striptracks_skip_profile+=("$2")
-          shift 2
-        else
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
           echo "Error|Invalid option: $1 requires an argument." >&2
           usage
-          exit 1
+          exit 20
         fi
+        striptracks_skip_profile+=("$2")
+        shift 2
+      ;;
+      --set-default-audio )
+        # Set the default audio track to specified language, and optional type (see issue #111)
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
+          echo "Error|Invalid option: $1 requires an argument." >&2
+          usage
+          exit 20
+        elif [[ "$2" != :* ]]; then
+          echo "Error|Invalid option: $1 argument requires a colon." >&2
+          usage
+          exit 20
+        fi
+        export striptracks_default_audio="$2"
+        shift 2
+      ;;
+      --set-default-subs|--set-default-subtitles )
+        # Set the default subtitles track to specified language, and optional type (see issue #111)
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
+          echo "Error|Invalid option: $1 requires an argument." >&2
+          usage
+          exit 20
+        elif [[ "$2" != :* ]]; then
+          echo "Error|Invalid option: $1 argument requires a colon." >&2
+          usage
+          exit 20
+        fi
+        export striptracks_default_subtitles="$2"
+        shift 2
       ;;
       -*)
         # Unknown option
@@ -718,7 +762,7 @@ function process_org_code {
   # Handle :org language code
 
   local track_type="$1" # 'audio' or 'subtitles'
-  local keep_var="$2"  # 'striptracks_audiokeep' or 'striptracks_subskeep'
+  local keep_var="$2"  # 'striptracks_audiokeep', 'striptracks_subskeep', 'striptracks_default_audio', or 'striptracks_default_subtitles'
 
   if [[ "${!keep_var}" =~ :org ]]; then
     # Check compatibility
@@ -1129,7 +1173,7 @@ function detect_languages {
 
             # Query custom formats if returned language from quality profile is null or -1 (Any)
             if [ -z "$profileLanguages" -o "$profileLanguages" = "[null]" -o "$(echo $profileLanguages | jq -crM '.[].id')" = "-1" ] && check_compat customformat; then
-              [ $striptracks_debug -ge 1 -a "$(echo $profileLanguages | jq -crM '.[].id')" = "-1" ] && echo "Debug|Language selection of 'Any' in quality profile. Deferring to Custom Format language selection if it exists." | log
+              [ $striptracks_debug -ge 1 ] && [ "$(echo $profileLanguages | jq -crM '.[].id')" = "-1" ] && echo "Debug|Language selection of 'Any' in quality profile. Deferring to Custom Format language selection if it exists." | log
               # Get list of Custom Formats, and hopefully languages
               get_custom_formats
               local customFormats="$striptracks_result"
@@ -1435,7 +1479,7 @@ function process_mkvmerge_json {
   else . end |
 
   # Output simplified dataset
-  { striptracks_log, tracks: .tracks | map({ id, type, language: .properties.language, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug_log, striptracks_log, striptracks_keep }) }
+  { striptracks_log, tracks: .tracks | map({ id, type, language: .properties.language, name: .properties.track_name, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug_log, striptracks_log, striptracks_keep }) }
   ')
   [ $striptracks_debug -ge 1 ] && echo "Debug|Track processing returned ${#striptracks_json_processed} bytes." | log
   [ $striptracks_debug -ge 2 ] && echo "Track processing returned: $(echo "$striptracks_json_processed" | jq)" | awk '{print "Debug|"$0}' | log
@@ -1476,6 +1520,9 @@ function process_mkvmerge_json {
     echo "$message" >&2
     end_script 11
   fi
+}
+function determine_track_order {
+  # Determine current and new track order for mkvmerge
 
   # Map current track order
   export striptracks_order=$(echo "$striptracks_json_processed" | jq -jcM '.tracks | map(select(.striptracks_keep) | .id | "0:" + tostring) | join(",")')
@@ -1522,6 +1569,55 @@ function process_mkvmerge_json {
     local message="Info|Reordering tracks using language code order."
     echo "$message" | log
   fi
+}
+function select_default_tracks {
+  # Set default flags on kept audio and subtitle tracks.
+
+  # Process audio and subtitle --set-default track settings
+  for tracktype in audio subtitles; do
+    local cfgvar="striptracks_default_${tracktype}"
+    local currentcfg="${!cfgvar}"
+
+    if [ -z "$currentcfg" ]; then
+      [ $striptracks_debug -ge 1 ] && echo "Debug|No default ${tracktype} track setting specified." | log
+      continue
+    fi
+    
+    # Use jq to find the candidate id using case-insensitive substring match on track name
+    local candidate_id=$(echo "$striptracks_json_processed" | jq -crM --arg type "$tracktype" --arg currentcfg "$currentcfg" '
+      def parse_cfg(cfg):
+        cfg | ltrimstr(":") | split("=") | {lang: .[0], name: .[1]};
+
+      (parse_cfg($currentcfg)).lang as $lang |
+      (parse_cfg($currentcfg)).name as $name |
+      .tracks |
+      map(. as $track |
+        (($lang == "any" or $lang == $track.language) as $lang_match |
+          ($name == "" or (($track.name // "") | ascii_downcase | contains(($name // "") | ascii_downcase))) as $name_match |
+          select($track.type == $type and $lang_match and $name_match and .striptracks_keep)
+        )
+      ) |
+      .[0].id // ""
+    ')
+
+    if [ -n "$candidate_id" ]; then
+      # Set variable to set default only on candidate track (unset others of same type)
+
+      export striptracks_default_flags
+      striptracks_default_flags+=" --default-track-flag $candidate_id"
+      # Find other kept tracks of same type to unset default flag (bool false)
+      local unset_ids=$(echo "$striptracks_json_processed" | jq -crM --arg type "$tracktype" --argjson candidate_id "$candidate_id" '.tracks | map(select(.type == $type and .striptracks_keep and .id != $candidate_id) | .id) | join(",")')
+      striptracks_default_flags+="$(echo $unset_ids | sed -E 's/([0-9]+),?/ --default-track-flag \1:false/g')"
+      local message="Info|Setting ${tracktype} track ID ${candidate_id} as default$([ -n "$unset_ids" ] && echo " and removing default from track(s) '$unset_ids'")."
+      echo "$message" | log
+      # Remove leading space
+      striptracks_default_flags="${striptracks_default_flags# }"
+    else
+      local message="Warn|No ${tracktype} track matched default specification '${currentcfg}'. No changes made to default ${tracktype} tracks."
+      echo "$message" | log
+    fi
+  done
+  [ $striptracks_debug -ge 1 ] && [ -n "$striptracks_default_flags" ] && echo "Debug|New mkvmerge default tracks: $striptracks_default_flags" | log
 }
 function set_title_and_exit_if_nothing_removed {
   # If no tracks are removed, we can skip remuxing, set the tile, and exit early
@@ -1571,7 +1667,7 @@ function remux_video {
   fi
 
   # Execute MKVmerge (remux then rename, see issue #46)
-  local mkvcommand="$striptracks_nice /usr/bin/mkvmerge --title \"$striptracks_title\" -q -o \"$striptracks_tempvideo\" $audioarg $subsarg $striptracks_neworder \"$striptracks_video\""
+  local mkvcommand="$striptracks_nice /usr/bin/mkvmerge --title \"$striptracks_title\" -q -o \"$striptracks_tempvideo\" $audioarg $subsarg $striptracks_neworder $striptracks_default_flags \"$striptracks_video\""
   execute_mkv_command "$mkvcommand" "remuxing video"
 
   # Check for non-empty file

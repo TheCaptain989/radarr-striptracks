@@ -1,5 +1,11 @@
 #!/bin/bash
 
+striptracks_debug=1
+source ../../root/usr/local/bin/striptracks.sh
+
+striptracks_pid=$$
+log() {( while read -r; do echo "$(date +"%Y-%m-%d %H:%M:%S.%1N")|[$striptracks_pid]$REPLY"; done; )}
+
 declare -g -x -a striptracks_skip_profile
 
 profileName="$1"

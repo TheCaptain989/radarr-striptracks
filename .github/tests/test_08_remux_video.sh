@@ -4,6 +4,9 @@
 # Remux video file
 # mkvtoolnix installed from BuildImage.yml
 
+# Used for debugging unit tests
+_log() {( while read -r; do echo "$(date +"%Y-%m-%d %H:%M:%S.%1N")|[$striptracks_pid]$REPLY" >>striptracks.txt; done; )}
+
 setup_suite() {
   which mkvmerge >/dev/null || { printf "\t\e[0;91mmkvmerge not found\e[0m\n"; exit 1; }
   source ../../root/usr/local/bin/striptracks.sh
@@ -131,6 +134,20 @@ test_temp_file_deleted() {
   remux_video
   rm -f "$striptracks_tempvideo"
   assert_status_code 10 "replace_original_video 2>/dev/null"
+}
+
+test_set_default_audio() {
+  # fake log _log
+  # striptracks_debug=1
+  process_command_line -a :any -s :any+f -f "$test_video3" --set-default-audio :eng=commentary
+  initialize_mode_variables
+  check_video
+  get_mediainfo "$striptracks_video"
+  process_mkvmerge_json
+  select_default_tracks
+  remux_video
+  replace_original_video
+  assert_equals true "$(mkvmerge -J "$striptracks_video" | jq -crM '.tracks[] | select(.type == "audio" and .properties.track_name == "Commentary") | .properties.default_track')"
 }
 
 teardown_suite() {

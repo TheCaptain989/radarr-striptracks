@@ -11,9 +11,9 @@ setup_suite() {
   source ../../root/usr/local/bin/striptracks.sh
   fake log :
   export test_video1="Racism_is_evil.webm"
-  export video_dir="Carmencita (1894)"
-  [ -d "$video_dir" ] || mkdir "$video_dir"
-  [ -f "$test_video1" ] || { wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "$video_dir/$test_video1"; }
+  export video1_dir="Carmencita (1894)"
+  [ -d "$video1_dir" ] || mkdir "$video1_dir"
+  [ -f "$test_video1" ] || { wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "$video1_dir/$test_video1"; }
 }
 
 setup() {
@@ -76,7 +76,7 @@ test_radarr_z01_video_load() {
   done
   get_video_info
   # Needed for next test
-  echo $striptracks_result | jq -r >"$video_dir/${test_video1%.webm}.json"
+  echo $striptracks_result | jq -r >"$video1_dir/${test_video1%.webm}.json"
   assert_equals "Carmencita" "$(echo $striptracks_result | jq -crM '.title')"
 }
 
@@ -84,7 +84,7 @@ test_radarr_z02_video_convert() {
   # fake log _log
   # striptracks_debug=1
   # Read in values from first test
-  striptracks_result="$(cat "$video_dir/${test_video1%.webm}.json")"
+  striptracks_result="$(cat "$video1_dir/${test_video1%.webm}.json")"
   radarr_moviefile_path="$(echo $striptracks_result | jq -crM '.movieFile.path')"
   radarr_moviefile_id="$(echo $striptracks_result | jq -crM '.movieFile.id')"
   radarr_movie_id="$(echo $striptracks_result | jq -crM '.id')"
@@ -108,7 +108,7 @@ test_radarr_z02_video_convert() {
 
 test_radarr_z03_video_delete() {
   # Read in values from first test
-  striptracks_result="$(cat "$video_dir/${test_video1%.webm}.json")"
+  striptracks_result="$(cat "$video1_dir/${test_video1%.webm}.json")"
   radarr_moviefile_path="$(echo $striptracks_result | jq -crM '.movieFile.path')"
   radarr_moviefile_id="$(echo $striptracks_result | jq -crM '.movieFile.id')"
   radarr_movie_id="$(echo $striptracks_result | jq -crM '.id')"
@@ -120,7 +120,7 @@ test_radarr_z03_video_delete() {
 
 load_video() {
   check_config
-  call_api 0 "Loading video file into Radarr." "POST" "movie" "{\"QualityProfileId\":1, \"TmdbId\":16612, \"Title\":\"Carmencita\", \"path\":\"$PWD/$video_dir\", \"monitored\":true, \"rootFolderPath\":\"$PWD/\", \"movieFile\":{\"id\":1, \"path\":\"$PWD/$video_dir/$test_video1\", \"quality\":{\"quality\":{\"id\":1,\"name\":\"Any\"},\"revision\":{\"version\":1,\"real\":1}}}}"
+  call_api 0 "Loading video file into Radarr." "POST" "movie" "{\"QualityProfileId\":1, \"TmdbId\":16612, \"Title\":\"Carmencita\", \"path\":\"$PWD/$video1_dir\", \"monitored\":true, \"rootFolderPath\":\"$PWD/\", \"movieFile\":{\"id\":1, \"path\":\"$PWD/$video1_dir/$test_video1\", \"quality\":{\"quality\":{\"id\":1,\"name\":\"Any\"},\"revision\":{\"version\":1,\"real\":1}}}}"
 }
 
 delete_video() {
@@ -133,6 +133,6 @@ get_video_info() {
 }
 
 teardown_suite() {
-  rm -f -d "./striptracks.txt" "$video_dir/${test_video1%.webm}.mkv" "$video_dir/${test_video1%.webm}.json" "$video_dir/$test_video1" "$video_dir"
+  rm -f -d "./striptracks.txt" "$video1_dir/${test_video1%.webm}.mkv" "$video1_dir/${test_video1%.webm}.json" "$video1_dir/$test_video1" "$video1_dir"
   unset radarr_eventtype striptracks_arr_config
 }
