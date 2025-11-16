@@ -1604,7 +1604,7 @@ function set_default_tracks {
       # The track IDs must be converted to 1-based for mkvpropedit (add 1)
       # Set variable to set default only on selected track (unset others of same type)
       export striptracks_default_flags
-      striptracks_default_flags+=" --edit track:$(($track_id + 1)) --set flag-default=1"
+      striptracks_default_flags+=" --edit track:$((track_id + 1)) --set flag-default=1"
       # Find other kept tracks of same type to unset default flag
       local unset_ids=$(echo "$striptracks_json_processed" | jq -crM --arg type "$tracktype" --argjson track_id "$track_id" '.tracks | map(select(.type == $type and .striptracks_keep and .id != $track_id) | .id) | join(",")')
       striptracks_default_flags+="$(echo $unset_ids | awk 'BEGIN {RS=","}; /[0-9]+/ {print " --edit track:" ($0 += 1) " --set flag-default=0"}' | tr -d '\n')"

@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2034,SC1254
 
 striptracks_debug=1
 source /workspaces/radarr-striptracks/root/usr/local/bin/striptracks.sh

@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2181
 
 container_name="radarr"
 repo="radarr-striptracks"
