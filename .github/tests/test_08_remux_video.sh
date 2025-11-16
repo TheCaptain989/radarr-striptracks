@@ -139,12 +139,12 @@ test_temp_file_deleted() {
 test_set_default_audio() {
   # fake log _log
   # striptracks_debug=1
-  process_command_line -a :any -s :any+f -f "$test_video3" --set-default-audio :eng=commentary
+  process_command_line -a :any -f "$test_video3" --set-default-audio :eng=commentary
   initialize_mode_variables
   check_video
   get_mediainfo "$striptracks_video"
   process_mkvmerge_json
-  select_default_tracks
+  set_default_tracks
   remux_video
   replace_original_video
   assert_equals true "$(mkvmerge -J "$striptracks_video" | jq -crM '.tracks[] | select(.type == "audio" and .properties.track_name == "Commentary") | .properties.default_track')"

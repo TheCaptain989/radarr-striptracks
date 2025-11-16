@@ -98,7 +98,7 @@ function main {
   get_mediainfo "$striptracks_video"
   process_mkvmerge_json
   determine_track_order
-  select_default_tracks
+  set_default_tracks
   set_title_and_exit_if_nothing_removed
   remux_video
   set_perms_and_owner
@@ -777,7 +777,7 @@ function process_org_code {
     fi
 
     # Log debug message if applicable
-    [ "$striptracks_debug" -ge 1 ] && echo "Debug|${track_type^} argument ':org' specified. Changing '${!keep_var}' to '${!keep_var//:org/${striptracks_originalLangCode}}'" | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|${track_type^} argument ':org' specified. Changing '${!keep_var}' to '${!keep_var//:org/${striptracks_originalLangCode}}'" | log
 
     # Replace :org with the original language code
     declare -g "$keep_var=${!keep_var//:org/${striptracks_originalLangCode}}"
@@ -1570,8 +1570,8 @@ function determine_track_order {
     echo "$message" | log
   fi
 }
-function select_default_tracks {
-  # Set default flags on kept audio and subtitle tracks.
+function set_default_tracks {
+  # Build mkvpropedit paramaters to set default flags on audio and subtitle tracks.
 
   # Process audio and subtitle --set-default track settings
   for tracktype in audio subtitles; do
@@ -1583,8 +1583,8 @@ function select_default_tracks {
       continue
     fi
     
-    # Use jq to find the candidate id using case-insensitive substring match on track name
-    local candidate_id=$(echo "$striptracks_json_processed" | jq -crM --arg type "$tracktype" --arg currentcfg "$currentcfg" '
+    # Use jq to find the track ID using case-insensitive substring match on track name
+    local track_id=$(echo "$striptracks_json_processed" | jq -crM --arg type "$tracktype" --arg currentcfg "$currentcfg" '
       def parse_cfg(cfg):
         cfg | ltrimstr(":") | split("=") | {lang: .[0], name: .[1]};
 
@@ -1600,15 +1600,15 @@ function select_default_tracks {
       .[0].id // ""
     ')
 
-    if [ -n "$candidate_id" ]; then
-      # Set variable to set default only on candidate track (unset others of same type)
-
+    if [ -n "$track_id" ]; then
+      # The track IDs must be converted to 1-based for mkvpropedit (add 1)
+      # Set variable to set default only on selected track (unset others of same type)
       export striptracks_default_flags
-      striptracks_default_flags+=" --default-track-flag $candidate_id"
-      # Find other kept tracks of same type to unset default flag (bool false)
-      local unset_ids=$(echo "$striptracks_json_processed" | jq -crM --arg type "$tracktype" --argjson candidate_id "$candidate_id" '.tracks | map(select(.type == $type and .striptracks_keep and .id != $candidate_id) | .id) | join(",")')
-      striptracks_default_flags+="$(echo $unset_ids | sed -E 's/([0-9]+),?/ --default-track-flag \1:false/g')"
-      local message="Info|Setting ${tracktype} track ID ${candidate_id} as default$([ -n "$unset_ids" ] && echo " and removing default from track(s) '$unset_ids'")."
+      striptracks_default_flags+=" --edit track:$(($track_id + 1)) --set flag-default=1"
+      # Find other kept tracks of same type to unset default flag
+      local unset_ids=$(echo "$striptracks_json_processed" | jq -crM --arg type "$tracktype" --argjson track_id "$track_id" '.tracks | map(select(.type == $type and .striptracks_keep and .id != $track_id) | .id) | join(",")')
+      striptracks_default_flags+="$(echo $unset_ids | awk 'BEGIN {RS=","}; /[0-9]+/ {print " --edit track:" ($0 += 1) " --set flag-default=0"}' | tr -d '\n')"
+      local message="Info|Setting ${tracktype} track ${track_id} as default$([ -n "$unset_ids" ] && echo " and removing default from track(s) '$unset_ids'")."
       echo "$message" | log
       # Remove leading space
       striptracks_default_flags="${striptracks_default_flags# }"
@@ -1617,7 +1617,12 @@ function select_default_tracks {
       echo "$message" | log
     fi
   done
-  [ $striptracks_debug -ge 1 ] && [ -n "$striptracks_default_flags" ] && echo "Debug|New mkvmerge default tracks: $striptracks_default_flags" | log
+
+  if [ -n "$striptracks_default_flags" ]; then
+    # Execute mkvpropedit to set default flags on tracks
+    local mkvcommand="/usr/bin/mkvpropedit -q $striptracks_default_flags \"$striptracks_video\""
+    execute_mkv_command "$mkvcommand" "setting default track flags"
+  fi
 }
 function set_title_and_exit_if_nothing_removed {
   # If no tracks are removed, we can skip remuxing, set the tile, and exit early
@@ -1667,7 +1672,7 @@ function remux_video {
   fi
 
   # Execute MKVmerge (remux then rename, see issue #46)
-  local mkvcommand="$striptracks_nice /usr/bin/mkvmerge --title \"$striptracks_title\" -q -o \"$striptracks_tempvideo\" $audioarg $subsarg $striptracks_neworder $striptracks_default_flags \"$striptracks_video\""
+  local mkvcommand="$striptracks_nice /usr/bin/mkvmerge --title \"$striptracks_title\" -q -o \"$striptracks_tempvideo\" $audioarg $subsarg $striptracks_neworder \"$striptracks_video\""
   execute_mkv_command "$mkvcommand" "remuxing video"
 
   # Check for non-empty file

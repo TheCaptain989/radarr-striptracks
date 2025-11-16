@@ -273,6 +273,8 @@ Modifier|Function
 `d`|Selects only tracks with the default flag set
 `[0-9]`|Specifies the maximum number of tracks to select.<br/>Based on the order of the tracks in the original source video.
 
+</details>
+
 These modifiers must be applied to each language code you want to modify.  They may be used with either audio or subtitles codes.  
 For example, the following options, `--audio :org:any+d --subs :eng+1:any+f` would keep:  
 - All original language audio tracks, and all Default audio tracks regardless of language
@@ -284,14 +286,18 @@ Modifiers may be combined, such as `:any+fd` to keep all forced and all default 
 > Note the exact phrasing of the previous sentence.  There is nuance here that is not obvious.  
 > `:any+fd` is equivalent to `:any+f:any+d`, but `:eng+1d` is **not** the same as `:eng+1:eng+d`.
 
-</details>
-
 ### Setting Default Track
 Use the `--set-default` options to choose tracks that appear first when the video is played. Only one audio and one subtitles track may be set as default. The language code is the same colon (`:`) prepended ISO 639-2 language code used with the `--audio` and `--subs` options.
 The first track of the specified language will have its default flag set and all other tracks (of any language) will have their default flag disabled.
 
 The language code can optionally be follow by an equals (`=`) and a string which is used to match against the track name. The first track that matches the specified language and with a name that matches the string will be set to default.
 The string matching uses a substring and is case insensitive. You can use this to set the default subtitles track to hearing impared (SDH), or the audio track to your preferred language.
+
+The setting of default track flags occurs after the track selection logic.
+
+> [!NOTE]
+> This is not a robust feature. It relies heavily on the track order and names from the source video file.
+> You may therefore not obtain consistent results.
 
 <details>
 <summary>Track Name Examples</summary>
@@ -301,10 +307,6 @@ If you want to set the default subtitles track to the first hearing impared Engl
 
 To set the default audio track to Dutch:  
 `--set-default-audio :dut`
-
-> [!NOTE]
-> This is not a robust feature. It relies heavily on the track order and names from the source video file.
-> You may therefore not obtain consistent results.
 
 </details>
 

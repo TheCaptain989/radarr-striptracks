@@ -1,7 +1,7 @@
 #!/bin/bash
 
-striptracks_debug=1
-source ../../root/usr/local/bin/striptracks.sh
+striptracks_debug=2
+source /workspaces/radarr-striptracks/root/usr/local/bin/striptracks.sh
 
 striptracks_pid=$$
 log() {( while read -r; do echo "$(date +"%Y-%m-%d %H:%M:%S.%1N")|[$striptracks_pid]$REPLY"; done; )}
@@ -31,7 +31,8 @@ striptracks_json='{
         "language": "",
         "number": 1,
         "packetizer": "mpeg4_p10_video",
-        "pixel_dimensions": "1280x720"
+        "pixel_dimensions": "1280x720",
+        "uid": 201326592
       },
       "type": "video"
     },
@@ -42,7 +43,8 @@ striptracks_json='{
         "audio_bits_per_sample": 16,
         "audio_channels": 2,
         "audio_sampling_frequency": 44100,
-        "number": 2
+        "number": 2,
+        "uid": 335544320
       },
       "type": "audio"
     },
@@ -56,7 +58,8 @@ striptracks_json='{
         "track_name": "Should include",
         "language": "ger",
         "number": 5,
-        "forced_track": true
+        "forced_track": true,
+        "uid": 536870912
       },
       "type": "audio"
     },
@@ -70,7 +73,8 @@ striptracks_json='{
         "track_name": "Must include",
         "language": "ger",
         "number": 6,
-        "default_track": true
+        "default_track": true,
+        "uid": 671088640
       },
       "type": "audio"
     },
@@ -81,7 +85,8 @@ striptracks_json='{
         "track_name": "Subs (SDH)",
         "language": "fre",
         "number": 3,
-        "forced_track": true
+        "forced_track": true,
+        "uid": 805306368
       },
       "type": "subtitles"
     },
@@ -94,7 +99,8 @@ striptracks_json='{
         "audio_sampling_frequency": 44100,
         "track_name": "Should include",
         "language": "eng",
-        "number": 3
+        "number": 3,
+        "uid": 402653184
       },
       "type": "audio"
     },
@@ -107,7 +113,8 @@ striptracks_json='{
         "audio_sampling_frequency": 44100,
         "language": "eng",
         "track_name": "Should exclude",
-        "number": 4
+        "number": 4,
+        "uid": 469762048
       },
       "type": "audio"
     }
@@ -126,4 +133,5 @@ process_mkvmerge_json
 echo "$striptracks_json_processed" | jq -c .
 
 # Set default tracks
-select_default_tracks
+execute_mkv_command() { echo "Simulated:" $1 $2; }
+set_default_tracks
