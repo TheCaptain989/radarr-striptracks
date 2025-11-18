@@ -33,7 +33,7 @@ test_radarr_test_event() {
 test_radarr_version() {
   check_eventtype
   check_config
-  assert_within_delta 5 ${striptracks_arr_version/.*/} 1
+  assert_within_delta 6 ${striptracks_arr_version/.*/} 2
 }
 
 test_radarr_get_languages() {
