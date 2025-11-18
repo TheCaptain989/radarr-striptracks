@@ -10,7 +10,7 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 
     *Example location:*  `/volume1/docker/99-striptracks.sh`  
 
-    *Example curl line to download the installation script:*  
+    *Example cURL line to download the installation script:*  
 
     ```shell
     curl -s https://raw.githubusercontent.com/TheCaptain989/radarr-striptracks/master/hotio/99-striptracks.sh >/volume1/docker/99-striptracks.sh
@@ -87,7 +87,7 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 6. After the container has fully started, continue with Installation step 2 in the main [Readme](../#installation) to configure `striptracks.sh` as a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen.
 
 # Requirements
-You must have the **bash** shell available in your host path.  You *might* attempt editing the [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) in the `99-striptracks.sh` script to get around this, but that is beyond the scope of this document.
+You must have the **Bash** shell available in your host path.  You *might* attempt editing the [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) in the `99-striptracks.sh` script to get around this, but that is beyond the scope of this document.
 
 # Known Issues
 On at least *some* Synology hosts that use the ash shell, this script will cause the container to abort and not start.  If this happens, ***check your container logs*** for hints as to what may be wrong.
