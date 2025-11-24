@@ -156,7 +156,8 @@ test_video_with_special_characters() {
   process_command_line -a :eng -f "$test_video4"
   initialize_mode_variables
   check_video
-  assert "$(get_mediainfo "$striptracks_video")"
+  get_mediainfo "$striptracks_video"
+  assert_equals "true" "$(echo "$striptracks_json" | jq -crM '.container.supported')"
 }
 
 teardown_suite() {
