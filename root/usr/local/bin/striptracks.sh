@@ -1054,6 +1054,7 @@ function escape_string {
   local input="$1" # Input string to escape
 
   # Escape backslashes, double quotes, and dollar signs
+  # shellcheck disable=SC2001
   local output="$(echo "$input" | sed -e 's/[`"\\$]/\\&/g')"
   echo "$output"
 }
