@@ -15,6 +15,7 @@ setup_suite() {
   export test_video1="Racism_is_evil.webm"
   export test_video2="vsshort - vorbis  -  subs.mkv"
   export test_video3="test5.mkv"
+  # shellcheck disable=SC2016
   export test_video4='$5 a Day (2008).mkv'
   fake log :
 }
