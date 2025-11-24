@@ -15,6 +15,7 @@ setup_suite() {
   export test_video1="Racism_is_evil.webm"
   export test_video2="vsshort - vorbis  -  subs.mkv"
   export test_video3="test5.mkv"
+  export test_video4='$5 a Day (2008).mkv'
   fake log :
 }
 
@@ -22,6 +23,7 @@ setup() {
   [ -f "$test_video1" ] || { wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "$test_video1" && mkvmerge -J "$test_video1" >"${test_video1%.webm}.json"; }
   [ -f "$test_video2" ] || { wget -q "https://mkvtoolnix.download/samples/vsshort-vorbis-subs.mkv" -O "$test_video2" && mkvmerge -J "$test_video2" >"${test_video2%.mkv}.json"; }
   [ -f "$test_video3" ] || { wget -q "https://github.com/ietf-wg-cellar/matroska-test-files/raw/refs/heads/master/test_files/test5.mkv" -O "$test_video3" && mkvmerge -J "$test_video3" >"${test_video3%.mkv}.json"; }
+  [ -f "$test_video4" ] || cp "$test_video3" "$test_video4"
 }
 
 test_get_media_info() {
@@ -150,7 +152,14 @@ test_set_default_audio() {
   assert_equals true "$(mkvmerge -J "$striptracks_video" | jq -crM '.tracks[] | select(.type == "audio" and .properties.track_name == "Commentary") | .properties.default_track')"
 }
 
+test_video_with_special_characters() {
+  process_command_line -a :eng -f "$test_video4"
+  initialize_mode_variables
+  check_video
+  assert $(get_mediainfo "$striptracks_video")
+}
+
 teardown_suite() {
-  rm -f "${test_video1%.webm}.mkv" "$test_video1" "$test_video2" "$test_video3" "${test_video2:0:5}.tmp".* "./striptracks.txt" "${test_video1%.webm}.json" "${test_video2%.mkv}.json" "${test_video3%.mkv}.json"
+  rm -f "${test_video1%.webm}.mkv" "$test_video1" "$test_video2" "$test_video3" "$test_video4" "${test_video2:0:5}.tmp".* "./striptracks.txt" "${test_video1%.webm}.json" "${test_video2%.mkv}.json" "${test_video3%.mkv}.json"
   unset striptracks_video test_video1 test_video2 test_video3
 }
