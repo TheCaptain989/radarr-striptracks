@@ -129,7 +129,7 @@ test_unsupported_container() {
 
 todo_corrupted_video() {
   # Must find video file that mkvmerge considers corrupted for this test to be valid
-  process_command_line -a :eng -f "$test_video6"
+  process_command_line -a :eng -f "$test_video5"
   initialize_mode_variables
   check_video
   get_mediainfo "$striptracks_video"
