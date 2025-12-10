@@ -17,6 +17,7 @@ setup_suite() {
   export test_video3="test5.mkv"
   # shellcheck disable=SC2016
   export test_video4='$5 a Day (2008).mkv'
+  export test_video5='bear-1280x720-a_frag-cenc.mp4'
   fake log :
 }
 
@@ -118,14 +119,22 @@ test_set_title_only() {
   assert_equals "vsshort - vorbis  -  subs" "$(mkvmerge -J "$striptracks_video" | jq -crM '.container.properties.title')"
 }
 
-todo_mkvmerge_error() {
-  # Must find an invalid video file that mkvmerge will error on
-  process_command_line -a :eng -f "bear-1280x720-a_frag-cenc.mp4"
+test_unsupported_container() {
+  touch $test_video5
+  process_command_line -a :eng -f "$test_video5"
+  initialize_mode_variables
+  check_video
+  assert_status_code 9 "get_mediainfo \"$striptracks_video\""
+}
+
+todo_corrupted_video() {
+  # Must find video file that mkvmerge considers corrupted for this test to be valid
+  process_command_line -a :eng -f "$test_video6"
   initialize_mode_variables
   check_video
   get_mediainfo "$striptracks_video"
   process_mkvmerge_json
-  assert_status_code 13 "remux_video 2>/dev/null"
+  assert_status_code 13 "remux_video"
 }
 
 test_temp_file_deleted() {
@@ -162,6 +171,6 @@ test_video_with_special_characters() {
 }
 
 teardown_suite() {
-  rm -f "${test_video1%.webm}.mkv" "$test_video1" "$test_video2" "$test_video3" "$test_video4" "${test_video2:0:5}.tmp".* "./striptracks.txt" "${test_video1%.webm}.json" "${test_video2%.mkv}.json" "${test_video3%.mkv}.json"
+  rm -f "${test_video1%.webm}.mkv" "$test_video1" "$test_video2" "$test_video3" "$test_video4" "$test_video5" "${test_video2:0:5}.tmp".* "./striptracks.txt" "${test_video1%.webm}.json" "${test_video2%.mkv}.json" "${test_video3%.mkv}.json"
   unset striptracks_video test_video1 test_video2 test_video3
 }
