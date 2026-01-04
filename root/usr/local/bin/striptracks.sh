@@ -1133,7 +1133,8 @@ function check_video {
   # Create temporary filename
   local basename="$(basename -- "${striptracks_video}")"
   local fileroot="${basename%.*}"
-  export striptracks_tempvideo="$(dirname -- "${striptracks_video}")/$(mktemp -u -- "${fileroot:0:5}.tmp.XXXXXX")"
+  # ._ prefixed files are ignored by Radarr/Sonarr (see issues #65 and #115)
+  export striptracks_tempvideo="$(dirname -- "${striptracks_video}")/$(mktemp -u -- "._${fileroot:0:5}.tmp.XXXXXX")"
   [ $striptracks_debug -ge 1 ] && echo "Debug|Using temporary file \"$striptracks_tempvideo\"" | log
 }
 function detect_languages {
