@@ -1133,7 +1133,8 @@ function check_video {
   # Create temporary filename
   local basename="$(basename -- "${striptracks_video}")"
   local fileroot="${basename%.*}"
-  export striptracks_tempvideo="$(dirname -- "${striptracks_video}")/$(mktemp -u -- "${fileroot:0:5}.tmp.XXXXXX")"
+  # ._ prefixed files are ignored by Radarr/Sonarr (see issues #65 and #115)
+  export striptracks_tempvideo="$(dirname -- "${striptracks_video}")/$(mktemp -u -- "._${fileroot:0:5}.tmp.XXXXXX")"
   [ $striptracks_debug -ge 1 ] && echo "Debug|Using temporary file \"$striptracks_tempvideo\"" | log
 }
 function detect_languages {
@@ -1260,7 +1261,6 @@ function detect_languages {
               local message="Warn|No languages found in any profile or custom format. Unable to use automatic language detection."
               echo "$message" | log
               echo "$message" >&2
-              change_exit_status 20
             else
               # Final determination of configured languages in profiles or custom formats
               local profileLangNames="$(echo $profileLanguages | jq -crM '[.[].name]')"

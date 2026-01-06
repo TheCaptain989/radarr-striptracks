@@ -23,7 +23,7 @@ test_video_not_exist() {
 test_set_temp_video() {
   touch "$striptracks_video"
   check_video
-  assert_matches "^\./test_\.tmp\..{6}$" "$striptracks_tempvideo"
+  assert_matches "^\./\._test_\.tmp\..{6}$" "$striptracks_tempvideo"
 }
 
 teardown_suite() {
