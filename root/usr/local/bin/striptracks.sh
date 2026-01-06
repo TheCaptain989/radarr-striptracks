@@ -1261,7 +1261,6 @@ function detect_languages {
               local message="Warn|No languages found in any profile or custom format. Unable to use automatic language detection."
               echo "$message" | log
               echo "$message" >&2
-              change_exit_status 20
             else
               # Final determination of configured languages in profiles or custom formats
               local profileLangNames="$(echo $profileLanguages | jq -crM '[.[].name]')"
