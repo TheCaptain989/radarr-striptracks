@@ -1021,7 +1021,7 @@ function call_api {
   # Add data arguments and url to curl arguments array
   curl_args+=("${curl_data_args[@]}")
   curl_args+=(--url "$url")
-  [ $striptracks_debug -ge 2 ] && echo "Debug|Executing: curl ${curl_args[@]}" | sed -E 's/(X-Api-Key: )[^ ]+/\1[REDACTED]/' | log
+  [ $striptracks_debug -ge 2 ] && echo "Debug|Executing: curl ${curl_args[*]}" | sed -E 's/(X-Api-Key: )[^ ]+/\1[REDACTED]/' | log
   unset striptracks_result
   # (See issue #104)
   declare -g striptracks_result
