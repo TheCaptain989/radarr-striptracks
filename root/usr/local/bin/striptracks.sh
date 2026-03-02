@@ -119,27 +119,32 @@ Video remuxing script that only keeps tracks with the specified languages.
 Designed for use with Radarr and Sonarr, but may be used standalone in batch
 mode.
 
-Source: https://github.com/TheCaptain989/radarr-striptracks
+Source and full documentation:
+  https://github.com/TheCaptain989/radarr-striptracks
 
 Usage:
-  $0 [{-a|--audio} <audio_languages> [{-s|--subs} <subtitle_languages>] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [--skip-profile <profile_name>]... [--set-default-audio <language_code[=name][-f]>] [--set-default-subs <language_code[=name][-f]>] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-p|--priority} {idle|low|medium|high}] [{-d|--debug} [<level>]]
+  $0 [{-a|--audio} <audio_languages>[{+|-}modifier(s)[=name]] [{-s|--subs} <subtitle_languages>[{+|-}modifier(s)[=name]]] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [--skip-profile <profile_name>]... [--set-default-audio <language_code>[{+|-}modifier(s)[=name]]] [--set-default-subs <language_code>[{+|-}modifier(s)[=name]]] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-p|--priority} {idle|low|medium|high}] [{-d|--debug} [<level>]]
 
   Options can also be set via the STRIPTRACKS_ARGS environment variable.
   Command-line arguments override the environment variable.
 
 Options and Arguments:
-  -a, --audio <audio_languages[+modifier]>
+  -a, --audio <audio_languages>[{+|-}modifier(s)[=name]]
                                    Audio languages to keep
                                    ISO639-2 code(s) prefixed with a colon \`:\`
                                    multiple codes may be concatenated.
                                    Each code may optionally be followed by a
-                                   plus \`+\` and one or more modifiers.
-  -s, --subs <subtitle_languages[+modifier]>
+                                   plus \`+\` or \`-\` and one or more modifiers.
+                                   Each code may optionally be followed by an
+                                   equals \`=\` and a track name.
+  -s, --subs <subtitle_languages>[{+|-}modifier(s)[=name]]
                                    Subtitles languages to keep
                                    ISO639-2 code(s) prefixed with a colon \`:\`
                                    multiple codes may be concatenated.
                                    Each code may optionally be followed by a
-                                   plus \`+\` and one or more modifiers.
+                                   plus \`+\` or \`-\` and one or more modifiers.
+                                   Each code may optionally be followed by an
+                                   equals \`=\` and a track name.
   -f, --file <video_file>          If included, the script enters batch mode
                                    and converts the specified video file.
                                    WARNING: Do not use this argument when
@@ -155,22 +160,20 @@ Options and Arguments:
                                    using the specified quality profile name.
                                    May be specified multiple times to skip
                                    multiple profiles.
-      --set-default-audio <language_code[=name][-f]>
+      --set-default-audio <language_code>[{+|-}modifier(s)[=name]]
                                    Set the default audio track to the first
                                    track of the specified language.
+                                   The code may optionally be followed by a
+                                   plus \`+\` or \`-\` and one or more modifiers.
                                    The code may optionally be followed by an
                                    equals \`=\` and a track name.
-                                   The code may optionally be followed by a
-                                   minus \`-f\` to indicate skipping Forced
-                                   tracks.
-      --set-default-subs <language_code[=name][-f]>
+      --set-default-subs <language_code>[{+|-}modifier(s)[=name]]
                                    Set the default subtitles track to the first
                                    track of the specified language.
+                                   The code may optionally be followed by a
+                                   plus \`+\` or \`-\` and one or more modifiers.
                                    The code may optionally be followed by an
                                    equals \`=\` and a track name.
-                                   The code may optionally be followed by a
-                                   minus \`-f\` to indicate skipping Forced
-                                   tracks.
   -l, --log <log_file>             Log filename
                                    [default: /config/log/striptracks.txt]
   -c, --config <config_file>       Radarr/Sonarr XML configuration file
@@ -190,43 +193,56 @@ audio or subtitle languages configured in the Radarr or Sonarr profile.  When
 used on the command line, they override the detected codes.  They are also
 accepted as positional parameters for backwards compatibility.
 
-Language modifiers may be \`f\` or \`d\` which select Forced or Default tracks
+Language modifiers are prefixed with plus \`+\` or minus \`-\` and may be \`f\`
+or \`d\` which selects tracks with or without Forced or Default flags set
 respectively, or a number which specifies the maximum tracks to keep.
 
-Track name modifiers are a string. The string is used to match against the
-track name, with the first track that matches the specified language and name
-being set as default.
+The name modifier is a string that is used to match against the track name.
 
 Batch Mode:
   In batch mode the script acts as if it were not called from within Radarr
-  or Sonarr.  It converts the file specified on the command line and ignores
+  or Sonarr.  It processes the file specified on the command line and ignores
   any environment variables that are normally expected.  The MKV embedded title
   attribute is set to the basename of the file minus the extension.
 
 Examples:
-  $striptracks_script -d 2                      # Enable debugging level 2, audio and
-                                           # subtitles languages detected from
-                                           # Radarr/Sonarr
-  $striptracks_script -a :eng:und -s :eng       # Keep English and Unknown audio and
-                                           # English subtitles
-  $striptracks_script -a :eng:org -s :any+f:eng # Keep English and Original audio,
-                                           # and forced or English subtitles
-  $striptracks_script -a :eng -s \"\"             # Keep English audio and no subtitles
-  $striptracks_script -d :eng:kor:jpn :eng:spa  # Enable debugging level 1, keeping
-                                           # English, Korean, and Japanese
-                                           # audio, and English and Spanish
-                                           # subtitles
+  $striptracks_script -d 2
+                  # Enable debugging level 2, audio and subtitles languages
+                  # detected from Radarr/Sonarr
+
+  $striptracks_script -a :eng:und -s :eng
+                  # Keep English and Unknown audio and English subtitles
+
+  $striptracks_script -a :eng:org -s :any+f:eng
+                  # Keep English and Original audio, and forced or English
+                  # subtitles
+
+  $striptracks_script -a :eng -s \"\"
+                  # Keep English audio and no subtitles
+
+  $striptracks_script -d -a :eng:kor:jpn -s :eng:spa
+                  # Enable debugging level 1, keeping English, Korean, and
+                  # Japanese audio, and English and Spanish subtitles
+
   $striptracks_script -f \"/movies/path/Finding Nemo (2003).mkv\" -a :eng:und -s :eng
-                                           # Batch Mode
-                                           # Keep English and Unknown audio and
-                                           # English subtitles, converting video
-                                           # specified
-  $striptracks_script -a :any -s \"\"             # Keep all audio and no subtitles
+                  # Batch Mode
+                  # Keep English and Unknown audio and English subtitles,
+                  # processing the video specified
+
+  $striptracks_script -a :any -s \"\"
+                  # Keep all audio and no subtitles
+
   $striptracks_script -a :org:any+d1 -s :eng+1:any+f2
-                                           # Keep all Original and one default
-                                           # audio in any language, and one
-                                           # English and two forced subtitles
-                                           # in any language
+                  # Keep all Original and one default audio track in any
+                  # language, and one English and two forced subtitles in any
+                  # language
+
+  $striptracks_script --audio :org:eng:fre:fra --subs :org:eng:fre:fra --reorder --disable-recycle --set-default-audio :org --set-default-subs :eng-f
+                  # Keep the Original, English, and French audio and subtitles
+                  # Reorder the tracks to match the above order (audio first, then substitles)
+                  # Set the first Original language audio track as default
+                  # Set the first non-forced English subtitles tracks as default
+                  # Force delete the original video after remuxing
 "
   echo "$usage"
 }
@@ -434,6 +450,20 @@ function process_command_line {
     else
       export striptracks_subskeep="$2"
     fi
+  fi
+}
+function setup_ansi_colors {
+  # TODO: Add ANSI color codes to output text
+  # Test for terminal
+  if [ -t 1 ]; then
+    export striptracks_ansi=true
+    export ansi_red='\033[0;31m'
+    export ansi_green='\033[0;32m'
+    export ansi_yellow='\033[0;33m'
+    export ansi_cyan='\033[0;36m'
+    export ansi_nc='\033[0m' # No Color
+  else
+    export striptracks_ansi=false
   fi
 }
 function initialize_mode_variables {
@@ -988,17 +1018,15 @@ function call_api {
     case "$1" in
       "{"*|"["*)
         curl_data_args+=(--json "$1")
-        shift
       ;;
       *=*)
         curl_data_args+=(--data-urlencode "$1")
-        shift
       ;;
       *)
         curl_data_args+=(--data-raw "$1")
-        shift
       ;;
     esac
+    shift
   done
 
   local -a curl_args=(
@@ -1031,16 +1059,20 @@ function call_api {
   for ((i=1; i <= 5; i++)); do
     striptracks_result=$(curl "${curl_args[@]}")
     local curl_return=$?
-    if [ $curl_return -ne 0 ]; then
-      local error_message="$(echo $striptracks_result | jq -jcM 'if type=="array" then map(.errorMessage) | join(", ") else (if has("title") then "[HTTP \(.status?)] \(.title) \(.errors?)" elif has("message") then .message else "Unknown JSON format." end) end')"
-      local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"$data_info\nWeb server returned: $error_message" | awk '{print "Error|"$0}')
-      echo "$message" | log
-      echo "$message" >&2
+    # If database is locked, log and loop
+    if wait_if_locked; then
+      if [ $curl_return -ne 0 ]; then
+        local error_message="$(echo $striptracks_result | jq -jcM 'if type=="array" then map(.errorMessage) | join(", ") else (if has("title") then "[HTTP \(.status?)] \(.title) \(.errors?)" elif has("message") then .message else "Unknown JSON format." end) end')"
+        local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"$data_info\nWeb server returned: $error_message" | awk '{print "Error|"$0}')
+        echo "$message" | log
+        echo "$message" >&2
+      fi
       break
     fi
-    # Exit loop if database is not locked, else wait
-    if wait_if_locked; then
-      break
+    if [ $i -eq 5 ]; then
+      local message="Error|Database is locked after 5 attempts when calling ${striptracks_type^} API using $method and URL '$url'${data:+ with ${data[@]}}"
+      echo "$message" | log
+      echo "$message" >&2
     fi
   done
 
@@ -1383,162 +1415,252 @@ function resolve_code_conflict {
   local message="Info|Keeping audio tracks with codes '$(echo $striptracks_audiokeep | sed -e 's/^://; s/:/,/g')' and subtitle tracks with codes '$(echo $striptracks_subskeep | sed -e 's/^://; s/:/,/g')'"
   echo "$message" | log
 }
+function parse_language_codes_to_json {
+  # Unified parser for language code strings for track selection
+  # Input: colon-separated codes, each code: :lang[+|-][modifiers][=match]...
+  # Output: JSON array of objects, order matches input
+  # Modifiers can be f (forced), d (default), and/or a number (limit of tracks to keep; -1 means all) (see issues #82 and #86)
+  # Substring matching when = is used (see issue #86)
+
+  # Example input: :eng+f="Director's Commentary":spa-d
+  # Example output: [{"eng":-1,"mods":[{"forced":true}],"match":"Director's Commentary"},{"spa":-1,"mods":[],"match":null}]
+  # Example input: :eng+1:fre:ger+d:any+f
+  # Example output:[{"eng":1,"mods":[],"match":null},{"fre":-1,"mods":[],"match":null},{"ger":-1,"mods":[{"default":true}],"match":null},{"any":-1,"mods":[{"forced":true}],"match":null}]
+  # Example input: # :fre-f:fre+f:eng:und+1=Commentary
+  # Example output: [{"fre":-1,"mods":[{"forced":false}],"match":null},{"fre":-1,"mods":[{"forced":true}],"match":null},{"eng":-1,"mods":[],"match":null},{"und":1,"mods":[],"match":"Commentary"}]
+
+  local input="$1" # Language code string to parse
+  local type="${2:-audio}" # Type of code string (audio, subtitles)
+
+  echo "$input" | jq -cRrM --arg trackType "$type" '
+    def parse_language_codes_to_json:
+      # Remove leading colon
+      (if startswith(":") then .[1:] else . end) as $input |
+      
+      # Split by colons and filter empty tokens
+      (if ($input == "") then [] else ($input | split(":")) end) |
+      
+      # Process each token
+      map(select(length > 0) |
+        . as $token |
+        
+        # Extract match specification (everything after =)
+        (if test("=") then
+          {token: (split("=")[0]), match: (split("=")[1])}
+        else
+          {token: ., match: null}
+        end) as $pm |
+        
+        # Extract language code (first 3 chars) and modifiers (rest)
+        ($pm.token[0:3]) as $lang |
+        ($pm.token[3:]) as $rest |
+        
+        # Determine polarity (+ or -) and extract mods string
+        (if ($rest | startswith("+")) then
+          {polarity: "+", mods_raw: $rest[1:]}
+        elif ($rest | startswith("-")) then
+          {polarity: "-", mods_raw: $rest[1:]}
+        else
+          {polarity: "", mods_raw: $rest}
+        end) as $pm2 |
+        
+        # Extract numeric limit from mods (e.g., "f1d" -> 1)
+        (if ($pm2.mods_raw | test("[0-9]+")) then
+          ($pm2.mods_raw | [scan("[0-9]+")][0] | tonumber)
+        else
+          -1
+        end) as $limit |
+        
+        # Build mods array based on modifiers present
+        (
+          [] |
+          # Add forced modifier if 'f' is present
+          if ($pm2.mods_raw | contains("f")) then
+            if ($pm2.polarity == "-") then
+              . + [{"forced": false}]
+            else
+              . + [{"forced": true}]
+            end
+          else
+            .
+          end |
+          # Add default modifier if 'd' is present
+          if ($pm2.mods_raw | contains("d")) then
+            if ($pm2.polarity == "-") then
+              . + [{"default": false}]
+            else
+              . + [{"default": true}]
+            end
+          else
+            .
+          end
+        ) as $mods |
+        
+        # Build output object with language code as key
+        {($lang): $limit, "mods": $mods, "match": $pm.match}
+      );
+
+    # Entry point
+    parse_language_codes_to_json |
+    
+    # For audio, preserve all "mis" and "zxx" codes
+    if ($trackType == "audio") then
+      (if map(keys_unsorted[0]) | index("mis") then . else . + [{"mis":-1,"mods":[],"match":null}] end) |
+      (if map(keys_unsorted[0]) | index("zxx") then . else . + [{"zxx":-1,"mods":[],"match":null}] end)
+    else
+      .
+    end
+  '
+}
 function process_mkvmerge_json {
   # Process JSON data from MKVmerge; track selection logic
+  # Use unified shell parser and convert into the rules structure jq expects
+  local audio_rules_json
+  local subs_rules_json
+  audio_rules_json=$(parse_language_codes_to_json "$striptracks_audiokeep" "audio")
+  subs_rules_json=$(parse_language_codes_to_json "$striptracks_subskeep" "subtitles")
 
-  export striptracks_json_processed=$(echo "$striptracks_json" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
-  --arg SubsKeep "$striptracks_subskeep" '
-  # Parse input string into JSON language rules function
-  def parse_language_codes(codes):
-    # Supports f, d, and number modifiers (see issues #82 and #86)
-    # -1 default value in language key means to keep unlimited tracks
-    # NOTE: Logic can result in duplicate keys, but jq just uses the last defined key
-    codes | split(":")[1:] | map(split("+") | {lang: .[0], mods: .[1]}) |
-    {languages: map(
-        # Select tracks with no modifiers or only numeric modifiers
-        (select(.mods == null) | {(.lang): -1}),
-        (select(.mods | test("^[0-9]+$")?) | {(.lang): .mods | tonumber})
-      ) | add,
-      forced_languages: map(
-        # Select tracks with f modifier
-        select(.mods | contains("f")?) | {(.lang): ((.mods | scan("[0-9]+") | tonumber) // -1)}
-      ) | add,
-      default_languages: map(
-        # Select tracks with d modifier
-        select(.mods | contains("d")?) | {(.lang): ((.mods | scan("[0-9]+") | tonumber) // -1)}
-      ) | add
-    };
+  export striptracks_json_processed=$(echo "$striptracks_json" | jq -jcM --argjson AudioRulesJSON "$audio_rules_json" \
+    --argjson SubsRulesJSON "$subs_rules_json" '
+    # Convert JSON rules array (from parse_language_codes_to_json) into rules objects
+    # Build rules object with languages, forced_languages and default_languages legacy maps
+    # Yes, this is cheating, but it saves me from completely rewriting the logic today. The rules objects have three maps: languages, forced_languages, and default_languages.
+    def parse_to_rules(arr):
+      (arr | map({lang:(keys_unsorted[0]), limit: .[keys_unsorted[0]], mods})) as $lang_code |
+      { languages: ($lang_code | map(select(.mods == []) | {(.lang): .limit}) | add // {}),
+        forced_languages: ($lang_code | map(select(.mods[]? | has("forced")) | {(.lang): (.limit // -1)}) | add // {}),
+        default_languages: ($lang_code | map(select(.mods[]? | has("default")) | {(.lang): (.limit // -1)}) | add // {})
+      };
 
-  # Language rules for audio and subtitles, adding required audio tracks (see issue #54)
-  (parse_language_codes($AudioKeep) | .languages += {"mis":-1,"zxx":-1}) as $AudioRules |
-  parse_language_codes($SubsKeep) as $SubsRules |
+    parse_to_rules($AudioRulesJSON) as $AudioRules |
+    parse_to_rules($SubsRulesJSON) as $SubsRules |
 
-  # Log chapter information
-  if (.chapters[0].num_entries) then
-    .striptracks_log = "Info|Chapters: \(.chapters[].num_entries)"
-  else . end |
+    # Log chapter information
+    if (.chapters[0].num_entries) then
+      .striptracks_log = "Info|Chapters: \(.chapters[].num_entries)"
+    else . end |
 
-  # Process tracks
-  reduce .tracks[] as $track (
-    # Create object to hold tracks and counters for each reduce iteration
-    # This is what will be output at the end of the reduce loop
-    {"tracks": [], "counters": {"audio": {"normal": {}, "forced": {}, "default": {}}, "subtitles": {"normal": {}, "forced": {}, "default": {}}}};
+    # Process tracks
+    reduce .tracks[] as $track (
+      # Create object to hold tracks and counters for each reduce iteration
+      # This is what will be output at the end of the reduce loop
+      {"tracks": [], "counters": {"audio": {"normal": {}, "forced": {}, "default": {}}, "subtitles": {"normal": {}, "forced": {}, "default": {}}}};
 
-    # Set track language to "und" if null or empty
-    # NOTE: The // operator cannot be used here because it checks for null or empty values, not blank strings
-    (if ($track.properties.language == "" or $track.properties.language == null) then "und" else $track.properties.language end) as $track_lang |
+      # Set track language to "und" if null or empty
+      # NOTE: The // operator cannot be used here because it checks for null or empty values, not blank strings
+      (if ($track.properties.language == "" or $track.properties.language == null) then "und" else $track.properties.language end) as $track_lang |
 
-    # Initialize counters for each track type and language
-    (.counters[$track.type].normal[$track_lang] //= 0) |
-    if $track.properties.forced_track then (.counters[$track.type].forced[$track_lang] //= 0) else . end |
-    if $track.properties.default_track then (.counters[$track.type].default[$track_lang] //= 0) else . end |
-    .counters[$track.type] as $track_counters |
-    
-    # Add tracks one at a time to output object above
-    .tracks += [
-      $track |
-      .striptracks_debug_log = "Debug|Parsing track ID:\(.id) Type:\(.type) Name:\(.properties.track_name) Lang:\($track_lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
-      # Use track language evaluation above
-      .properties.language = $track_lang |
+      # Initialize counters for each track type and language
+      (.counters[$track.type].normal[$track_lang] //= 0) |
+      if $track.properties.forced_track then (.counters[$track.type].forced[$track_lang] //= 0) else . end |
+      if $track.properties.default_track then (.counters[$track.type].default[$track_lang] //= 0) else . end |
+      .counters[$track.type] as $track_counters |
+      
+      # Add tracks one at a time to output object above
+      .tracks += [
+        $track |
+        .striptracks_debug_log = "Debug|Parsing track ID:\(.id) Type:\(.type) Name:\(.properties.track_name) Lang:\($track_lang) Codec:\(.codec) Default:\(.properties.default_track) Forced:\(.properties.forced_track)" |
+        # Use track language evaluation above
+        .properties.language = $track_lang |
 
-      # Determine keep logic based on type and rules
-      if .type == "video" then
-        .striptracks_keep = true
-      elif .type == "audio" or .type == "subtitles" then
-        .striptracks_log = "\(.id): \($track_lang) (\(.codec))\(if .properties.track_name then " \"" + .properties.track_name + "\"" else "" end)" |
-        # Same logic for both audio and subtitles
-        (if .type == "audio" then $AudioRules else $SubsRules end) as $currentRules |
-        if ($currentRules.languages["any"] == -1 or ($track_counters.normal | add) < $currentRules.languages["any"] or
-            $currentRules.languages[$track_lang] == -1 or $track_counters.normal[$track_lang] < $currentRules.languages[$track_lang]) then
+        # Determine keep logic based on type and rules
+        if .type == "video" then
           .striptracks_keep = true
-        elif (.properties.forced_track and
-              ($currentRules.forced_languages["any"] == -1 or ($track_counters.forced | add) < $currentRules.forced_languages["any"] or
-                $currentRules.forced_languages[$track_lang] == -1 or $track_counters.forced[$track_lang] < $currentRules.forced_languages[$track_lang])) then
-          .striptracks_keep = true |
-          .striptracks_rule = "forced"
-        elif (.properties.default_track and
-              ($currentRules.default_languages["any"] == -1 or ($track_counters.default | add) < $currentRules.default_languages["any"] or
-                $currentRules.default_languages[$track_lang] == -1 or $track_counters.default[$track_lang] < $currentRules.default_languages[$track_lang])) then
-          .striptracks_keep = true |
-          .striptracks_rule = "default"
-        else . end |
-        if .striptracks_keep then
-          .striptracks_log = "Info|Keeping \(if .striptracks_rule then .striptracks_rule + " " else "" end)\(.type) track " + .striptracks_log
-        else
-          .striptracks_keep = false
-        end
+        elif .type == "audio" or .type == "subtitles" then
+          .striptracks_log = "\(.id): \($track_lang) (\(.codec))\(if .properties.track_name then " \"" + .properties.track_name + "\"" else "" end)" |
+          # Same logic for both audio and subtitles
+          (if .type == "audio" then $AudioRules else $SubsRules end) as $currentRules |
+          if ($currentRules.languages["any"] == -1 or ($track_counters.normal | add) < $currentRules.languages["any"] or
+              $currentRules.languages[$track_lang] == -1 or $track_counters.normal[$track_lang] < $currentRules.languages[$track_lang]) then
+            .striptracks_keep = true
+          elif (.properties.forced_track and
+                ($currentRules.forced_languages["any"] == -1 or ($track_counters.forced | add) < $currentRules.forced_languages["any"] or
+                  $currentRules.forced_languages[$track_lang] == -1 or $track_counters.forced[$track_lang] < $currentRules.forced_languages[$track_lang])) then
+            .striptracks_keep = true |
+            .striptracks_rule = "forced"
+          elif (.properties.default_track and
+                ($currentRules.default_languages["any"] == -1 or ($track_counters.default | add) < $currentRules.default_languages["any"] or
+                  $currentRules.default_languages[$track_lang] == -1 or $track_counters.default[$track_lang] < $currentRules.default_languages[$track_lang])) then
+            .striptracks_keep = true |
+            .striptracks_rule = "default"
+          else . end |
+          if .striptracks_keep then
+            .striptracks_log = "Info|Keeping \(if .striptracks_rule then .striptracks_rule + " " else "" end)\(.type) track " + .striptracks_log
+          else
+            .striptracks_keep = false
+          end
+        else . end
+      ] | 
+      
+      # Increment counters for each track type and language
+      .counters[$track.type].normal[$track_lang] +=
+        if .tracks[-1].striptracks_keep then
+          1
+        else 0 end | 
+      .counters[$track.type].forced[$track_lang] +=
+        if ($track.properties.forced_track and .tracks[-1].striptracks_keep) then
+          1
+        else 0 end |
+      .counters[$track.type].default[$track_lang] +=
+        if ($track.properties.default_track and .tracks[-1].striptracks_keep) then
+          1
+        else 0 end
+    ) |
+
+    # Ensure at least one audio track is kept
+    if ((.tracks | map(select(.type == "audio")) | length == 1) and (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0)) then
+      # If there is only one audio track and none are kept, keep the only audio track
+      .tracks |= map(if .type == "audio" then
+          .striptracks_log = "Warn|No audio tracks matched! Keeping only audio track " + .striptracks_log |
+          .striptracks_keep = true
+        else . end)
+    elif (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0) then
+      # If no audio tracks are kept, first try to keep the default audio track
+      .tracks |= map(if .type == "audio" and .properties.default_track then
+          .striptracks_log = "Warn|No audio tracks matched! Keeping default audio track " + .striptracks_log |
+          .striptracks_keep = true
+        else . end) |
+      # If still no audio tracks are kept, keep the first audio track
+      if (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0) then
+        (first(.tracks[] | select(.type == "audio"))) |= . +
+        {striptracks_log: ("Warn|No audio tracks matched! Keeping first audio track " + .striptracks_log),
+        striptracks_keep: true}
       else . end
-    ] | 
-    
-    # Increment counters for each track type and language
-    .counters[$track.type].normal[$track_lang] +=
-      if .tracks[-1].striptracks_keep then
-        1
-      else 0 end | 
-    .counters[$track.type].forced[$track_lang] +=
-      if ($track.properties.forced_track and .tracks[-1].striptracks_keep) then
-        1
-      else 0 end |
-    .counters[$track.type].default[$track_lang] +=
-      if ($track.properties.default_track and .tracks[-1].striptracks_keep) then
-        1
-      else 0 end
-  ) |
+    else . end |
 
-  # Ensure at least one audio track is kept
-  if ((.tracks | map(select(.type == "audio")) | length == 1) and (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0)) then
-    # If there is only one audio track and none are kept, keep the only audio track
-    .tracks |= map(if .type == "audio" then
-        .striptracks_log = "Warn|No audio tracks matched! Keeping only audio track " + .striptracks_log |
-        .striptracks_keep = true
-      else . end)
-  elif (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0) then
-    # If no audio tracks are kept, first try to keep the default audio track
-    .tracks |= map(if .type == "audio" and .properties.default_track then
-        .striptracks_log = "Warn|No audio tracks matched! Keeping default audio track " + .striptracks_log |
-        .striptracks_keep = true
-      else . end) |
-    # If still no audio tracks are kept, keep the first audio track
-    if (.tracks | map(select(.type == "audio" and .striptracks_keep)) | length == 0) then
-      (first(.tracks[] | select(.type == "audio"))) |= . +
-      {striptracks_log: ("Warn|No audio tracks matched! Keeping first audio track " + .striptracks_log),
-      striptracks_keep: true}
-    else . end
-  else . end |
-
-  # Output simplified dataset
-  { striptracks_log, tracks: .tracks | map({ id, type, language: .properties.language, name: .properties.track_name, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug_log, striptracks_log, striptracks_keep }) }
+    # Output simplified dataset
+    { striptracks_log, tracks: .tracks | map({ id, type, language: .properties.language, name: .properties.track_name, forced: .properties.forced_track, default: .properties.default_track, striptracks_debug_log, striptracks_log, striptracks_keep }) }
   ')
   [ $striptracks_debug -ge 1 ] && echo "Debug|Track processing returned ${#striptracks_json_processed} bytes." | log
   [ $striptracks_debug -ge 2 ] && echo "Track processing returned: $(echo "$striptracks_json_processed" | jq)" | awk '{print "Debug|"$0}' | log
 
   # Write messages to log
   echo "$striptracks_json_processed" | jq -crM --argjson Debug $striptracks_debug '
-  # Join log messages into one line function
-  def log_removed_tracks($type):
-    if (.tracks | map(select(.type == $type and .striptracks_keep == false)) | length > 0) then
-      "Info|Removing \($type) tracks: " +
-      (.tracks | map(select(.type == $type and .striptracks_keep == false) | .striptracks_log) | join(", "))
-    else empty end;
+    # Join log messages into one line function
+    def log_removed_tracks($type):
+      if (.tracks | map(select(.type == $type and .striptracks_keep == false)) | length > 0) then
+        "Info|Removing \($type) tracks: " +
+        (.tracks | map(select(.type == $type and .striptracks_keep == false) | .striptracks_log) | join(", "))
+      else empty end;
 
-  # Log the chapters, if any
-  .striptracks_log // empty,
+    # Log the chapters, if any
+    .striptracks_log // empty,
 
-  # Log debug messages
-  ( .tracks[] | (if $Debug >= 1 then .striptracks_debug_log else empty end),
+    # Log debug messages
+    ( .tracks[] | (if $Debug >= 1 then .striptracks_debug_log else empty end),
 
-  # Log messages for kept tracks
-  (select(.striptracks_keep) | .striptracks_log // empty)
-  ),
+    # Log messages for kept tracks
+    (select(.striptracks_keep) | .striptracks_log // empty)
+    ),
 
-  # Log removed tracks
-  log_removed_tracks("audio"),
-  log_removed_tracks("subtitles"),
+    # Log removed tracks
+    log_removed_tracks("audio"),
+    log_removed_tracks("subtitles"),
 
-  # Summary of kept tracks
-  "Info|Kept tracks: \(.tracks | map(select(.striptracks_keep)) | length) " +
-  "(audio: \(.tracks | map(select(.type == "audio" and .striptracks_keep)) | length), " +
-  "subtitles: \(.tracks | map(select(.type == "subtitles" and .striptracks_keep)) | length))"
+    # Summary of kept tracks
+    "Info|Kept tracks: \(.tracks | map(select(.striptracks_keep)) | length) " +
+    "(audio: \(.tracks | map(select(.type == "audio" and .striptracks_keep)) | length), " +
+    "subtitles: \(.tracks | map(select(.type == "subtitles" and .striptracks_keep)) | length))"
   ' | log
 
   # Check for no audio tracks
@@ -1551,6 +1673,7 @@ function process_mkvmerge_json {
 }
 function determine_track_order {
   # Determine current and new track order for mkvmerge
+  # Example text output: 0:0,0:2,0:5,0:4,0:27
 
   # Map current track order
   export striptracks_order=$(echo "$striptracks_json_processed" | jq -jcM '.tracks | map(select(.striptracks_keep) | .id | "0:" + tostring) | join(",")')
@@ -1558,41 +1681,49 @@ function determine_track_order {
 
   # Prepare to reorder tracks if option is enabled (see issue #92)
   if [ "$striptracks_reorder" = "true" ]; then
-    export striptracks_neworder=$(echo "$striptracks_json_processed" | jq -jcM --arg AudioKeep "$striptracks_audiokeep" \
-  --arg SubsKeep "$striptracks_subskeep" '
-  # Reorder tracks function
-  def order_tracks(tracks; rules; tracktype):
-    rules | split(":")[1:] | map(split("+") | {lang: .[0], mods: .[1]}) | 
-    reduce .[] as $rule (
-      [];
-      . as $orderedTracks |
-      . += [tracks |
-      map(. as $track | 
-        select(.type == tracktype and .striptracks_keep and
-          ($rule.lang | in({"any":0,($track.language):0})) and
-          ($rule.mods == null or
-            ($rule.mods | test("[fd]") | not) or
-            ($rule.mods | contains("f") and $track.forced) or
-            ($rule.mods | contains("d") and $track.default)
-          )
-        ) |
-        .id as $id |
-        # Remove track id from orderedTracks if it already exists
-        if ([$id] | flatten | inside($orderedTracks | flatten)) then empty else $id end
-      )]
-    ) | flatten;
+    # Use parsed language rules from shell parser
+    local audio_rules_json
+    local subs_rules_json
+    audio_rules_json=$(parse_language_codes_to_json "$striptracks_audiokeep" "audio")
+    subs_rules_json=$(parse_language_codes_to_json "$striptracks_subskeep" "subtitles")
 
-  # Reorder audio and subtitles according to language code order
-  .tracks as $tracks |
-  order_tracks($tracks; $AudioKeep; "audio") as $audioOrder |
-  order_tracks($tracks; $SubsKeep; "subtitles") as $subsOrder |
+    export striptracks_neworder=$(echo "$striptracks_json_processed" | jq -jcM --argjson AudioRulesJSON "$audio_rules_json" \
+      --argjson SubsRulesJSON "$subs_rules_json" '
+      # Reorder tracks function using parsed rules arrays
+      # Same cheating here as in process_mkvmerge_json function
+      def parsed_rules_list(arr): arr | map({lang:(keys_unsorted[0]), mods});
 
-  # Output ordered track string compatible with the mkvmerge --track-order option
-  # Video tracks are always first, followed by audio tracks, then subtitles
-  # NOTE: If there is only one audio track and it does not match a code in AudioKeep, it will not appear in the new track order string
-  # NOTE: Other track types are still preserved as mkvmerge will automatically place any missing tracks after those listed per https://mkvtoolnix.download/doc/mkvmerge.html#mkvmerge.description.track_order
-  $tracks | map(select(.type == "video") | .id) + $audioOrder + $subsOrder | map("0:" + tostring) | join(",")
-  ')
+      def order_tracks(tracks; rulesArr; tracktype):
+        parsed_rules_list(rulesArr) as $rules |
+        reduce $rules[] as $rule (
+          [];
+          . as $orderedTracks |
+          . += [tracks |
+          map(. as $track |
+            select(.type == tracktype and .striptracks_keep and
+              ($rule.lang | in({"any":0,($track.language):0})) and
+              (
+                ($rule.mods | length == 0) or
+                ( ($rule.mods | map(.forced? // false) | index(true) != null) and $track.forced ) or
+                ( ($rule.mods | map(.default? // false) | index(true) != null) and $track.default )
+              )
+            ) |
+            .id as $id |
+            if ([$id] | flatten | inside($orderedTracks | flatten)) then empty else $id end
+          )]
+        ) | flatten;
+
+      # Reorder audio and subtitles according to language code order
+      .tracks as $tracks |
+      order_tracks($tracks; $AudioRulesJSON; "audio") as $audioOrder |
+      order_tracks($tracks; $SubsRulesJSON; "subtitles") as $subsOrder |
+
+      # Output ordered track string compatible with the mkvmerge --track-order option
+      # Video tracks are always first, followed by audio tracks, then subtitles
+      # NOTE: If there is only one audio track and it does not match a code in AudioKeep, it will not appear in the new track order string
+      # NOTE: Other track types are still preserved as mkvmerge will automatically place any missing tracks after those listed per https://mkvtoolnix.download/doc/mkvmerge.html#mkvmerge.description.track_order
+      $tracks | map(select(.type == "video") | .id) + $audioOrder + $subsOrder | map("0:" + tostring) | join(",")
+    ')
     [ $striptracks_debug -ge 1 ] && echo "Debug|New mkvmerge track order: $striptracks_neworder" | log
     local message="Info|Reordering tracks using language code order."
     echo "$message" | log
@@ -1611,35 +1742,25 @@ function set_default_tracks {
       continue
     fi
     
+    # Use JSON from language code parser
+    local rules_json
+    # The track type argument is not needed here since the default track selection logic is the same for audio and subtitles, but we have to pass something
+    # or the parser will treat it as audio and add "mis" and "zxx" codes that we don't want for this logic
+    rules_json=$(parse_language_codes_to_json "$currentcfg" "dummmy")
+
     # Use jq to find the track ID using case-insensitive substring match on track name
-    local track_id=$(echo "$striptracks_json_processed" | jq -crM --arg type "$tracktype" --arg currentcfg "$currentcfg" '
-      def parse_cfg(cfg):
-        # Remove leading ":" then split on "=" (if present)
-        # Supports f as a modifier (see issue #113)
-        (cfg | ltrimstr(":") | split("=")) as $eq |
-        ($eq[0]) as $left |
-        (if ($eq | length > 1) then $eq[1] else "" end) as $right |
-
-        # Detect trailing "-f" on left or right and strip it; only "f" is a valid modifier
-        (if ($left | test("-f$")) then {lang: ($left | sub("-f$"; "")), skip: true} else {lang: $left, skip: false} end) as $leftinfo |
-
-        (if $right == "" then
-           $leftinfo + {name: ""}
-         else
-           (if ($right | test("-f$")) then
-             $leftinfo + {name: ($right | sub("-f$"; "")), skip: true}
-           else
-             $leftinfo + {name: $right}
-           end)
-         end);
-
-      parse_cfg($currentcfg) as $rule |
+    local track_id=$(echo "$striptracks_json_processed" | jq -crM --arg type "$tracktype" --argjson RulesJSON "$rules_json" '
+      # Convert input JSON array into rule object, taking only the first rule
+      ($RulesJSON[0] // {}) as $rule |
       .tracks |
       map(. as $track |
-        (($rule.lang == "any" or $rule.lang == $track.language) as $lang_match |
-          ($rule.name == "" or (($track.name // "") | ascii_downcase | contains(($rule.name // "") | ascii_downcase))) as $name_match |
-          ($rule.skip and $track.forced) as $skipped |
-          select($track.type == $type and $lang_match and $name_match and ($skipped | not) and .striptracks_keep)
+        ((($rule | keys_unsorted[0]) == "any" or ($rule | keys_unsorted[0]) == $track.language) as $lang_match |
+          ($rule.match == "" or (($track.name // "") | ascii_downcase | contains(($rule.match // "") | ascii_downcase))) as $name_match |
+          (($rule.mods as $mods | ($mods | map(select(.forced != null) | .forced) | first) as $forced_mod |
+            ($mods | map(select(.default != null) | .default) | first) as $default_mod |
+            ((if $forced_mod == true then $track.forced == true elif $forced_mod == false then $track.forced != true else true end) and (if $default_mod == true then $track.default == true elif $default_mod == false then $track.default != true else true end)))
+          ) as $mod_match |
+          select($track.type == $type and $lang_match and $name_match and $mod_match and .striptracks_keep)
         )
       ) |
       .[0].id // ""
@@ -1647,7 +1768,7 @@ function set_default_tracks {
 
     if [ -n "$track_id" ]; then
       # The track IDs must be converted to 1-based for mkvpropedit (add 1)
-      # Set variable to set default only on selected track (unset others of same type)
+      # Use variable to set default only on selected track (unset others of same type)
       export striptracks_default_flags
       striptracks_default_flags+=" --edit track:$((track_id + 1)) --set flag-default=1"
       # Find other kept tracks of same type to unset default flag

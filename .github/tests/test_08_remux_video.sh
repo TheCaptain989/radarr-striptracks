@@ -10,6 +10,7 @@ _log() {( while read -r; do echo "$(date +"%Y-%m-%d %H:%M:%S.%1N")|[$striptracks
 setup_suite() {
   which mkvmerge >/dev/null || { printf "\t\e[0;91mmkvmerge not found\e[0m\n"; exit 1; }
   source ../../root/usr/local/bin/striptracks.sh
+  fake log :
   initialize_variables
   check_log >/dev/null
   export test_video1="Racism_is_evil.webm"
@@ -18,14 +19,17 @@ setup_suite() {
   # shellcheck disable=SC2016
   export test_video4='$5 a Day (2008).mkv'
   export test_video5='bear-1280x720-a_frag-cenc.mp4'
-  fake log :
+  [ -f "/tmp/$test_video1" ] || { wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "/tmp/$test_video1" && mkvmerge -J "/tmp/$test_video1" >"/tmp/${test_video1%.webm}.json"; }
+  [ -f "/tmp/$test_video2" ] || { wget -q "https://mkvtoolnix.download/samples/vsshort-vorbis-subs.mkv" -O "/tmp/$test_video2" && mkvmerge -J "/tmp/$test_video2" >"/tmp/${test_video2%.mkv}.json"; }
+  [ -f "/tmp/$test_video3" ] || { wget -q "https://github.com/ietf-wg-cellar/matroska-test-files/raw/refs/heads/master/test_files/test5.mkv" -O "/tmp/$test_video3" && mkvmerge -J "/tmp/$test_video3" >"/tmp/${test_video3%.mkv}.json"; }
+  [ -f "/tmp/$test_video4" ] || cp "/tmp/$test_video3" "/tmp/$test_video4"
 }
 
 setup() {
-  [ -f "$test_video1" ] || { wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "$test_video1" && mkvmerge -J "$test_video1" >"${test_video1%.webm}.json"; }
-  [ -f "$test_video2" ] || { wget -q "https://mkvtoolnix.download/samples/vsshort-vorbis-subs.mkv" -O "$test_video2" && mkvmerge -J "$test_video2" >"${test_video2%.mkv}.json"; }
-  [ -f "$test_video3" ] || { wget -q "https://github.com/ietf-wg-cellar/matroska-test-files/raw/refs/heads/master/test_files/test5.mkv" -O "$test_video3" && mkvmerge -J "$test_video3" >"${test_video3%.mkv}.json"; }
-  [ -f "$test_video4" ] || cp "$test_video3" "$test_video4"
+  [ -f "$test_video1" ] || cp "/tmp/$test_video1" .
+  [ -f "$test_video2" ] || cp "/tmp/$test_video2" .
+  [ -f "$test_video3" ] || cp "/tmp/$test_video3" .
+  [ -f "$test_video4" ] || cp "/tmp/$test_video4" .
 }
 
 test_get_media_info() {
@@ -171,6 +175,6 @@ test_video_with_special_characters() {
 }
 
 teardown_suite() {
-  rm -f "${test_video1%.webm}.mkv" "$test_video1" "$test_video2" "$test_video3" "$test_video4" "$test_video5" "${test_video2:0:5}.tmp".* "./striptracks.txt" "${test_video1%.webm}.json" "${test_video2%.mkv}.json" "${test_video3%.mkv}.json"
+  rm -f "${test_video1%.webm}.mkv" "$test_video1" "/tmp/$test_video1" "$test_video2" "/tmp/$test_video2" "$test_video3" "/tmp/$test_video3" "$test_video4" "/tmp/$test_video4" "$test_video5" "/tmp/$test_video5" "${test_video2:0:5}.tmp".* "./striptracks.txt" "/tmp/${test_video1%.webm}.json" "/tmp/${test_video2%.mkv}.json" "/tmp/${test_video3%.mkv}.json"
   unset striptracks_video test_video1 test_video2 test_video3
 }

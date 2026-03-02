@@ -122,7 +122,6 @@ striptracks_json='{
   ],
   "warnings": []
 }'
-
 striptracks_audiokeep=":eng+1:fre:ger+d:any+f"
 striptracks_subskeep=":any+f"
 striptracks_default_audio=":ger"
