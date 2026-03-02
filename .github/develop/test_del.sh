@@ -7,7 +7,6 @@ source /workspaces/radarr-striptracks/root/usr/local/bin/striptracks.sh
 striptracks_pid=$$
 log() {( while read -r; do echo "$(date +"%Y-%m-%d %H:%M:%S.%1N")|[$striptracks_pid]$REPLY"; done; )}
 
-
 striptracks_type=Radarr
 striptracks_api_url="http://localhost:7878/api/v3"
 striptracks_apikey="NOT_A_REAL_API_KEY"
