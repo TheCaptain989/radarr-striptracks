@@ -1423,11 +1423,11 @@ function parse_language_codes_to_json {
   # Substring matching when = is used (see issue #86)
 
   # Example input: :eng+f="Director's Commentary":spa-d
-  # Example output: [{"eng":-1,"mods":[{"forced":true}],"match":"Director's Commentary"},{"spa":-1,"mods":[],"match":null}]
+  # Example output: [{"lang":"eng","limit":-1,"mods":[{"forced":true}],"match":"Director's Commentary"},{"lang":"spa","limit":-1,"mods":[],"match":null}]
   # Example input: :eng+1:fre:ger+d:any+f
-  # Example output:[{"eng":1,"mods":[],"match":null},{"fre":-1,"mods":[],"match":null},{"ger":-1,"mods":[{"default":true}],"match":null},{"any":-1,"mods":[{"forced":true}],"match":null}]
+  # Example output:[{"lang":"eng","limit":1,"mods":[],"match":null},{"lang":"fre","limit":-1,"mods":[],"match":null},{"lang":"ger","limit":-1,"mods":[{"default":true}],"match":null},{"lang":"any","limit":-1,"mods":[{"forced":true}],"match":null}]
   # Example input: # :fre-f:fre+f:eng:und+1=Commentary
-  # Example output: [{"fre":-1,"mods":[{"forced":false}],"match":null},{"fre":-1,"mods":[{"forced":true}],"match":null},{"eng":-1,"mods":[],"match":null},{"und":1,"mods":[],"match":"Commentary"}]
+  # Example output: [{"lang":"fre","limit":-1,"mods":[{"forced":false}],"match":null},{"lang":"fre","limit":-1,"mods":[{"forced":true}],"match":null},{"lang":"eng","limit":-1,"mods":[],"match":null},{"lang":"und","limit":1,"mods":[],"match":"Commentary"}]
 
   local input="$1" # Language code string to parse
   local type="${2:-audio}" # Type of code string (audio, subtitles)
@@ -1496,8 +1496,8 @@ function parse_language_codes_to_json {
           end
         ) as $mods |
         
-        # Build output object with language code as key
-        {($lang): $limit, "mods": $mods, "match": $pm.match}
+        # Build output object
+        {lang: $lang, limit: $limit, mods: $mods, match: $pm.match}
       );
 
     # Entry point
@@ -1505,8 +1505,8 @@ function parse_language_codes_to_json {
     
     # For audio, preserve all "mis" and "zxx" codes
     if ($trackType == "audio") then
-      (if map(keys_unsorted[0]) | index("mis") then . else . + [{"mis":-1,"mods":[],"match":null}] end) |
-      (if map(keys_unsorted[0]) | index("zxx") then . else . + [{"zxx":-1,"mods":[],"match":null}] end)
+      (if map(.lang) | index("mis") then . else . + [{"lang":"mis","limit":-1,"mods":[],"match":null}] end) |
+      (if map(.lang) | index("zxx") then . else . + [{"lang":"zxx","limit":-1,"mods":[],"match":null}] end)
     else
       .
     end
@@ -1526,7 +1526,7 @@ function process_mkvmerge_json {
     # Build rules object with languages, forced_languages and default_languages legacy maps
     # Yes, this is cheating, but it saves me from completely rewriting the logic today. The rules objects have three maps: languages, forced_languages, and default_languages.
     def parse_to_rules(arr):
-      (arr | map({lang:(keys_unsorted[0]), limit: .[keys_unsorted[0]], mods})) as $lang_code |
+      (arr | map({lang, limit, mods})) as $lang_code |
       { languages: ($lang_code | map(select(.mods == []) | {(.lang): .limit}) | add // {}),
         forced_languages: ($lang_code | map(select(.mods[]? | has("forced")) | {(.lang): (.limit // -1)}) | add // {}),
         default_languages: ($lang_code | map(select(.mods[]? | has("default")) | {(.lang): (.limit // -1)}) | add // {})
@@ -1691,7 +1691,7 @@ function determine_track_order {
       --argjson SubsRulesJSON "$subs_rules_json" '
       # Reorder tracks function using parsed rules arrays
       # Same cheating here as in process_mkvmerge_json function
-      def parsed_rules_list(arr): arr | map({lang:(keys_unsorted[0]), mods});
+      def parsed_rules_list(arr): arr | map({lang, mods});
 
       def order_tracks(tracks; rulesArr; tracktype):
         parsed_rules_list(rulesArr) as $rules |
@@ -1754,7 +1754,7 @@ function set_default_tracks {
       ($RulesJSON[0] // {}) as $rule |
       .tracks |
       map(. as $track |
-        ((($rule | keys_unsorted[0]) == "any" or ($rule | keys_unsorted[0]) == $track.language) as $lang_match |
+        (($rule.lang == "any" or $rule.lang == $track.language) as $lang_match |
           ($rule.match == "" or (($track.name // "") | ascii_downcase | contains(($rule.match // "") | ascii_downcase))) as $name_match |
           (($rule.mods as $mods | ($mods | map(select(.forced != null) | .forced) | first) as $forced_mod |
             ($mods | map(select(.default != null) | .default) | first) as $default_mod |
