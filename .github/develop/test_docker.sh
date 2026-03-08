@@ -7,19 +7,19 @@ status="$(docker ps -a --filter "name=^${container_name}$" --format '{{.Status}}
 
 # Create radarr container
 if [ -z "$status" ]; then
- echo "Creating $container_name container"
- docker run -d -e TZ=America/Chicago --user root --name $container_name -p 7878:7878 -v /workspaces/$repo:/workspaces/$repo linuxserver/$container_name:latest
- if [ $? -ne 0 ]; then
-   echo "Failed to start $container_name container"
-   exit 1
- fi
+  echo "Creating $container_name container"
+  docker run -d -e TZ=America/Chicago --user root --name $container_name -p 7878:7878 -v /workspaces/$repo:/workspaces/$repo linuxserver/$container_name:latest
+  if [ $? -ne 0 ]; then
+    echo "Failed to start $container_name container"
+    exit 1
+  fi
 elif [[ "$status" =~ Exited ]]; then
- echo "Starting existing $container_name container"
- docker start $container_name
- if [ $? -ne 0 ]; then
-   echo "Failed to start $container_name container"
-   exit 1
- fi
+  echo "Starting existing $container_name container"
+  docker start $container_name
+  if [ $? -ne 0 ]; then
+    echo "Failed to start $container_name container"
+    exit 1
+  fi
 fi
 
 # Install mkvmerge and bash-unit
@@ -35,6 +35,13 @@ if [ $bashunit_installed -ne 0 -o $mkvtoolnix_installed -ne 0 ]; then
     exit 1
   fi
 fi
+
+# Checking that Radarr is up and running before proceeding with tests
+echo "Waiting for $container_name to start..."
+until curl -s http://localhost:7878/ping > /dev/null; do
+  sleep 2
+done
+echo "$container_name is up and running!"
 
 # Run tests
 docker exec -it $container_name /bin/bash -c "FORCE_COLOR=true /tmp/bash_unit ${2} /workspaces/$repo/.github/tests/test_${1}*"

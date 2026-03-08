@@ -1546,7 +1546,7 @@ function process_mkvmerge_json {
     reduce .tracks[] as $track (
       # Create object to hold tracks and counters for each reduce iteration
       # This is what will be output at the end of the reduce loop
-      {"tracks": [], "counters": {"audio": {"normal": {}, "forced": {}, "default": {}}, "subtitles": {"normal": {}, "forced": {}, "default": {}}}};
+      {"tracks": [], "counters": {"audio": {"normal": {}, "forced": {}, "default": {}, "not_forced": {}, "not_default": {}}, "subtitles": {"normal": {}, "forced": {}, "default": {}, "not_forced": {}, "not_default": {}}}};
 
       # Set track language to "und" if null or empty
       # NOTE: The // operator cannot be used here because it checks for null or empty values, not blank strings
@@ -1556,8 +1556,8 @@ function process_mkvmerge_json {
       (.counters[$track.type].normal[$track_lang] //= 0) |
       if $track.properties.forced_track then (.counters[$track.type].forced[$track_lang] //= 0) else . end |
       if $track.properties.default_track then (.counters[$track.type].default[$track_lang] //= 0) else . end |
-      if $track.properties.forced_track == false then (.counters[$track.type].not_forced[$track_lang] //= 0) else . end |
-      if $track.properties.default_track == false then (.counters[$track.type].not_default[$track_lang] //= 0) else . end |
+      if $track.properties.forced_track != true then (.counters[$track.type].not_forced[$track_lang] //= 0) else . end |
+      if $track.properties.default_track != true then (.counters[$track.type].not_default[$track_lang] //= 0) else . end |
       .counters[$track.type] as $track_counters |
       
       # Add tracks one at a time to output object above
@@ -1582,7 +1582,7 @@ function process_mkvmerge_json {
                   $currentRules.forced_languages[$track_lang] == -1 or $track_counters.forced[$track_lang] < $currentRules.forced_languages[$track_lang])) then
             .striptracks_keep = true |
             .striptracks_rule = "forced"
-          elif (.properties.forced_track == false and
+          elif (.properties.forced_track != true and
                 ($currentRules.not_forced_languages["any"] == -1 or ($track_counters.not_forced | add) < $currentRules.not_forced_languages["any"] or
                   $currentRules.not_forced_languages[$track_lang] == -1 or $track_counters.not_forced[$track_lang] < $currentRules.not_forced_languages[$track_lang])) then
             .striptracks_keep = true |
@@ -1592,7 +1592,7 @@ function process_mkvmerge_json {
                   $currentRules.default_languages[$track_lang] == -1 or $track_counters.default[$track_lang] < $currentRules.default_languages[$track_lang])) then
             .striptracks_keep = true |
             .striptracks_rule = "default"
-          elif (.properties.default_track == false and
+          elif (.properties.default_track != true and
                 ($currentRules.not_default_languages["any"] == -1 or ($track_counters.not_default | add) < $currentRules.not_default_languages["any"] or
                   $currentRules.not_default_languages[$track_lang] == -1 or $track_counters.not_default[$track_lang] < $currentRules.not_default_languages[$track_lang])) then
             .striptracks_keep = true |
@@ -1620,11 +1620,11 @@ function process_mkvmerge_json {
           1
         else 0 end |
       .counters[$track.type].not_forced[$track_lang] +=
-        if ($track.properties.forced_track == false and .tracks[-1].striptracks_keep) then
+        if ($track.properties.forced_track != true and .tracks[-1].striptracks_keep) then
           1
         else 0 end |
       .counters[$track.type].not_default[$track_lang] +=
-        if ($track.properties.default_track == false and .tracks[-1].striptracks_keep) then
+        if ($track.properties.default_track != true and .tracks[-1].striptracks_keep) then
           1
         else 0 end
     ) |

@@ -257,7 +257,6 @@ else
   echo -e "${ansi_red}ERROR: Processed JSON differs from original processing!${ansi_nc}"
   echo -e "\tOriginal: $(echo "$striptracks_json_processed_org" | jq -cM '.tracks | map(select(.striptracks_keep)|"{\(.id):\(.language)\(if .forced then ",f" else "" end)\(if .default then ",d" else "" end)}") | join(",")')"
   echo -e "\t     New: $(echo "$striptracks_json_processed" | jq -cM '.tracks | map(select(.striptracks_keep)|"{\(.id):\(.language)\(if .forced then ",f" else "" end)\(if .default then ",d" else "" end)}") | join(",")')"
-  echo "$striptracks_json_processed"
 fi
 
 # Test determine_track_order function
@@ -399,3 +398,126 @@ else
   echo -e "\tOriginal: $striptracks_default_flags_org"
   echo -e "\t     New: $striptracks_default_flags"
 fi
+
+# Test issue #117 specific case
+echo -e "${ansi_cyan}Testing issue #117 specific case...${ansi_nc}"
+striptracks_json='{
+  "attachments": [],
+  "chapters": [],
+  "container": {
+    "properties": {
+      "container_type": 25,
+      "is_providing_timestamps": true
+    },
+    "recognized": true,
+    "supported": true,
+    "type": "MKV"
+  },
+  "errors": [],
+  "file_name": "mytestfile.mkv",
+  "global_tags": [],
+  "identification_format_version": 1,
+  "track_tags": [],
+  "tracks": [
+    {
+      "codec": "MPEG-4p10/AVC/H.264",
+      "id": 0,
+      "properties": {
+        "language": "",
+        "number": 1,
+        "packetizer": "mpeg4_p10_video",
+        "pixel_dimensions": "1920x1080"
+      },
+      "type": "video"
+    },
+    {
+      "codec": "E-AC-3",
+      "id": 1,
+      "properties": {
+        "audio_bits_per_sample": 16,
+        "audio_channels": 2,
+        "audio_sampling_frequency": 44100,
+        "number": 2,
+        "track_name": "VFF",
+        "language": "fre"
+      },
+      "type": "audio"
+    },
+    {
+      "codec": "E-AC-3",
+      "id": 2,
+      "properties": {
+        "audio_bits_per_sample": 16,
+        "audio_channels": 2,
+        "audio_sampling_frequency": 44100,
+        "number": 3,
+        "track_name": "VFF AD",
+        "language": "fre"
+      },
+      "type": "audio"
+    },
+    {
+      "codec": "E-AC-3",
+      "id": 3,
+      "properties": {
+        "audio_bits_per_sample": 16,
+        "audio_channels": 2,
+        "audio_sampling_frequency": 44100,
+        "number": 3,
+        "language": "eng"
+      },
+      "type": "audio"
+    },
+    {
+      "codec": "SubRip/SRT",
+      "id": 4,
+      "properties": {
+        "track_name": "VFF Forced",
+        "language": "fre",
+        "number": 4,
+        "forced_track": true
+      },
+      "type": "subtitles"
+    },
+    {
+      "codec": "SubRip/SRT",
+      "id": 5,
+      "properties": {
+        "track_name": "VFF",
+        "language": "fre",
+        "number": 5,
+        "forced_track": false
+      },
+      "type": "subtitles"
+    },
+    {
+      "codec": "SubRip/SRT",
+      "id": 6,
+      "properties": {
+        "track_name": "VFF SDH",
+        "language": "fre",
+        "number": 6
+      },
+      "type": "subtitles"
+    },
+    {
+      "codec": "SubRip/SRT",
+      "id": 7,
+      "properties": {
+        "language": "eng",
+        "number": 7
+      },
+      "type": "subtitles"
+    }
+  ],
+  "warnings": []
+}'
+striptracks_audiokeep=":org:fre:eng:und"
+striptracks_subskeep=":fre-f:fre+f:eng:und"
+striptracks_reorder="true"
+striptracks_default_audio=":org"
+striptracks_default_subtitles=":fre-f"
+
+process_mkvmerge_json
+determine_track_order
+set_default_tracks
