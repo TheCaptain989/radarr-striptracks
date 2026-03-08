@@ -59,3 +59,41 @@ test_set_default_with_name_and_skip() {
   set_default_tracks
   assert_matches '--edit track:4 --set flag-default=1 --edit track:3 --set flag-default=0' "$striptracks_default_flags"
 }
+
+test_process_mkvmerge_json_keeps_matching_tracks() {
+  export striptracks_debug=0
+  export striptracks_json='{"tracks":[{"id":0,"type":"video","codec":"avc1","properties":{"language":null,"track_name":""}},{"id":1,"type":"audio","codec":"aac","properties":{"language":"eng","track_name":"English","default_track":true,"forced_track":false}},{"id":2,"type":"audio","codec":"aac","properties":{"language":"fra","track_name":"French","default_track":false,"forced_track":false}},{"id":3,"type":"subtitles","codec":"subrip","properties":{"language":"eng","track_name":"English","default_track":true,"forced_track":false}},{"id":4,"type":"subtitles","codec":"subrip","properties":{"language":"fra","track_name":"French","default_track":false,"forced_track":false}}]}'
+  export striptracks_audiokeep=":eng"
+  export striptracks_subskeep=":eng"
+  process_mkvmerge_json
+  # Check that English audio is kept
+  assert_equals "true" "$(echo "$striptracks_json_processed" | jq -crM '.tracks[] | select(.type == "audio" and .language == "eng") | .striptracks_keep')"
+  # Check that French audio is not kept
+  assert_equals "false" "$(echo "$striptracks_json_processed" | jq -crM '.tracks[] | select(.type == "audio" and .language == "fra") | .striptracks_keep')"
+  # Check that English subtitles are kept
+  assert_equals "true" "$(echo "$striptracks_json_processed" | jq -crM '.tracks[] | select(.type == "subtitles" and .language == "eng") | .striptracks_keep')"
+}
+
+test_process_mkvmerge_json_handles_forced_subtitles() {
+  export striptracks_debug=0
+  export striptracks_json='{"tracks":[{"id":0,"type":"video","codec":"avc1","properties":{"language":null,"track_name":""}},{"id":1,"type":"audio","codec":"aac","properties":{"language":"eng","track_name":"English","default_track":true,"forced_track":false}},{"id":2,"type":"subtitles","codec":"subrip","properties":{"language":"eng","track_name":"English (Forced)","default_track":false,"forced_track":true}},{"id":3,"type":"subtitles","codec":"subrip","properties":{"language":"eng","track_name":"English","default_track":true,"forced_track":false}}]}'
+  export striptracks_audiokeep=":eng"
+  export striptracks_subskeep=":eng-f"
+  process_mkvmerge_json
+  # Check that forced English subtitle (track 2) is excluded
+  assert_equals "false" "$(echo "$striptracks_json_processed" | jq -crM '.tracks[] | select(.type == "subtitles" and .language == "eng" and .forced == true) | .striptracks_keep')"
+}
+
+test_process_mkvmerge_json_complex_modifiers() {
+  export striptracks_debug=0
+  export striptracks_json='{"tracks":[{"id":0,"type":"video","codec":"avc1","properties":{"language":null,"track_name":""}},{"id":1,"type":"audio","codec":"aac","properties":{"language":"eng","track_name":"English","default_track":true,"forced_track":false}},{"id":2,"type":"audio","codec":"aac","properties":{"language":"eng","track_name":"English (Forced)","default_track":false,"forced_track":true}},{"id":3,"type":"audio","codec":"aac","properties":{"language":"eng","track_name":"English (Forced)","default_track":false,"forced_track":true}},{"id":4,"type":"audio","codec":"aac","properties":{"language":"fra","track_name":"French","default_track":false,"forced_track":false}},{"id":5,"type":"audio","codec":"aac","properties":{"language":"fra","track_name":"French Alt","default_track":false,"forced_track":false}},{"id":6,"type":"audio","codec":"aac","properties":{"language":"fra","track_name":"French 3","default_track":false,"forced_track":false}}]}'
+  export striptracks_audiokeep=":eng+f:fra+1"
+  export striptracks_subskeep=""
+  process_mkvmerge_json
+  # Check that all forced English audio tracks are kept (forced modifier)
+  assert_equals "2" "$(echo "$striptracks_json_processed" | jq -crM '[.tracks[] | select(.type == "audio" and .language == "eng" and .forced == true and .striptracks_keep)] | length')"
+  # Check that exactly 1 French audio track is kept (limit modifier)
+  assert_equals "1" "$(echo "$striptracks_json_processed" | jq -crM '[.tracks[] | select(.type == "audio" and .language == "fra" and .striptracks_keep)] | length')"
+  # Check that non-forced English is not kept
+  assert_equals "false" "$(echo "$striptracks_json_processed" | jq -crM '.tracks[] | select(.type == "audio" and .language == "eng" and .forced == false) | .striptracks_keep')"
+}

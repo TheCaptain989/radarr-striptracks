@@ -110,6 +110,7 @@ test_remove_all_subtitles() {
   process_mkvmerge_json
   remux_video
   assert_equals "" "$(mkvmerge -J "$striptracks_tempvideo" | jq -crM '.tracks[] | select(.type == "subtitles")')"
+  rm -f "$striptracks_tempvideo"
 }
 
 test_set_title_only() {

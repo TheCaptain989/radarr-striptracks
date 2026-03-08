@@ -1528,8 +1528,10 @@ function process_mkvmerge_json {
     def parse_to_rules(arr):
       (arr | map({lang, limit, mods})) as $lang_code |
       { languages: ($lang_code | map(select(.mods == []) | {(.lang): .limit}) | add // {}),
-        forced_languages: ($lang_code | map(select(.mods[]? | has("forced")) | {(.lang): (.limit // -1)}) | add // {}),
-        default_languages: ($lang_code | map(select(.mods[]? | has("default")) | {(.lang): (.limit // -1)}) | add // {})
+        forced_languages: ($lang_code | map(select(.mods[]? | .forced) | {(.lang): (.limit // -1)}) | add // {}),
+        default_languages: ($lang_code | map(select(.mods[]? | .default) | {(.lang): (.limit // -1)}) | add // {}),
+        not_forced_languages: ($lang_code | map(select(.mods[]? | .forced == false) | {(.lang): (.limit // -1)}) | add // {}),
+        not_default_languages: ($lang_code | map(select(.mods[]? | .default == false) | {(.lang): (.limit // -1)}) | add // {})
       };
 
     parse_to_rules($AudioRulesJSON) as $AudioRules |
@@ -1554,6 +1556,8 @@ function process_mkvmerge_json {
       (.counters[$track.type].normal[$track_lang] //= 0) |
       if $track.properties.forced_track then (.counters[$track.type].forced[$track_lang] //= 0) else . end |
       if $track.properties.default_track then (.counters[$track.type].default[$track_lang] //= 0) else . end |
+      if $track.properties.forced_track == false then (.counters[$track.type].not_forced[$track_lang] //= 0) else . end |
+      if $track.properties.default_track == false then (.counters[$track.type].not_default[$track_lang] //= 0) else . end |
       .counters[$track.type] as $track_counters |
       
       # Add tracks one at a time to output object above
@@ -1578,11 +1582,21 @@ function process_mkvmerge_json {
                   $currentRules.forced_languages[$track_lang] == -1 or $track_counters.forced[$track_lang] < $currentRules.forced_languages[$track_lang])) then
             .striptracks_keep = true |
             .striptracks_rule = "forced"
+          elif (.properties.forced_track == false and
+                ($currentRules.not_forced_languages["any"] == -1 or ($track_counters.not_forced | add) < $currentRules.not_forced_languages["any"] or
+                  $currentRules.not_forced_languages[$track_lang] == -1 or $track_counters.not_forced[$track_lang] < $currentRules.not_forced_languages[$track_lang])) then
+            .striptracks_keep = true |
+            .striptracks_rule = "not_forced"
           elif (.properties.default_track and
                 ($currentRules.default_languages["any"] == -1 or ($track_counters.default | add) < $currentRules.default_languages["any"] or
                   $currentRules.default_languages[$track_lang] == -1 or $track_counters.default[$track_lang] < $currentRules.default_languages[$track_lang])) then
             .striptracks_keep = true |
             .striptracks_rule = "default"
+          elif (.properties.default_track == false and
+                ($currentRules.not_default_languages["any"] == -1 or ($track_counters.not_default | add) < $currentRules.not_default_languages["any"] or
+                  $currentRules.not_default_languages[$track_lang] == -1 or $track_counters.not_default[$track_lang] < $currentRules.not_default_languages[$track_lang])) then
+            .striptracks_keep = true |
+            .striptracks_rule = "not_default"
           else . end |
           if .striptracks_keep then
             .striptracks_log = "Info|Keeping \(if .striptracks_rule then .striptracks_rule + " " else "" end)\(.type) track " + .striptracks_log
@@ -1603,6 +1617,14 @@ function process_mkvmerge_json {
         else 0 end |
       .counters[$track.type].default[$track_lang] +=
         if ($track.properties.default_track and .tracks[-1].striptracks_keep) then
+          1
+        else 0 end |
+      .counters[$track.type].not_forced[$track_lang] +=
+        if ($track.properties.forced_track == false and .tracks[-1].striptracks_keep) then
+          1
+        else 0 end |
+      .counters[$track.type].not_default[$track_lang] +=
+        if ($track.properties.default_track == false and .tracks[-1].striptracks_keep) then
           1
         else 0 end
     ) |
