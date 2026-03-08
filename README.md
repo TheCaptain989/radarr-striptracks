@@ -236,8 +236,8 @@ Option|Argument|Description
 `--reorder`||Reorder audio and subtitles tracks to match the language code order specified in the `<audio_languages>` and `<subtitle_languages>` arguments.
 `--disable-recycle`||Disable recycle bin use, even if configured in Radarr/Sonarr
 `--skip-profile`|`<profile_name>`|Skip processing if the video was downloaded using the specified Quality Profile name. May be specified multiple times to skip multiple profiles.
-`--set-default-audio`|`<language_code>[{+\|-}modifier(s)][=name]`|[Set the default](#setting-default-track) audio track to the first track of the specified language. Only one language code is allowed. If specified, all other tracks are marked as not default.<br/>The code may optionally be followed by a plus (`+`) or minus (`-`) and one or more modifiers.<br/>The code may optionally be followed by an equals (`=`) and a track name matching string.
-`--set-default-subs`|`<language_code>[{+\|-}modifier(s)][=name]`|Set the default subtitles track to the first track of the specified language. Only one language code is allowed. If specified, all other tracks are marked as not default.<br/>The code may optionally be followed by a plus (`+`) or minus (`-`) and one or more modifiers.<br/>The code may optionally be followed by an equals (`=`) and a track name string.
+`--set-default-audio`|`<language_code>[{+\|-}modifier(s)][=name]`|[Set the default](#setting-default-track) audio track to the first track of the specified language, and all other tracks are marked as not default.<br/>The code may optionally be followed by a plus (`+`) or minus (`-`) and one or more modifiers.<br/>The code may optionally be followed by an equals (`=`) and a track name matching string.<br/>If multiple codes are specified, the first match wins.
+`--set-default-subs`|`<language_code>[{+\|-}modifier(s)][=name]`|Set the default subtitles track to the first track of the specified language, and all other tracks are marked as not default.<br/>The code may optionally be followed by a plus (`+`) or minus (`-`) and one or more modifiers.<br/>The code may optionally be followed by an equals (`=`) and a track name string.<br/>If multiple codes are specified, the first match wins.
 `-l`, `--log`|`<log_file>`|The log filename<br/>Default is `/config/log/striptracks.txt`
 `-c`, `--config`|`<config_file>`|Radarr/Sonarr XML configuration file<br/>Default is `/config/config.xml`
 `-p`, `--priority`|`idle`, `low`, `medium`, `high`|CPU and I/O process priority for mkvmerge<br/>Default is `medium`<br/>![notes] High priority can consume all system resources. When processing a large video file your system may become unresponsive!
@@ -300,6 +300,8 @@ The first track of the specified language will have its default flag set and all
 
 These options can also use the same modifiers (`f` and `d`) and optional name matching (`=`) that the regular track selection logic uses. (Though the `d` options doesn't make much sense here, since that's what you're setting.)  You could use this to set the default subtitles track to hearing impaired (SDH), for example.
 
+Multiple codes are evaluated in the order of precendece, with the first match being set as the default track.
+
 The setting of default track flags occurs after the track selection logic.
 
 > [!NOTE]
@@ -312,8 +314,8 @@ The setting of default track flags occurs after the track selection logic.
 If you want to set the default subtitles track to the first hearing impaired English track, you would use:  
 `--set-default-subs :eng=SDH`
 
-To set the default audio track to Dutch:  
-`--set-default-audio :dut`
+To set the default audio track to Dutch, and if not found, to English:  
+`--set-default-audio :dut:eng`
 
 To set the default subtitles track to the first non-forced English track:  
 `--set-default-subs :eng-f`

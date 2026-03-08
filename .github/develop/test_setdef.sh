@@ -130,7 +130,7 @@ striptracks_default_subtitles=":fre=SDH"
 echo "Keeping Audio $striptracks_audiokeep     Subtitles $striptracks_subskeep"
 
 process_mkvmerge_json
-echo "$striptracks_json_processed" | jq -c .
+echo "$striptracks_json_processed" | jq -c '.'
 
 # Set default tracks
 execute_mkv_command() { echo "Simulated:" $1 $2; }

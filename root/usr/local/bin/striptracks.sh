@@ -36,7 +36,7 @@
 #  3 - no subtitles language specified on command line
 #  4 - mkvmerge, mkvpropedit, or jq not found
 #  5 - input video file not found
-#  6 - unable to rename temp video to MKV
+#  6 - unable to rename temp video to MKV, or to move video to destination in Import mode
 #  7 - unknown eventtype environment variable
 #  8 - unsupported Radarr/Sonarr version (v2)
 #  9 - mkvmerge returned an unsupported container format
@@ -66,7 +66,9 @@ function initialize_variables {
   # If this were defined directly in Radarr or Sonarr this would not be needed here
   # shellcheck disable=SC2089
   export striptracks_isocodemap='{"languages":[{"language":{"name":"Afrikaans","iso639-2":["afr"]}},{"language":{"name":"Albanian","iso639-2":["sqi","alb"]}},{"language":{"name":"Any","iso639-2":["any"]}},{"language":{"name":"Arabic","iso639-2":["ara"]}},{"language":{"name":"Bengali","iso639-2":["ben"]}},{"language":{"name":"Bosnian","iso639-2":["bos"]}},{"language":{"name":"Bulgarian","iso639-2":["bul"]}},{"language":{"name":"Catalan","iso639-2":["cat"]}},{"language":{"name":"Chinese","iso639-2":["zho","chi"]}},{"language":{"name":"Croatian","iso639-2":["hrv"]}},{"language":{"name":"Czech","iso639-2":["ces","cze"]}},{"language":{"name":"Danish","iso639-2":["dan"]}},{"language":{"name":"Dutch","iso639-2":["nld","dut"]}},{"language":{"name":"English","iso639-2":["eng"]}},{"language":{"name":"Estonian","iso639-2":["est"]}},{"language":{"name":"Finnish","iso639-2":["fin"]}},{"language":{"name":"Flemish","iso639-2":["nld","dut"]}},{"language":{"name":"French","iso639-2":["fra","fre"]}},{"language":{"name":"Georgian","iso639-2":["kat","geo"]}},{"language":{"name":"German","iso639-2":["deu","ger"]}},{"language":{"name":"Greek","iso639-2":["ell","gre"]}},{"language":{"name":"Hebrew","iso639-2":["heb"]}},{"language":{"name":"Hindi","iso639-2":["hin"]}},{"language":{"name":"Hungarian","iso639-2":["hun"]}},{"language":{"name":"Icelandic","iso639-2":["isl","ice"]}},{"language":{"name":"Indonesian","iso639-2":["ind"]}},{"language":{"name":"Italian","iso639-2":["ita"]}},{"language":{"name":"Japanese","iso639-2":["jpn"]}},{"language":{"name":"Kannada","iso639-2":["kan"]}},{"language":{"name":"Korean","iso639-2":["kor"]}},{"language":{"name":"Latvian","iso639-2":["lav"]}},{"language":{"name":"Lithuanian","iso639-2":["lit"]}},{"language":{"name":"Macedonian","iso639-2":["mac","mkd"]}},{"language":{"name":"Malayalam","iso639-2":["mal"]}},{"language":{"name":"Marathi","iso639-2":["mar"]}},{"language":{"name":"Mongolian","iso639-2":["mon"]}},{"language":{"name":"Norwegian","iso639-2":["nno","nob","nor"]}},{"language":{"name":"Persian","iso639-2":["fas","per"]}},{"language":{"name":"Polish","iso639-2":["pol"]}},{"language":{"name":"Portuguese","iso639-2":["por"]}},{"language":{"name":"Portuguese (Brazil)","iso639-2":["por"]}},{"language":{"name":"Romanian","iso639-2":["rum","ron"]}},{"language":{"name":"Romansh","iso639-2":["roh"]}},{"language":{"name":"Russian","iso639-2":["rus"]}},{"language":{"name":"Serbian","iso639-2":["srp"]}},{"language":{"name":"Slovak","iso639-2":["slk","slo"]}},{"language":{"name":"Slovenian","iso639-2":["slv"]}},{"language":{"name":"Spanish","iso639-2":["spa"]}},{"language":{"name":"Spanish (Latino)","iso639-2":["spa"]}},{"language":{"name":"Swedish","iso639-2":["swe"]}},{"language":{"name":"Tagalog","iso639-2":["tgl"]}},{"language":{"name":"Tamil","iso639-2":["tam"]}},{"language":{"name":"Telugu","iso639-2":["tel"]}},{"language":{"name":"Thai","iso639-2":["tha"]}},{"language":{"name":"Turkish","iso639-2":["tur"]}},{"language":{"name":"Ukrainian","iso639-2":["ukr"]}},{"language":{"name":"Unknown","iso639-2":["und"]}},{"language":{"name":"Urdu","iso639-2":["urd"]}},{"language":{"name":"Vietnamese","iso639-2":["vie"]}}]}'
-  # Presence of '*_eventtype' variable sets script mode
+  # Default to Custom Script mode. Possible modes: "Batch", "Import", "Custom Script"
+  export striptracks_mode="Custom Script"
+  # Presence of '*_eventtype' variable sets script type when in Custom Script mode: "radarr", "sonarr"
   export striptracks_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
   declare -g -x -a striptracks_skip_profile
 }
@@ -308,8 +310,7 @@ function process_command_line {
           usage
           exit 1
         fi
-        # Overrides detected *_eventtype
-        export striptracks_type="batch"
+        export striptracks_mode="Batch"
         export striptracks_video="$2"
         shift 2
       ;;
@@ -467,64 +468,93 @@ function setup_ansi_colors {
   fi
 }
 function initialize_mode_variables {
-  # Sets mode specific variables
+  # Determines script mode and sets mode specific variables
 
-  if [[ "${striptracks_type,,}" = "batch" ]]; then
-    # Batch mode
-    export batch_eventtype="Convert"
-    export striptracks_title="$(basename "$striptracks_video" ".${striptracks_video##*.}")"
-  elif [[ "${striptracks_type,,}" = "radarr" ]]; then
-    # Radarr mode
-    # shellcheck disable=SC2154
-    export striptracks_video="$radarr_moviefile_path"
-    # shellcheck disable=SC2154
-    export striptracks_video_folder="$radarr_movie_path"
-    export striptracks_video_api="movie"
-    # shellcheck disable=SC2154
-    export striptracks_video_id="${radarr_movie_id}"
-    export striptracks_videofile_api="moviefile"
-    # shellcheck disable=SC2154
-    export striptracks_videofile_id="${radarr_moviefile_id}"
-    # shellcheck disable=SC2154
-    export striptracks_rescan_id="${radarr_movie_id}"
-    export striptracks_json_quality_root="movieFile"
-    export striptracks_video_type="movie"
-    export striptracks_video_rootNode=""
-    # shellcheck disable=SC2154
-    export striptracks_title="${radarr_movie_title:-UNKNOWN} (${radarr_movie_year:-UNKNOWN})"
-    export striptracks_language_jq=".language"
-    # export striptracks_language_node="languages"
-  elif [[ "${striptracks_type,,}" = "sonarr" ]]; then
-    # Sonarr mode
-    # shellcheck disable=SC2154
-    export striptracks_video="$sonarr_episodefile_path"
-    # shellcheck disable=SC2154
-    export striptracks_video_folder="$sonarr_series_path"
-    export striptracks_video_api="episode"
-    # shellcheck disable=SC2154
-    export striptracks_video_id="${sonarr_episodefile_episodeids}"
-    export striptracks_videofile_api="episodefile"
-    # shellcheck disable=SC2154
-    export striptracks_videofile_id="${sonarr_episodefile_id}"
-    # shellcheck disable=SC2154
-    export striptracks_rescan_id="${sonarr_series_id}"
-    export striptracks_json_quality_root="episodeFile"
-    export striptracks_video_type="series"
-    export striptracks_video_rootNode=".series"
-    # shellcheck disable=SC2154
-    export striptracks_title="${sonarr_series_title:-UNKNOWN} $(numfmt --format "%02f" ${sonarr_episodefile_seasonnumber:-0})x$(numfmt --format "%02f" ${sonarr_episodefile_episodenumbers:-0}) - ${sonarr_episodefile_episodetitles:-UNKNOWN}"
-    # export striptracks_language_node="language"
-    # # Sonarr requires the episodeIds array
-    # export striptracks_sonarr_json=" \"episodeIds\":[.episodes[].id],"
-  else
-    # Called in an unexpected way
-    echo -e "Error|Unknown or missing '*_eventtype' environment variable: ${striptracks_type}\nNot calling from Radarr/Sonarr? Try using Batch Mode option: -f <file>" >&2
-    usage
-    exit 7
+  # Switch to Import mode if *_transfermode variable is found (see issues #52 and #121)
+  local transfermode=$(printenv | sed -n 's/_transfermode *=.*$//p')
+  if [ -n "$transfermode" ]; then
+    export striptracks_mode="Import"
+    export striptracks_type="$transfermode"    # "radarr", "sonarr"
   fi
-  export striptracks_rescan_api="Rescan${striptracks_video_type^}"
-  export striptracks_eventtype="${striptracks_type,,}_eventtype"
-  export striptracks_newvideo="${striptracks_video%.*}.mkv"
+
+  # Mode specfic variable assignment
+  if [[ "${striptracks_mode,,}" = "batch" ]]; then
+    # Batch mode
+    export striptracks_type="batch"
+    export batch_eventtype="Convert"
+    local event_var="${striptracks_type,,}_eventtype"
+    export striptracks_title="$(basename "$striptracks_video" ".${striptracks_video##*.}")"
+  else
+    # Custom Script or Import mode
+    if [[ "${striptracks_type,,}" = "radarr" ]]; then
+      # Radarr
+      # shellcheck disable=SC2154
+      export striptracks_video="$radarr_moviefile_path"
+      # shellcheck disable=SC2154
+      export striptracks_video_folder="$radarr_movie_path"
+      export striptracks_video_api="movie"
+      # shellcheck disable=SC2154
+      export striptracks_video_id="$radarr_movie_id"
+      export striptracks_videofile_api="moviefile"
+      # shellcheck disable=SC2154
+      export striptracks_videofile_id="$radarr_moviefile_id"
+      # shellcheck disable=SC2154
+      export striptracks_rescan_id="$radarr_movie_id"
+      export striptracks_json_quality_root="movieFile"
+      export striptracks_video_type="movie"
+      export striptracks_video_rootNode=""
+      # shellcheck disable=SC2154
+      export striptracks_title="${radarr_movie_title:-UNKNOWN} (${radarr_movie_year:-UNKNOWN})"
+      export striptracks_language_jq=".language"
+      # export striptracks_language_node="languages"
+    elif [[ "${striptracks_type,,}" = "sonarr" ]]; then
+      # Sonarr
+      # shellcheck disable=SC2154
+      export striptracks_video="$sonarr_episodefile_path"
+      # shellcheck disable=SC2154
+      export striptracks_video_folder="$sonarr_series_path"
+      export striptracks_video_api="episode"
+      # shellcheck disable=SC2154
+      export striptracks_video_id="$sonarr_episodefile_episodeids"
+      export striptracks_videofile_api="episodefile"
+      # shellcheck disable=SC2154
+      export striptracks_videofile_id="$sonarr_episodefile_id"
+      # shellcheck disable=SC2154
+      export striptracks_rescan_id="$sonarr_series_id"
+      export striptracks_json_quality_root="episodeFile"
+      export striptracks_video_type="series"
+      export striptracks_video_rootNode=".series"
+      # shellcheck disable=SC2154
+      export striptracks_title="${sonarr_series_title:-UNKNOWN} $(numfmt --format "%02f" ${sonarr_episodefile_seasonnumber:-0})x$(numfmt --format "%02f" ${sonarr_episodefile_episodenumbers:-0}) - ${sonarr_episodefile_episodetitles:-UNKNOWN}"
+      # export striptracks_language_node="language"
+      # # Sonarr requires the episodeIds array when importing episodes directly
+      # export striptracks_sonarr_json=" \"episodeIds\":[.episodes[].id],"
+    else
+      # Called in an unexpected way
+      echo -e "Error|Unknown or missing '*_eventtype' or '*_transfermode' environment variables: ${striptracks_type}\nNot calling from Radarr/Sonarr? Try using Batch Mode option: -f <file>" >&2
+      usage
+      exit 7
+    fi
+    export striptracks_rescan_api="Rescan${striptracks_video_type^}"
+    local event_var="${striptracks_type,,}_eventtype"
+    
+    # Import mode overrides
+    if [[ "${striptracks_mode,,}" = "import" ]]; then
+      local sourcepath_var="${striptracks_type}_sourcepath"
+      local destinationpath_var="${striptracks_type}_destinationpath"
+      local sourcepath="${!sourcepath_var}"
+      local destinationpath="${!destinationpath_var}"
+      local event_var="${striptracks_type,,}_transfermode"
+      export striptracks_video="$sourcepath"
+      export striptracks_newvideo="${destinationpath%.*}.mkv"
+    fi
+  fi
+
+  # Set new video name for Custom Script and bash modes
+  if [ -z "$striptracks_newvideo" -a "$striptracks_video" != "" ]; then
+    export striptracks_newvideo="${striptracks_video%.*}.mkv"
+  fi
+  export striptracks_event="${!event_var}"
 }
 function log {(
   # Write piped message to log file
@@ -803,7 +833,7 @@ function process_org_code {
 
   if [[ "${!keep_var}" =~ :org ]]; then
     # Check compatibility
-    if [ "${striptracks_type,,}" = "batch" ]; then
+    if [ "${striptracks_mode,,}" = "batch" ]; then
       local message="Warn|${track_type^} argument contains ':org' code, but this is undefined for Batch mode! Unexpected behavior may result."
       echo "$message" | log
       echo "$message" >&2
@@ -877,7 +907,7 @@ function log_first_debug_messages {
 
   # Log Debug state
   if [ $striptracks_debug -ge 1 ]; then
-    local message="Debug|Running ${striptracks_script} version ${striptracks_ver/{{VERSION\}\}/unknown} with debug logging level ${striptracks_debug}. Video: $striptracks_title"
+    local message="Debug|Running ${striptracks_script} version ${striptracks_ver/{{VERSION\}\}/unknown} in mode ${striptracks_mode} with debug logging level ${striptracks_debug}. Video: $striptracks_title"
     echo "$message" | log
     echo "$message" >&2
   fi
@@ -901,16 +931,16 @@ function log_first_debug_messages {
 function check_eventtype {
   # Check for invalid _eventtypes and handle test event
 
-  if [[ "${!striptracks_eventtype}" =~ Grab|Rename|MovieAdded|MovieDelete|MovieFileDelete|SeriesAdd|SeriesDelete|EpisodeFileDelete|HealthIssue|ApplicationUpdate ]]; then
-    local message="Error|${striptracks_type^} event ${!striptracks_eventtype} is not supported. Exiting."
+  if [[ "${striptracks_event}" =~ Grab|Rename|MovieAdded|MovieDelete|MovieFileDelete|SeriesAdd|SeriesDelete|EpisodeFileDelete|HealthIssue|ApplicationUpdate ]]; then
+    local message="Error|${striptracks_type^} event ${striptracks_event} is not supported. Exiting."
     echo "$message" | log
     echo "$message" >&2
     end_script 20
   fi
 
   # Handle Test event
-  if [[ "${!striptracks_eventtype}" = "Test" ]]; then
-    echo "Info|${striptracks_type^} event: ${!striptracks_eventtype}" | log
+  if [[ "${striptracks_event}" = "Test" ]]; then
+    echo "Info|${striptracks_type^} event: ${striptracks_event}" | log
     local message="Info|Script was test executed successfully."
     echo "$message" | log
     echo "$message"
@@ -934,13 +964,13 @@ function log_script_start {
 
   # shellcheck disable=SC2046
   local filesize=$(stat -c %s "${striptracks_video}" | numfmt --to iec --format "%.3f")
-  local message="Info|${striptracks_type^} event: ${!striptracks_eventtype}, Video: $striptracks_video, Size: $filesize"
+  local message="Info|${striptracks_type^} event: ${striptracks_event}, Video: $striptracks_video, Size: $filesize"
   echo "$message" | log
 }
 function check_config {
   # Check for config file
 
-  if [ "$striptracks_type" = "batch" ]; then
+  if [ "${striptracks_mode,,}" = "batch" ]; then
     [ $striptracks_debug -ge 1 ] && echo "Debug|Not using config file in batch mode." | log
   elif [ -f "$striptracks_arr_config" ]; then
     # Read *arr config.xml
@@ -1174,17 +1204,17 @@ function check_video {
   fi
 
   # Create temporary filename
-  local basename="$(basename -- "${striptracks_video}")"
+  local basename="$(basename -- "${striptracks_newvideo}")"
   local fileroot="${basename%.*}"
   # ._ prefixed files are ignored by Radarr/Sonarr (see issues #65 and #115)
-  export striptracks_tempvideo="$(dirname -- "${striptracks_video}")/$(mktemp -u -- "._${fileroot:0:5}.tmp.XXXXXX")"
+  export striptracks_tempvideo="$(dirname -- "${striptracks_newvideo}")/$(mktemp -u -- "._${fileroot:0:5}.tmp.XXXXXX")"
   [ $striptracks_debug -ge 1 ] && echo "Debug|Using temporary file \"$striptracks_tempvideo\"" | log
 }
 function detect_languages {
   # Detect languages configured in Radarr/Sonarr, quality of video, etc.
 
   # Bypass if using batch mode
-  if [ "$striptracks_type" = "batch" ]; then
+  if [ "${striptracks_mode,,}" = "batch" ]; then
     [ $striptracks_debug -ge 1 ] && echo "Debug|Cannot detect languages in batch mode." | log
   # Check for URL
   elif [ -n "$striptracks_api_url" ]; then
@@ -1770,22 +1800,32 @@ function set_default_tracks {
     # or the parser will treat it as audio and add "mis" and "zxx" codes that we don't want for this logic
     rules_json=$(parse_language_codes_to_json "$currentcfg" "dummmy")
 
-    # Use jq to find the track ID using case-insensitive substring match on track name
+    # Use jq to find the track ID using case-insensitive substring match on track name, trying each rule until one matches
     local track_id=$(echo "$striptracks_json_processed" | jq -crM --arg type "$tracktype" --argjson RulesJSON "$rules_json" '
-      # Convert input JSON array into rule object, taking only the first rule
-      ($RulesJSON[0] // {}) as $rule |
-      .tracks |
-      map(. as $track |
-        (($rule.lang == "any" or $rule.lang == $track.language) as $lang_match |
-          ($rule.match == "" or (($track.name // "") | ascii_downcase | contains(($rule.match // "") | ascii_downcase))) as $name_match |
-          (($rule.mods as $mods | ($mods | map(select(.forced != null) | .forced) | first) as $forced_mod |
-            ($mods | map(select(.default != null) | .default) | first) as $default_mod |
-            ((if $forced_mod == true then $track.forced == true elif $forced_mod == false then $track.forced != true else true end) and (if $default_mod == true then $track.default == true elif $default_mod == false then $track.default != true else true end)))
-          ) as $mod_match |
-          select($track.type == $type and $lang_match and $name_match and $mod_match and .striptracks_keep)
-        )
+      . as $tracks |
+      # Loop through rules and find the first track that matches each rule
+      $RulesJSON |
+      map(. as $rule |
+        $tracks | .tracks |
+        map(. as $track |
+          (($rule.lang == "any" or $rule.lang == $track.language) as $lang_match |
+            ($rule.match == "" or (($track.name // "") | ascii_downcase | contains(($rule.match // "") | ascii_downcase))) as $name_match |
+            ($rule.mods as $mods | ($mods | map(select(.forced != null) | .forced) | first) as $forced_mod |
+              ($mods | map(select(.default != null) | .default) | first) as $default_mod |
+              ((if $forced_mod == true then $track.forced == true elif $forced_mod == false then $track.forced != true else true end)
+                and
+                (if $default_mod == true then $track.default == true elif $default_mod == false then $track.default != true else true end)
+              )
+            ) as $mod_match |
+            select($track.type == $type and $lang_match and $name_match and $mod_match and .striptracks_keep)
+          )
+        ) |
+        .[0].id |
+        # Exclude null matches
+        select(length > 0)
       ) |
-      .[0].id // ""
+      # Select the first matching track ID
+      .[0] // ""
     ')
 
     if [ -n "$track_id" ]; then
@@ -1813,7 +1853,7 @@ function set_default_tracks {
   fi
 }
 function set_title_and_exit_if_nothing_removed {
-  # If no tracks are removed, we can skip remuxing, set the tile, and exit early
+  # If no tracks are removed, we can skip remuxing, set the title, and exit early
 
   # All tracks matched/no tracks removed (see issues #49 and #89)
   if [ "$(echo "$striptracks_json" | jq -crM '.tracks|map(select(.type=="audio" or .type=="subtitles"))|length')" = "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select((.type=="audio" or .type=="subtitles") and .striptracks_keep))|length')" ]; then
@@ -1825,7 +1865,18 @@ function set_title_and_exit_if_nothing_removed {
         # Remuxing not performed
         local message="Info|No tracks would be removed from video$( [ "$striptracks_reorder" = "true" ] && echo " or reordered"). Setting Title only and exiting."
         echo "$message" | log
-        local mkvcommand="/usr/bin/mkvpropedit -q --edit info --set \"title=$(escape_string "$striptracks_title")\" \"$(escape_string "$striptracks_video")\""
+        if [ "${striptracks_mode,,}" = "import" ]; then
+          # When running in import mode, we're still moving the video
+          local result
+          result=$(mv -f "$striptracks_video" "$striptracks_newvideo")
+          local return=$?; [ $return -ne 0 ] && {
+            local message=$(echo -e "[$return] Unable to move video: \"$striptracks_video\" to: \"$striptracks_newvideo\".  Halting.\nmv returned: $result" | awk '{print "Error|"$0}')
+            echo "$message" | log
+            echo "$message" >&2
+            end_script 6
+          }
+        fi
+        local mkvcommand="/usr/bin/mkvpropedit -q --edit info --set \"title=$(escape_string "$striptracks_title")\" \"$(escape_string "$striptracks_newvideo")\""
         execute_mkv_command "$mkvcommand" "setting video title"
         end_script
       else
@@ -1904,7 +1955,7 @@ function replace_original_video {
   # Replace original video with remuxed video
 
   # Just delete the original video if running in batch mode or if configured to do so (see issue #99)
-  if [ "$striptracks_type" = "batch" -o "$striptracks_recycle" = "false" ]; then
+  if [ "${striptracks_mode,,}" = "batch" -o "$striptracks_recycle" = "false" ]; then
     [ $striptracks_debug -ge 1 ] && echo "Debug|Deleting: \"$striptracks_video\"" | log
     local result
     result=$(rm "$striptracks_video")
@@ -1955,7 +2006,7 @@ function rescan_and_cleanup {
   # Fix various database issues that occur after a rescan, such as wrong metadata, monitoring status, listed languages, needing to be renamed, etc.
 
   # Check for URL
-  if [ "$striptracks_type" = "batch" ]; then
+  if [ "${striptracks_mode,,}" = "batch" ]; then
     [ $striptracks_debug -ge 1 ] && echo "Debug|Not calling API while in batch mode." | log
   elif [ -n "$striptracks_api_url" ]; then
     # Check for video IDs

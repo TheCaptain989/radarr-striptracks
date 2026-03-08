@@ -27,7 +27,7 @@ jobs:
           # Start Radarr in the background
           /app/radarr/bin/Radarr -nobrowser -data=/config &
           echo "Waiting for Radarr to start..."
-          until curl -s http://localhost:7878/ping > /dev/null; do
+          until curl -s -I http://localhost:7878/ping > /dev/null; do
             sleep 2
           done
           echo "Radarr is up and running!"

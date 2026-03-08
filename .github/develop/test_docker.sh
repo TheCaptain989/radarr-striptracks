@@ -38,7 +38,7 @@ fi
 
 # Checking that Radarr is up and running before proceeding with tests
 echo "Waiting for $container_name to start..."
-until curl -s http://localhost:7878/ping > /dev/null; do
+until curl -s -I http://localhost:7878/ping > /dev/null; do
   sleep 2
 done
 echo "$container_name is up and running!"
