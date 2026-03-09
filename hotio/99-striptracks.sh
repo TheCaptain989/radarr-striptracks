@@ -7,7 +7,7 @@
 # Pre-set LSIO Docker Mod variables
 DOCKER_MODS=linuxserver/mods:radarr-striptracks
 #DOCKER_MODS_DEBUG=true
-LSIO_FIRST_PARTY=false
+export LSIO_FIRST_PARTY=false
 export DOCKER_MODS
 export DOCKER_MODS_DEBUG
 [ "$DOCKER_MODS_DEBUG" = "true" ] && echo "[mod-install] DOCKER_MODS: $DOCKER_MODS" && echo "[mod-install] DOCKER_MODS_DEBUG: $DOCKER_MODS_DEBUG"
