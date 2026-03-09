@@ -7,31 +7,60 @@
 # Pre-set LSIO Docker Mod variables
 DOCKER_MODS=linuxserver/mods:radarr-striptracks
 #DOCKER_MODS_DEBUG=true
+LSIO_FIRST_PARTY=false
 export DOCKER_MODS
 export DOCKER_MODS_DEBUG
 [ "$DOCKER_MODS_DEBUG" = "true" ] && echo "[mod-install] DOCKER_MODS: $DOCKER_MODS" && echo "[mod-install] DOCKER_MODS_DEBUG: $DOCKER_MODS_DEBUG"
 echo "[mod-install] installing $DOCKER_MODS mod"
 
+update_docker_mods() {
+  # Download the main docker-mods script to install the mod
+  # Very well thought out code, this.  Why reinvent?
+  curl -s --fail-with-body -o /tmp/docker-mods "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/docker-mods.${MODS_VERSION}"
+  ret=$?
+  [ $ret -ne 0 ] && echo "[mod-install] unable to download docker-mods: Exit code: $ret. Exiting." && exit 1
+
+  # Edit the docker-mods script to add a line that deletes the /tmp/mod/etc folder, which is needed for s6-overlay to work properly.
+  # This is a bit hacky, but it avoids having to maintain a custom version of the docker-mods script.
+  sed -i -r 's@^( *)cp -R /tmp/mod/\* /@\1rm -rf /tmp/mod/etc\n\0@' /tmp/docker-mods
+}
+
+# Checking for existing install
+if [ -f /usr/local/bin/striptracks.sh ]; then
+  VERSION=$(sed -nr 's/^ *export striptracks_ver="?([^"]+)"?/\1/p' /usr/local/bin/striptracks.sh)
+  echo "[mod-install] striptracks.sh already installed (version $VERSION). Skipping installation."
+  exit 0
+fi
+
 # Steal the current docker-mods version from the source
 MODS_VERSION=$(curl -s --fail-with-body "https://raw.githubusercontent.com/linuxserver/docker-baseimage-alpine/master/Dockerfile" | sed -nr 's/^ARG MODS_VERSION="?([^"]+)"?/\1/p')
 [ "$DOCKER_MODS_DEBUG" = "true" ] && echo "[mod-install] MODS_VERSION: $MODS_VERSION"
 
-# Download and execute the main docker-mods script to install the mod
-# Very well thought out code, this.  Why reinvent?
-curl -s --fail-with-body -o /docker-mods "https://raw.githubusercontent.com/linuxserver/docker-mods/mod-scripts/docker-mods.${MODS_VERSION}"
-ret=$?
-[ $ret -ne 0 ] && echo "[mod-install] unable to download docker-mods: Exit code: $ret. Exiting." && exit 1
+# Check for existing docker-mods installation
+if [ ! -f /tmp/docker-mods ]; then
+  echo "[mod-install] docker-mods not found. Installing version $MODS_VERSION."
+  update_docker_mods
+else
+  # Check for up to date docker-mods installation
+  MOD_SCRIPT_VER=$(sed -nr 's/^MOD_SCRIPT_VER="?([^".]+)\.[^"]+"?/\1/p' /tmp/docker-mods)
+  if [ "$MOD_SCRIPT_VER" != "${MODS_VERSION#v}" ]; then
+    echo "[mod-install] docker-mods already installed but with outdated version $MOD_SCRIPT_VER. Updating to version $MODS_VERSION."
+    update_docker_mods
+  else
+    echo "[mod-install] docker-mods already installed with version $MOD_SCRIPT_VER. Skipping installation."
+  fi
+fi
 
-chmod +x /docker-mods
-
-. /docker-mods
+# Execute the docker-mods script to install the mod
+chmod +x /tmp/docker-mods
+. /tmp/docker-mods
 [ $ret -ne 0 ] && echo "[mod-install] docker-mods installation error: $ret. Exiting." && exit 1
 
 # Get script version from installed mod
-VERSION=$(sed -nr 's/^export striptracks_ver="?([^"]+)"?/\1/p' /usr/local/bin/striptracks.sh)
+VERSION=$(sed -nr 's/^ *export striptracks_ver="?([^"]+)"?/\1/p' /usr/local/bin/striptracks.sh)
 [ "$DOCKER_MODS_DEBUG" = "true" ] && echo "[mod-install] striptracks.sh version: $VERSION"
 
-# Remaining setup that is normally done with s6-overlay init scripts, but that rely on a lot of Docker Mods dependencies
+# Remaining setup that is normally done with s6-overlay init scripts, but that relies on a lot of Docker Mods dependencies
 cat <<EOF
 ----------------
 >>> Striptracks Mod by TheCaptain989 <<<

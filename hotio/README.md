@@ -37,7 +37,7 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 
    ```yaml
    services:
-   sonarr:
+     sonarr:
        container_name: sonarr
        image: ghcr.io/hotio/sonarr
        ports:
