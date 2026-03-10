@@ -176,6 +176,6 @@ test_video_with_special_characters() {
 }
 
 teardown_suite() {
-  rm -f "${test_video1%.webm}.mkv" "$test_video1" "/tmp/$test_video1" "$test_video2" "/tmp/$test_video2" "$test_video3" "/tmp/$test_video3" "$test_video4" "/tmp/$test_video4" "$test_video5" "/tmp/$test_video5" "${test_video2:0:5}.tmp".* "./striptracks.txt" "/tmp/${test_video1%.webm}.json" "/tmp/${test_video2%.mkv}.json" "/tmp/${test_video3%.mkv}.json"
+  rm -f "${test_video1%.webm}.mkv" "$test_video1" "$test_video2" "/tmp/$test_video2" "$test_video3" "/tmp/$test_video3" "$test_video4" "/tmp/$test_video4" "$test_video5" "/tmp/$test_video5" "${test_video2:0:5}.tmp".* "./striptracks.txt" "/tmp/${test_video1%.webm}.json" "/tmp/${test_video2%.mkv}.json" "/tmp/${test_video3%.mkv}.json"
   unset striptracks_video test_video1 test_video2 test_video3
 }

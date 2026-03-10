@@ -13,7 +13,8 @@ setup_suite() {
   export test_video1="Racism_is_evil.webm"
   export video1_dir="Carmencita (1894)"
   [ -d "$video1_dir" ] || mkdir "$video1_dir"
-  [ -f "$test_video1" ] || { wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "$video1_dir/$test_video1"; }
+  [ -f "/tmp/$test_video1" ] || { wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "/tmp/$test_video1"; }
+  [ -f "$video1_dir/$test_video1" ] || cp "/tmp/$test_video1" "./$video1_dir/"
 }
 
 setup() {
