@@ -1281,7 +1281,7 @@ function detect_languages {
   if ! get_video_info; then
     # 'hasFile' is not True in returned JSON.
     # Import mode will not have a video file until after import
-    if [ "${striptracks_mode,,}" != "import"]; then
+    if [ "${striptracks_mode,,}" != "import" ]; then
       local message="Warn|Could not find a video file for $striptracks_video_api id '$striptracks_video_id'"
       echo "$message" | log
       echo "$message" >&2
