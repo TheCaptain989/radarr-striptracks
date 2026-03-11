@@ -1219,9 +1219,9 @@ function move_video {
   local dest="$2"   # Destination video file
 
   local result
-  result=$(mv -f "$1" "$2")
+  result=$(mv -f "$source" "$dest")
   local return=$?; [ $return -ne 0 ] && {
-    local message=$(echo -e "[$return] Unable to move video: \"$1\" to: \"$2\".  Halting.\nmv returned: $result" | awk '{print "Error|"$0}')
+    local message=$(echo -e "[$return] Unable to move video: \"$source\" to: \"$dest\".  Halting.\nmv returned: $result" | awk '{print "Error|"$0}')
     echo "$message" | log
     echo "$message" >&2
     end_script 6
