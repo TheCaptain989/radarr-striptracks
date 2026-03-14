@@ -24,7 +24,7 @@ setup() {
   # initialize_mode_variables
   check_log >/dev/null
   check_required_binaries
-  check_config
+  check_config_file
 }
 
 test_radarr_z01_add_video() {

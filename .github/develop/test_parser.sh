@@ -384,8 +384,8 @@ function set_default_tracks_org {
 
   if [ -n "$striptracks_default_flags_org" ]; then
     # Execute mkvpropedit to set default flags on tracks
-    local mkvcommand="/usr/bin/mkvpropedit -q $striptracks_default_flags_org \"$(escape_string "$striptracks_video")\""
-    execute_mkv_command "$mkvcommand" "setting default track flags"
+    local mkvcommand="/usr/bin/mkvpropedit"
+    execute_mkv_command "setting default track flags" "$mkvcommand" -q $striptracks_default_flags_org "$striptracks_video"
   fi
 }
 set_default_tracks_org
