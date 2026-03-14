@@ -87,11 +87,10 @@ function main {
   check_wsl
   check_eventtype
   log_script_start
-  check_config
-  check_import_config
+  check_config_file
+  check_arr_config
   check_video
   detect_languages
-  check_unmonitor_config
   # Special handling for ':org' code from command line.
   process_org_code "audio" "striptracks_audiokeep"
   process_org_code "subtitles" "striptracks_subskeep"
@@ -102,9 +101,9 @@ function main {
   get_mediainfo "$striptracks_video"
   process_mkvmerge_json
   determine_track_order
-  set_default_tracks
   set_title_and_exit_if_nothing_removed
   remux_video
+  set_default_tracks "$striptracks_tempvideo"
   set_perms_and_owner
   replace_original_video
   rescan_and_cleanup
@@ -127,7 +126,7 @@ Source and full documentation:
   https://github.com/TheCaptain989/radarr-striptracks
 
 Usage:
-  $0 [{-a|--audio} <audio_languages>[{+|-}modifier(s)[=name]] [{-s|--subs} <subtitle_languages>[{+|-}modifier(s)[=name]]] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [--skip-profile <profile_name>]... [--set-default-audio <language_code>[{+|-}modifier(s)[=name]]] [--set-default-subs <language_code>[{+|-}modifier(s)[=name]]] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-p|--priority} {idle|low|medium|high}] [{-d|--debug} [<level>]]
+  $striptracks_script [{-a|--audio} <audio_languages>[{+|-}modifier(s)[=name]] [{-s|--subs} <subtitle_languages>[{+|-}modifier(s)[=name]]] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [--skip-profile <profile_name>]... [--set-default-audio <language_code>[{+|-}modifier(s)[=name]]] [--set-default-subs <language_code>[{+|-}modifier(s)[=name]]] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-p|--priority} {idle|low|medium|high}] [{-d|--debug} [<level>]]
 
   Options can also be set via the STRIPTRACKS_ARGS environment variable.
   Command-line arguments override the environment variable.
@@ -149,7 +148,7 @@ Options and Arguments:
                                    plus \`+\` or \`-\` and one or more modifiers.
                                    Each code may optionally be followed by an
                                    equals \`=\` and a track name.
-  -f, --file <video_file>          If included, the script enters batch mode
+  -f, --file <video_file>          If included, the script enters Batch mode
                                    and converts the specified video file.
                                    WARNING: Do not use this argument when
                                    calling from Radarr or Sonarr!
@@ -204,7 +203,7 @@ respectively, or a number which specifies the maximum tracks to keep.
 The name modifier is a string that is used to match against the track name.
 
 Batch Mode:
-  In batch mode the script acts as if it were not called from within Radarr
+  In Batch mode the script acts as if it were not called from within Radarr
   or Sonarr.  It processes the file specified on the command line and ignores
   any environment variables that are normally expected.  The MKV embedded title
   attribute is set to the basename of the file minus the extension.
@@ -368,7 +367,7 @@ function process_command_line {
         fi
         case "$2" in
           idle) export striptracks_nice="ionice -c 3 nice -n 19" ;; # Idle priority
-          low) export striptracks_nice="ionice -c 2 -n 7  nice -n 19" ;; # Low priority
+          low) export striptracks_nice="ionice -c 2 -n 7 nice -n 19" ;; # Low priority
           medium) export striptracks_nice="ionice -c 2 -n 4 nice -n 10" ;; # Normal priority
           high) export striptracks_nice="ionice -c 2 -n 0 nice -n 0" ;; # High priority
         esac
@@ -501,6 +500,10 @@ function initialize_mode_variables {
       # shellcheck disable=SC2154
       export striptracks_videofile_id="$radarr_moviefile_id"
       # shellcheck disable=SC2154
+      export striptracks_download_client="$radarr_download_client"
+      # shellcheck disable=SC2154
+      export striptracks_download_client_type="$radarr_download_client_type"
+      # shellcheck disable=SC2154
       export striptracks_rescan_id="$radarr_movie_id"
       export striptracks_json_quality_root="movieFile"
       export striptracks_video_type="movie"
@@ -521,6 +524,10 @@ function initialize_mode_variables {
       export striptracks_videofile_api="episodefile"
       # shellcheck disable=SC2154
       export striptracks_videofile_id="$sonarr_episodefile_id"
+      # shellcheck disable=SC2154
+      export striptracks_download_client="$sonarr_download_client"
+      # shellcheck disable=SC2154
+      export striptracks_download_client_type="$sonarr_download_client_type"
       # shellcheck disable=SC2154
       export striptracks_rescan_id="$sonarr_series_id"
       export striptracks_json_quality_root="episodeFile"
@@ -689,7 +696,7 @@ function delete_videofile {
 
   local videofile_id="$1"  # ID of video file to inspect
 
-  call_api 0 "Deleting or recycling \"$striptracks_video\"." "DELETE" "$striptracks_videofile_api/$videofile_id"
+  call_api 0 "Deleting or recycling '$striptracks_video'." "DELETE" "$striptracks_videofile_api/$videofile_id"
   return
 }
 # function get_import_info {
@@ -746,7 +753,7 @@ function rename_videofile {
   local newname="$2" # New name of the video file 
 
   echo "Info|Renaming new video file per ${striptracks_type^}'s rules to \"$(basename "$newname")\"" | log
-  call_api 0 "Renaming \"$striptracks_newvideo\"." "POST" "command" "{\"name\":\"RenameFiles\",\"${striptracks_video_type}Id\":$striptracks_rescan_id,\"files\":[$file_id]}"
+  call_api 0 "Renaming '$striptracks_newvideo'." "POST" "command" "{\"name\":\"RenameFiles\",\"${striptracks_video_type}Id\":$striptracks_rescan_id,\"files\":[$file_id]}"
   [ "$striptracks_result" != "null" ] && [ "$striptracks_result" != "" ]
   return
 }
@@ -909,20 +916,20 @@ function log_first_debug_messages {
 
   # Log Debug state
   if [ $striptracks_debug -ge 1 ]; then
-    local message="Debug|Running ${striptracks_script} version ${striptracks_ver/{{VERSION\}\}/unknown} in mode ${striptracks_mode} with debug logging level ${striptracks_debug}. Video: $striptracks_title"
+    local message="Debug|Running ${striptracks_script} version ${striptracks_ver/{{VERSION\}\}/unknown} in ${striptracks_mode} mode with debug logging level ${striptracks_debug}. Video: $striptracks_title"
     echo "$message" | log
     echo "$message" >&2
   fi
 
   # Log command line parameters
   if [ -n "$striptracks_prelogmessagedebug" ]; then
-    # striptracks_prelogmessagedebug is set above, before argument processing
+    # striptracks_prelogmessagedebug is set in process_command_line
     [ $striptracks_debug -ge 1 ] && echo "$striptracks_prelogmessagedebug" | log
   fi
 
   # Log STRIPTRACKS_ARGS usage
   if [ -n "$striptracks_prelogmessage" ]; then
-    # striptracks_prelogmessage is set above, before argument processing
+    # striptracks_prelogmessage is set in process_command_line
     echo "$striptracks_prelogmessage" | log
     [ $striptracks_debug -ge 1 ] && echo "Debug|STRIPTRACKS_ARGS: ${STRIPTRACKS_ARGS}" | log
   fi
@@ -968,12 +975,16 @@ function log_script_start {
   local filesize=$(stat -c %s "${striptracks_video}" | numfmt --to iec --format "%.3f")
   local message="Info|${striptracks_type^} event: ${striptracks_event}, Video: $striptracks_video, Size: $filesize"
   echo "$message" | log
+
+  if [ "${striptracks_mode,,}" = "import" -a -n "$striptracks_download_client" ]; then
+    echo "Info|Importing video directly from ${striptracks_download_client} (${striptracks_download_client_type})" | log
+  fi
 }
-function check_config {
+function check_config_file {
   # Check for config file
 
   if [ "${striptracks_mode,,}" = "batch" ]; then
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Not using config file in batch mode." | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Not using config file in Batch mode." | log
   elif [ -f "$striptracks_arr_config" ]; then
     # Read *arr config.xml
     [ $striptracks_debug -ge 1 ] && echo "Debug|Reading from ${striptracks_type^} config file '$striptracks_arr_config'" | log
@@ -1157,11 +1168,11 @@ function execute_mkv_command {
   [ $striptracks_debug -ge 2 ] && [ ${#striptracks_mkvresult} -ne 0 ] && echo "$shortcommand returned: $striptracks_mkvresult" | awk '{print "Debug|"$0}' | log
   case $return in
     1)
-      local message=$(echo -e "[$return] Warning when $action.\n$shortcommand returned: $(echo "$striptracks_mkvresult" | jq -crM '.warnings[]')" | awk '{print "Warn|"$0}')
+      local message=$(echo -e "[$return] Warning when $action.\n$shortcommand returned: $(echo "$striptracks_mkvresult" | jq -RcrM '. as $raw | try ($raw | fromjson | .warnings[]) catch $raw')" | awk '{print "Warn|"$0}')
       echo "$message" | log
     ;;
     2)
-      local message=$(echo -e "[$return] Error when $action.\n$shortcommand returned: $(echo "$striptracks_mkvresult" | jq -crM '.errors[]')" | awk '{print "Error|"$0}')
+      local message=$(echo -e "[$return] Error when $action.\n$shortcommand returned: $(echo "$striptracks_mkvresult" | jq -RcrM '. as $raw | try ($raw | fromjson | .errors[]) catch $raw')" | awk '{print "Error|"$0}')
       echo "$message" | log
       echo "$message" >&2
       end_script 13
@@ -1169,7 +1180,7 @@ function execute_mkv_command {
   esac
   # Check for unsupported container
   if [ "$(echo "$striptracks_mkvresult" | jq -crM '.container.supported')" = "false" ]; then
-    local message="Error|Video format for '$videofile' is unsupported. Unable to continue. $shortcommand returned container info: $(echo $striptracks_mkvresult | jq -crM .container)"
+    local message="Error|Video format is unsupported. Unable to continue. $shortcommand returned container info: $(echo $striptracks_mkvresult | jq -crM .container)"
     echo "$message" | log
     echo "$message" >&2
     end_script 9
@@ -1190,7 +1201,7 @@ function check_video {
 
   # Check if source video exists
   if [ ! -f "$striptracks_video" ]; then
-    local message="Error|Input video file not found: \"$striptracks_video\""
+    local message="Error|Input video file not found: '$striptracks_video'"
     echo "$message" | log
     echo "$message" >&2
     end_script 5
@@ -1210,7 +1221,7 @@ function check_video {
   local fileroot="${basename%.*}"
   # ._ prefixed files are ignored by Radarr/Sonarr (see issues #65 and #115)
   export striptracks_tempvideo="$(dirname -- "${striptracks_newvideo}")/$(mktemp -u -- "._${fileroot:0:5}.tmp.XXXXXX")"
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Using temporary file \"$striptracks_tempvideo\"" | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Using temporary file '$striptracks_tempvideo'" | log
 }
 function move_video {
   # Move video file to new location
@@ -1218,6 +1229,7 @@ function move_video {
   local source="$1" # Source video file
   local dest="$2"   # Destination video file
 
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Renaming/moving video '$source' to '$dest'" | log
   local result
   result=$(mv -f "$source" "$dest")
   local return=$?; [ $return -ne 0 ] && {
@@ -1250,9 +1262,9 @@ function exit_if_profile_skipped {
 function detect_languages {
   # Detect languages configured in Radarr/Sonarr, quality of video, etc.
 
-  # Bypass if using batch mode
+  # Bypass if using Batch mode
   if [ "${striptracks_mode,,}" = "batch" ]; then
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Cannot detect languages in batch mode." | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Cannot detect languages in Batch mode." | log
     return
   fi
 
@@ -1415,7 +1427,7 @@ function detect_languages {
 
     # shellcheck disable=SC2090
     export striptracks_originalLangCode="$(echo $striptracks_isocodemap | jq -jcM ".languages[] | select(.language.name == \"$originalLangName\") | .language | \":\(.\"iso639-2\"[])\"")"
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Found original video language of '$originalLangName ($striptracks_originalLangCode)' from $striptracks_video_type '$striptracks_rescan_id'" | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Found original video language of '$originalLangName (${striptracks_originalLangCode#:})' from $striptracks_video_type '$striptracks_rescan_id'" | log
   fi
 
   # Map language names to ISO code(s) used by mkvmerge
@@ -1430,8 +1442,9 @@ function detect_languages {
   done
   [ $striptracks_debug -ge 1 ] && echo "Debug|Mapped $languageSource language(s) '$(echo $profileLangNames | jq -crM "join(\",\")")' to ISO639-2 code list '$striptracks_profileLangCodes'" | log
 }
-function check_unmonitor_config {
-  # Check if Radarr/Sonarr are configured to unmonitor deleted videos
+function check_arr_config {
+  # Check Radarr/Sonarr configuration...
+
   get_media_config
   local return=$?; [ $return -ne 0 ] && {
     # No '.id' in returned JSON
@@ -1440,28 +1453,19 @@ function check_unmonitor_config {
     echo "$message" >&2
     change_exit_status 17
   }
+  # ...to unmonitor deleted videos
   if [ "$(echo "$striptracks_result" | jq -crM ".autoUnmonitorPreviouslyDownloaded${striptracks_video_api^}s")" = "true" ]; then
     local message="Warn|Will compensate for ${striptracks_type^} configuration to unmonitor deleted ${striptracks_video_api}s."
     echo "$message" | log
   fi
-}
-function check_import_config {
-  # Check if Radarr/Sonarr are configured to use an import script
-  get_media_config
-  local return=$?; [ $return -ne 0 ] && {
-    # No '.id' in returned JSON
-    local message="Warn|The Media Management Config API returned no id."
-    echo "$message" | log
-    echo "$message" >&2
-    change_exit_status 17
-  }
+  # ...to use an import script
   if [ "$(echo "$striptracks_result" | jq -crM ".useScriptImport")" = "true" ]; then
     export striptracks_importscript="$(echo "$striptracks_result" | jq -crM ".scriptImportPath")"
     [ $striptracks_debug -ge 1 ] && echo "Debug|${striptracks_type^} is configured to use an external import script: $striptracks_importscript" | log
 
     # Catch double configuration of this script as both Import Script and Custom Script
-    if [ "${striptracks_mode,,}" = "Custom Script" -a "$striptracks_importscript" = "$0" ]; then
-      local message="Error|${striptracks_type^} is configured to use this script as an import script, but was just called as a Custom Script, which would result in processing the same video files twice. Halting."
+    if [ "${striptracks_mode,,}" = "custom script" -a "$striptracks_importscript" = "$0" ]; then
+      local message="Error|${striptracks_type^} is configured to use ${striptracks_script} as an Import script, but called it as a Custom Script, which would result in duplicate processing. Halting."
       echo "$message" | log
       echo "$message" >&2
       end_script 20
@@ -1843,6 +1847,8 @@ function determine_track_order {
 function set_default_tracks {
   # Build mkvpropedit parameters to set default flags on audio and subtitle tracks.
 
+  local videofile="$1" # Full path to video
+
   # Process audio and subtitle --set-default track settings
   for tracktype in audio subtitles; do
     local cfgvar="striptracks_default_${tracktype}"
@@ -1907,7 +1913,7 @@ function set_default_tracks {
 
   if [ -n "$striptracks_default_flags" ]; then
     # Execute mkvpropedit to set default flags on tracks
-    local mkvcommand="/usr/bin/mkvpropedit -q $striptracks_default_flags \"$(escape_string "$striptracks_video")\""
+    local mkvcommand="/usr/bin/mkvpropedit -q $striptracks_default_flags \"$(escape_string "$videofile")\""
     execute_mkv_command "$mkvcommand" "setting default track flags"
   fi
 }
@@ -1920,7 +1926,7 @@ function set_title_and_exit_if_nothing_removed {
   fi
 
   # All tracks matched/no tracks removed (see issues #49 and #89)
-  [ $striptracks_debug -ge 1 ] && echo "Debug|No tracks will be removed from video \"$striptracks_video\"" | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|No tracks will be removed from video '$striptracks_video'" | log
 
   # Check if already MKV
   if ! [[ $striptracks_video == *.mkv ]]; then
@@ -1946,6 +1952,8 @@ function set_title_and_exit_if_nothing_removed {
   fi
   local mkvcommand="/usr/bin/mkvpropedit -q --edit info --set \"title=$(escape_string "$striptracks_title")\" \"$(escape_string "$striptracks_newvideo")\""
   execute_mkv_command "$mkvcommand" "setting video title"
+  # Set default tracks if configured
+  set_default_tracks "$striptracks_newvideo"
   end_script
 }
 function remux_video {
@@ -1975,7 +1983,7 @@ function remux_video {
 
   # Check for non-empty file
   if [ ! -s "$striptracks_tempvideo" ]; then
-    local message="Error|Unable to locate or invalid remuxed file: \"$striptracks_tempvideo\".  Halting."
+    local message="Error|Unable to locate or invalid remuxed file: '$striptracks_tempvideo'.  Halting."
     echo "$message" | log
     echo "$message" >&2
     end_script 10
@@ -1987,11 +1995,11 @@ function set_perms_and_owner {
   # Check that the script is running as root
   if [ "$(id -u)" -eq 0 ]; then
     # Set owner
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Changing owner of file \"$striptracks_tempvideo\"" | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Changing owner of file '$striptracks_tempvideo'" | log
     local result
     result=$(chown --reference="$striptracks_video" "$striptracks_tempvideo")
     local return=$?; [ $return -ne 0 ] && {
-      local message=$(echo -e "[$return] Error when changing owner of file: \"$striptracks_tempvideo\"\nchown returned: $result" | awk '{print "Error|"$0}')
+      local message=$(echo -e "[$return] Error when changing owner of file: '$striptracks_tempvideo'\nchown returned: $result" | awk '{print "Error|"$0}')
       echo "$message" | log
       echo "$message" >&2
       change_exit_status 15
@@ -2004,7 +2012,7 @@ function set_perms_and_owner {
   local result
   result=$(chmod --reference="$striptracks_video" "$striptracks_tempvideo")
   local return=$?; [ $return -ne 0 ] && {
-    local message=$(echo -e "[$return] Error when changing permissions of file: \"$striptracks_tempvideo\"\nchmod returned: $result" | awk '{print "Error|"$0}')
+    local message=$(echo -e "[$return] Error when changing permissions of file: '$striptracks_tempvideo'\nchmod returned: $result" | awk '{print "Error|"$0}')
     echo "$message" | log
     echo "$message" >&2
     change_exit_status 15
@@ -2015,11 +2023,11 @@ function replace_original_video {
 
   # Just delete the original video if running in Batch mode, Import mode, or if configured to do so (see issue #99)
   if [ "${striptracks_mode,,}" = "batch" -o "${striptracks_mode,,}" = "import" -o "$striptracks_recycle" = "false" ]; then
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Deleting: \"$striptracks_video\"" | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Deleting: '$striptracks_video'" | log
     local result
     result=$(rm "$striptracks_video")
     local return=$?; [ $return -ne 0 ] && {
-      local message=$(echo -e "[$return] Error when deleting video: \"$striptracks_video\"\nrm returned: $result" | awk '{print "Error|"$0}')
+      local message=$(echo -e "[$return] Error when deleting video: '$striptracks_video'\nrm returned: $result" | awk '{print "Error|"$0}')
       echo "$message" | log
       echo "$message" >&2
       change_exit_status 16
@@ -2028,7 +2036,7 @@ function replace_original_video {
     # Call Radarr/Sonarr to delete the original video, or recycle if configured.
     delete_videofile $striptracks_videofile_id
     local return=$?; [ $return -ne 0 ] && {
-      local message="Error|[$return] ${striptracks_type^} error when deleting the original video: \"$striptracks_video\""
+      local message="Error|[$return] ${striptracks_type^} error when deleting the original video: '$striptracks_video'"
       echo "$message" | log
       echo "$message" >&2
       change_exit_status 17
@@ -2037,14 +2045,13 @@ function replace_original_video {
 
   # Another check for the temporary file, to make sure it wasn't deleted (see issue #65)
   if [ ! -f "$striptracks_tempvideo" ]; then
-    local message="Error|${striptracks_type^} deleted the temporary remuxed file: \"$striptracks_tempvideo\".  Halting."
+    local message="Error|${striptracks_type^} deleted the temporary remuxed file: '$striptracks_tempvideo'.  Halting."
     echo "$message" | log
     echo "$message" >&2
     end_script 10
   fi
 
   # Rename the temporary video file to MKV
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Renaming \"$striptracks_tempvideo\" to \"$striptracks_newvideo\"" | log
   move_video "$striptracks_tempvideo" "$striptracks_newvideo"
 
   # Log new file size (see issue #61)
@@ -2059,7 +2066,21 @@ function rescan_and_cleanup {
 
   # Check for Batch mode
   if [ "${striptracks_mode,,}" = "batch" ]; then
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Not calling API while in batch mode." | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Not calling API while in Batch mode." | log
+    return
+  fi
+
+  # Check for Import mode
+  if [ "${striptracks_mode,,}" = "import" ]; then
+    # Check if already MKV
+    if ! [[ $striptracks_video == *.mkv ]]; then
+      # Not MKV
+      local message="Warn|Original video was not an MKV, so both the remuxed MKV and original file will appear in ${striptracks_type^}. Automatic cleanup is not possible in Import mode."
+      echo "$message" | log
+      echo "$message" >&2
+      rescan
+    fi
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Automatic cleanup not possible in Import mode." | log
     return
   fi
 
@@ -2114,8 +2135,8 @@ function rescan_and_cleanup {
   # # Check status of import job
   # check_job $striptracks_jobid
 
-  # Rescan if not in Import mode recycle bin use is disabled to remove the original video from the database
-  if [ "${striptracks_mode,,}" = "import" -o "$striptracks_recycle" = "false" ]; then
+  # Rescan if recycle bin use is disabled to remove the original video from the database
+  if [ "$striptracks_recycle" = "false" ]; then
     [ $striptracks_debug -ge 1 ] && echo "Debug|Recycle Bin use is disabled and original video has been deleted. Rescaning to remove the original video from the ${striptracks_type^} database." | log
     rescan
     sleep 1
@@ -2186,8 +2207,8 @@ function rescan_and_cleanup {
   fi
   export striptracks_videofile_info="$striptracks_result"
 
-  # Check that the metadata didn't get lost in the rescan.
-  if [ -n "$striptracks_videofile_info" ] && [ "$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)" != "$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)" -o "$(echo $striptracks_videofile_info | jq -crM '.releaseGroup | select(. != null)')" != "$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')" ]; then
+  # Check that the metadata didn't get lost in the rescan. This is not necessary in Import mode
+  if [ -n "$striptracks_original_metadata" ] && [ -n "$striptracks_videofile_info" ] && [ "$(echo $striptracks_videofile_info | jq -crM .quality.quality.name)" != "$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)" -o "$(echo $striptracks_videofile_info | jq -crM '.releaseGroup | select(. != null)')" != "$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')" ]; then
     # Put back the missing metadata
     set_metadata
     # Check that the returned result shows the updates
@@ -2208,7 +2229,7 @@ function rescan_and_cleanup {
   # Check the languages returned
   # If we stripped out other language tracks, remove them from Radarr/Sonarr
   # Only works in Radarr and Sonarr v4 (no per-episode edit function in Sonarr v3)
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Getting languages in new video file \"$striptracks_newvideo\"" | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Getting languages in new video file '$striptracks_newvideo'" | log
   get_mediainfo "$striptracks_newvideo"
 
   # Build array of full name languages

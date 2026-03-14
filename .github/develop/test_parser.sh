@@ -389,7 +389,7 @@ function set_default_tracks_org {
   fi
 }
 set_default_tracks_org
-set_default_tracks
+set_default_tracks "$striptracks_video"
 
 if [ "$striptracks_default_flags" = "$striptracks_default_flags_org" ]; then
   echo -e "\t${ansi_green}Default flags test passed!${ansi_nc}"
@@ -520,4 +520,4 @@ striptracks_default_subtitles=":fre-f"
 
 process_mkvmerge_json
 determine_track_order
-set_default_tracks
+set_default_tracks "$striptracks_video"

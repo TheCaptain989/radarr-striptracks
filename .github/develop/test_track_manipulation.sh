@@ -19,20 +19,20 @@ echo "determine_track_order -> $striptracks_neworder"
 export striptracks_json_processed='{"tracks":[{"id":0,"type":"video","language":"und","striptracks_keep":true},{"id":1,"type":"audio","language":"eng","name":"name","striptracks_keep":true},{"id":2,"type":"subtitles","language":"eng","name":"comment forced","forced":true,"striptracks_keep":true},{"id":3,"type":"subtitles","language":"eng","name":"comment","forced":false,"striptracks_keep":true}]}' 
 striptracks_default_subtitles=":eng-f" 
 striptracks_default_flags="" 
-set_default_tracks 
+set_default_tracks "$striptracks_video"
 echo "default_flags for :eng-f -> $striptracks_default_flags" 
  
 striptracks_default_subtitles=":eng=comment" 
 striptracks_default_flags="" 
-set_default_tracks 
+set_default_tracks "$striptracks_video"
 echo "default_flags for :eng=comment -> $striptracks_default_flags" 
  
 striptracks_default_subtitles=":eng=comment-f" 
 striptracks_default_flags="" 
-set_default_tracks 
+set_default_tracks "$striptracks_video"
 echo "default_flags for :eng=comment-f -> $striptracks_default_flags" 
  
 striptracks_default_subtitles=":eng-f=comment" 
 striptracks_default_flags="" 
-set_default_tracks 
+set_default_tracks "$striptracks_video"
 echo "default_flags for :eng-f=comment -> $striptracks_default_flags"
