@@ -721,8 +721,8 @@ function get_mediainfo {
 
   local videofile="$1"  # Video file to inspect
 
-  local mkvcommand="/usr/bin/mkvmerge -J \"$(escape_string "$videofile")\""
-  execute_mkv_command "$mkvcommand" "inspecting video"
+  local mkvcommand="/usr/bin/mkvmerge"
+  execute_mkv_command "inspecting video" "$mkvcommand" -J "$videofile"
   local return=$?
 
   unset striptracks_json
@@ -1153,16 +1153,24 @@ function escape_string {
 function execute_mkv_command {
   # Execute mkvmerge or mkvpropedit command
 
-  local command="$1" # Full mkvmerge or mkvpropedit command to execute
-  local action="$2" # Action being performed (for logging purposes)
+  local action="$1"  # Action being performed (for logging purposes)
+  local command="$2" # Full mkvmerge or mkvpropedit command to execute
+  local -a mkv_args=() # Use array instead of string for safer argument passing 
 
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $command" | log
+  # Process remaining data values
+  shift 2
+  while (( "$#" )); do
+    mkv_args+=("$1")
+    shift
+  done
+
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: $command ${mkv_args[*]}" | log
   local shortcommand="$(echo $command | sed -E 's/(.+ )?(\/[^ ]+) .*$/\2/')"
   shortcommand=$(basename "$shortcommand")
   unset striptracks_mkvresult
   # This must be a declare statement to avoid the 'Argument list too long' error with some large returned JSON (see issue #104)
   declare -g striptracks_mkvresult
-  striptracks_mkvresult=$(eval "$command")
+  striptracks_mkvresult=$($command "${mkv_args[@]}")
   local return=$?
   [ $striptracks_debug -ge 1 ] && echo "Debug|$shortcommand returned ${#striptracks_mkvresult} bytes" | log
   [ $striptracks_debug -ge 2 ] && [ ${#striptracks_mkvresult} -ne 0 ] && echo "$shortcommand returned: $striptracks_mkvresult" | awk '{print "Debug|"$0}' | log
@@ -1913,8 +1921,8 @@ function set_default_tracks {
 
   if [ -n "$striptracks_default_flags" ]; then
     # Execute mkvpropedit to set default flags on tracks
-    local mkvcommand="/usr/bin/mkvpropedit -q $striptracks_default_flags \"$(escape_string "$videofile")\""
-    execute_mkv_command "$mkvcommand" "setting default track flags"
+    local mkvcommand="/usr/bin/mkvpropedit"
+    execute_mkv_command "setting default track flags" "$mkvcommand" -q $striptracks_default_flags "$videofile"
   fi
 }
 function set_title_and_exit_if_nothing_removed {
@@ -1950,15 +1958,14 @@ function set_title_and_exit_if_nothing_removed {
     # The video is still moved when running in Import mode
     move_video "$striptracks_video" "$striptracks_newvideo"
   fi
-  local mkvcommand="/usr/bin/mkvpropedit -q --edit info --set \"title=$(escape_string "$striptracks_title")\" \"$(escape_string "$striptracks_newvideo")\""
-  execute_mkv_command "$mkvcommand" "setting video title"
+  local mkvcommand="/usr/bin/mkvpropedit"
+  execute_mkv_command "setting video title" "$mkvcommand" -q --edit info --set "title=$(escape_string "$striptracks_title")" "$striptracks_newvideo"
   # Set default tracks if configured
   set_default_tracks "$striptracks_newvideo"
   end_script
 }
 function remux_video {
   # Execute MKVmerge to remux video
-  # TODO: Replace eval with an array argument, if possible
 
   # Build argument with kept audio tracks for MKVmerge
   local audioarg=$(echo "$striptracks_json_processed" | jq -crM '.tracks | map(select(.type == "audio" and .striptracks_keep) | .id) | join(",")')
@@ -1978,8 +1985,8 @@ function remux_video {
   fi
 
   # Execute MKVmerge (remux then rename, see issue #46)
-  local mkvcommand="$striptracks_nice /usr/bin/mkvmerge --title \"$(escape_string "$striptracks_title")\" -q -o \"$(escape_string "$striptracks_tempvideo")\" $audioarg $subsarg $striptracks_neworder \"$(escape_string "$striptracks_video")\""
-  execute_mkv_command "$mkvcommand" "remuxing video"
+  local mkvcommand="$striptracks_nice /usr/bin/mkvmerge"
+  execute_mkv_command "remuxing video" "$mkvcommand" -o "$striptracks_tempvideo" -q --title "$(escape_string "$striptracks_title")" $audioarg $subsarg $striptracks_neworder "$striptracks_video"
 
   # Check for non-empty file
   if [ ! -s "$striptracks_tempvideo" ]; then
