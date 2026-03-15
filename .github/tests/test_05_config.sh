@@ -14,19 +14,19 @@ setup_suite() {
 test_api_url() {
   fake get_version :
   fake check_compat :
-  check_config
+  check_config_file
   assert_equals "http://localhost:7878/api/v3" "$striptracks_api_url"
 }
 
 test_api_curl_failure() {
   fake get_version return 1
-  assert_status_code 17 "check_config 2>/dev/null"
+  assert_status_code 17 "check_config_file 2>/dev/null"
 }
 
 test_api_bad_version() {
   fake get_version :
   fake check_compat return 1
-  assert_status_code 8 "check_config 2>/dev/null"
+  assert_status_code 8 "check_config_file 2>/dev/null"
 }
 
 teardown_suite() {
