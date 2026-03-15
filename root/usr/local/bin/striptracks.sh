@@ -126,93 +126,112 @@ Source and full documentation:
   https://github.com/TheCaptain989/radarr-striptracks
 
 Usage:
-  $striptracks_script [{-a|--audio} <audio_languages>[{+|-}modifier(s)[=name]] [{-s|--subs} <subtitle_languages>[{+|-}modifier(s)[=name]]] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [--skip-profile <profile_name>]... [--set-default-audio <language_code>[{+|-}modifier(s)[=name]]] [--set-default-subs <language_code>[{+|-}modifier(s)[=name]]] [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-p|--priority} {idle|low|medium|high}] [{-d|--debug} [<level>]]
+  $striptracks_script [{-a|--audio} <audio_languages>[{+|-}modifiers][=name] [{-s|--subs} <subtitle_languages>[{+|-}modifiers][=name]] [{-f|--file} <video_file>]]
+      [--reorder]
+      [--disable-recycle]
+      [--skip-profile <profile_name>]...
+      [--set-default-audio <audio_languages>[{+|-}modifiers][=name]]
+      [--set-default-subs <subtitle_languages>[{+|-}modifiers][=name]]
+      [{-l|--log} <log_file>]
+      [{-c|--config} <config_file>]
+      [{-p|--priority} {idle|low|medium|high}]
+      [{-d|--debug} [<level>]]
 
   Options can also be set via the STRIPTRACKS_ARGS environment variable.
   Command-line arguments override the environment variable.
 
 Options and Arguments:
-  -a, --audio <audio_languages>[{+|-}modifier(s)[=name]]
-                                   Audio languages to keep
-                                   ISO639-2 code(s) prefixed with a colon \`:\`
-                                   multiple codes may be concatenated.
-                                   Each code may optionally be followed by a
-                                   plus \`+\` or \`-\` and one or more modifiers.
-                                   Each code may optionally be followed by an
-                                   equals \`=\` and a track name.
-  -s, --subs <subtitle_languages>[{+|-}modifier(s)[=name]]
-                                   Subtitles languages to keep
-                                   ISO639-2 code(s) prefixed with a colon \`:\`
-                                   multiple codes may be concatenated.
-                                   Each code may optionally be followed by a
-                                   plus \`+\` or \`-\` and one or more modifiers.
-                                   Each code may optionally be followed by an
-                                   equals \`=\` and a track name.
-  -f, --file <video_file>          If included, the script enters Batch mode
-                                   and converts the specified video file.
-                                   WARNING: Do not use this argument when
-                                   calling from Radarr or Sonarr!
-      --reorder                    Reorder audio and subtitles tracks to match
-                                   the language code order specified in the
-                                   <audio_languages> and <subtitle_languages>
-                                   arguments.
-      --disable-recycle            Disable recycle bin use, even if configured
-                                   in Radarr/Sonarr
+  -a, --audio <audio_languages>[{+|-}modifiers][=name]
+                  Audio languages to keep
+                  ISO639-2 code(s) prefixed with a colon \`:\`
+                  Multiple codes may be concatenated.
+                  Each code may optionally be followed by a plus \`+\` to include or minus \`-\` to
+                  exclude tracks and one or more modifiers.
+                  Each code may optionally be followed by an equals \`=\` and a track name matching string.
+
+  -s, --subs <subtitle_languages>[{+|-}modifiers][=name]
+                  Subtitles languages to keep
+                  ISO639-2 code(s) prefixed with a colon \`:\`
+                  Multiple codes may be concatenated.
+                  Each code may optionally be followed by a plus \`+\` to include or minus \`-\` to 
+                  exclude tracks and one or more modifiers.
+                  Each code may optionally be followed by an equals \`=\` and a track name matching string.
+
+  -f, --file <video_file>
+                  If included, the script enters Batch mode and processes the specified video file.
+                  Required the \`--audio\` option.
+                  WARNING: Do not use this argument when calling from Radarr or Sonarr!
+
+      --reorder 
+                  Reorder audio and subtitles tracks to match the language code order specified in the
+                  <audio_languages> and <subtitle_languages> arguments.
+
+      --disable-recycle
+                  Disable recycle bin use, even if configured in Radarr/Sonarr
+
       --skip-profile <profile_name>
-                                   Skip processing if the video was downloaded
-                                   using the specified quality profile name.
-                                   May be specified multiple times to skip
-                                   multiple profiles.
-      --set-default-audio <language_codes>[{+|-}modifier(s)[=name]]
-                                   Set the default audio track to the first
-                                   track of the specified language.
-                                   The code may optionally be followed by a
-                                   plus \`+\` or \`-\` and one or more modifiers.
-                                   The code may optionally be followed by an
-                                   equals \`=\` and a track name.
-      --set-default-subs <language_codes>[{+|-}modifier(s)[=name]]
-                                   Set the default subtitles track to the first
-                                   track of the specified language.
-                                   The code may optionally be followed by a
-                                   plus \`+\` or \`-\` and one or more modifiers.
-                                   The code may optionally be followed by an
-                                   equals \`=\` and a track name.
-  -l, --log <log_file>             Log filename
-                                   [default: /config/log/striptracks.txt]
-  -c, --config <config_file>       Radarr/Sonarr XML configuration file
-                                   [default: ./config/config.xml]
+                  Skip processing if the video was downloaded using the specified Quality Profile name.
+                  May be specified multiple times to skip multiple profiles.
+
+      --set-default-audio <audio_languages>[{+|-}modifier(s)][=name]
+                  Set the default audio track to the first track that matches, and all other tracks
+                  are marked as not default.
+                  Each code may optionally be followed by a plus \`+\` or minus \`-\` and one or more modifiers.
+                  Each code may optionally be followed by an equals \`=\` and a track name matching string.
+
+      --set-default-subs <subtitle_languages>[{+|-}modifier(s)][=name]
+                  Set the default subtitles track to the first track that matches, and all other tracks
+                  are marked as not default.
+                  Each code may optionally be followed by a plus \`+\` or minus \`-\` and one or more modifiers.
+                  Each code may optionally be followed by an equals \`=\` and a track name matching string.
+
+  -l, --log <log_file>
+                  Log filename
+                  [default: /config/log/striptracks.txt]
+
+  -c, --config <config_file>
+                  Radarr/Sonarr XML configuration file
+                  [default: /config/config.xml]
+
   -p, --priority idle|low|medium|high
-                                   CPU and I/O process priority for mkvmerge
-                                   [default: medium]
-  -d, --debug [<level>]            Enable debug logging
-                                   level is optional, between 1-3
-                                   1 is lowest, 3 is highest
-                                   [default: 1]
-      --help                       Display this help and exit
-      --version                    Display script version and exit
+                  CPU and I/O process priority for mkvmerge
+                  [default: medium]
+                  WARNING: High priority can consume all system resources. When processing a large video file
+                  your system may become unresponsive!
+
+  -d, --debug [<level>]
+                  Enables debug logging.
+                  Level is optional:
+                    1 (low)
+                    2 includes JSON output
+                    3 contains even more JSON output
+                  [default: 1]
+
+      --help
+                  Display this help and exit
+
+      --version
+                  Display script version and exit
       
-When audio_languages and subtitle_languages are omitted the script detects the
-audio or subtitle languages configured in the Radarr or Sonarr profile.  When
-used on the command line, they override the detected codes.  They are also
-accepted as positional parameters for backwards compatibility.
+When <audio_languages> and <subtitle_languages> are omitted the script detects the audio or subtitle
+languages configured in the Radarr or Sonarr profile. When used on the command line, they override
+the detected codes.  They are also accepted as positional parameters for backwards compatibility.
 
-Language modifiers are prefixed with plus \`+\` or minus \`-\` and may be \`f\`
-or \`d\` which selects tracks with or without Forced or Default flags set
-respectively, or a number which specifies the maximum tracks to keep.
+Language modifiers are prefixed with plus \`+\` or minus \`-\` and may be \`f\` or \`d\` which
+selects tracks with or without Forced or Default flags set respectively, or a number which specifies
+the maximum tracks to keep.
 
-The name modifier is a string that is used to match against the track name.
+The name string is used as a case-insensitive match against the track name.
 
 Batch Mode:
-  In Batch mode the script acts as if it were not called from within Radarr
-  or Sonarr.  It processes the file specified on the command line and ignores
-  any environment variables that are normally expected.  The MKV embedded title
-  attribute is set to the basename of the file minus the extension.
+  Batch mode allows the script to be executed independently of Radarr or Sonarr.  It processes the
+  file specified on the command line and ignores any environment variables that are normally
+  expected.  The MKV embedded title attribute is set to the basename of the file minus the extension.
 
 Import Using Script:
-  The script can also be used to import the video directly from the download
-  client by selecting Settings > Media Management > Importing > Import Using
-  Script setting in Radarr/Sonarr.  Doing so will process the video file
-  before it is added to the library.
+  The script can also be used to import the video directly from the download client by selecting
+  the Settings > Media Management > Importing > Import Using Script setting in Radarr/Sonarr.
+  Doing so will process the video file before it is added to the library.
 
 Examples:
   $striptracks_script -d 2
@@ -242,14 +261,13 @@ Examples:
                   # Keep all audio and no subtitles
 
   $striptracks_script -a :org:any+d1 -s :eng+1:any+f2
-                  # Keep all Original and one default audio track in any
-                  # language, and one English and two forced subtitles in any
-                  # language
+                  # Keep all Original and one default audio track in any language,
+                  # and one English and two forced subtitles in any language
 
-  $striptracks_script --audio :org:eng:fre:fra --subs :org:eng:fre:fra --reorder --disable-recycle --set-default-audio :org --set-default-subs :eng-f
+  $striptracks_script --audio :org:eng:fre:fra --subs :org:eng:fre:fra --reorder --disable-recycle --set-default-audio :org:eng --set-default-subs :eng-f
                   # Keep the Original, English, and French audio and subtitles
                   # Reorder the tracks to match the above order (audio first, then subtitles)
-                  # Set the first Original language audio track as default
+                  # Set the first Original language audio track, and if not found, the first English audio track, as default
                   # Set the first non-forced English subtitles tracks as default
                   # Force delete the original video after remuxing
 "
@@ -546,7 +564,7 @@ function initialize_mode_variables {
       # export striptracks_sonarr_json=" \"episodeIds\":[.episodes[].id],"
     else
       # Called in an unexpected way
-      echo -e "Error|Unknown or missing '*_eventtype' or '*_transfermode' environment variables: ${striptracks_type}\nNot calling from Radarr/Sonarr? Try using Batch Mode option: -f <file>" >&2
+      echo -e "Error|Unknown or missing *_eventtype or *_transfermode environment variables.\nNot calling from Radarr/Sonarr? Try using Batch Mode option: -f <file>" >&2
       usage
       exit 7
     fi
@@ -944,7 +962,7 @@ function log_first_debug_messages {
   [ $striptracks_debug -ge 2 ] && printenv | sort | sed 's/^/Debug|/' | log
 }
 function check_eventtype {
-  # Check for invalid _eventtypes and handle test event
+  # Check for invalid _eventtype and handle test event
 
   if [[ "${striptracks_event}" =~ Grab|Rename|MovieAdded|MovieDelete|MovieFileDelete|SeriesAdd|SeriesDelete|EpisodeFileDelete|HealthIssue|ApplicationUpdate ]]; then
     local message="Error|${striptracks_type^} event ${striptracks_event} is not supported. Exiting."
