@@ -250,8 +250,11 @@ Examples:
                   # Keep English and Original audio, and forced or English
                   # subtitles
 
-  $striptracks_script -a :eng -s \"\"
+  $striptracks_script -a :eng
                   # Keep English audio and no subtitles
+
+  $striptracks_script -a :any
+                  # Keep all audio and no subtitles
 
   $striptracks_script -d -a :eng:kor:jpn -s :eng:spa
                   # Enable debugging level 1, keeping English, Korean, and
@@ -261,9 +264,6 @@ Examples:
                   # Batch Mode
                   # Keep English and Unknown audio and English subtitles,
                   # processing the video specified
-
-  $striptracks_script -a :any -s \"\"
-                  # Keep all audio and no subtitles
 
   $striptracks_script -a :org:any+d1 -s :eng+1:any+f2
                   # Keep all Original and one default audio track in any language,
@@ -316,7 +316,7 @@ function process_command_line {
       -l|--log )
         # Log file
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 20
         fi
@@ -330,13 +330,13 @@ function process_command_line {
       ;;
       --version )
         # Display version
-        echo "${striptracks_script} ${striptracks_ver/{{VERSION\}\}/unknown}"
+        echo_ansi "${striptracks_script} ${striptracks_ver/{{VERSION\}\}/unknown}"
         exit 0
       ;;
       -f|--file )
         # Batch Mode
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 1
         fi
@@ -347,11 +347,11 @@ function process_command_line {
       -a|--audio )
         # Audio languages to keep
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 2
         elif [[ "$2" != :* ]]; then
-          echo "Error|Invalid option: $1 argument requires a colon." >&2
+          echo_ansi "Error|Invalid option: $1 argument requires a colon." >&2
           usage
           exit 2
         fi
@@ -361,11 +361,11 @@ function process_command_line {
       -s|--subs|--subtitles )
         # Subtitles languages to keep
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 3
         elif [[ "$2" != :* ]]; then
-          echo "Error|Invalid option: $1 argument requires a colon." >&2
+          echo_ansi "Error|Invalid option: $1 argument requires a colon." >&2
           usage
           exit 3
         fi
@@ -375,7 +375,7 @@ function process_command_line {
       -c|--config )
         # *arr XML configuration file
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 20
         fi
@@ -386,11 +386,11 @@ function process_command_line {
       -p|--priority )
         # Set process priority (see issue #102)
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 20
         elif ! [[ "$2" =~ ^(idle|low|medium|high)$ ]]; then
-          echo "Error|Invalid option: $1 argument must be idle, low, medium, or high." >&2
+          echo_ansi "Error|Invalid option: $1 argument must be idle, low, medium, or high." >&2
           usage
           exit 20
         fi
@@ -421,7 +421,7 @@ function process_command_line {
         # Skip processing if the video was downloaded using the specified quality profile name. (see issue #108)
         # May be specified multiple times to skip multiple profiles.
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 20
         fi
@@ -431,11 +431,11 @@ function process_command_line {
       --set-default-audio )
         # Set the default audio track to specified language, and optional type (see issue #111)
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 20
         elif [[ "$2" != :* ]]; then
-          echo "Error|Invalid option: $1 argument requires a colon." >&2
+          echo_ansi "Error|Invalid option: $1 argument requires a colon." >&2
           usage
           exit 20
         fi
@@ -445,11 +445,11 @@ function process_command_line {
       --set-default-subs|--set-default-subtitles )
         # Set the default subtitles track to specified language, and optional type (see issue #111)
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
-          echo "Error|Invalid option: $1 requires an argument." >&2
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
           exit 20
         elif [[ "$2" != :* ]]; then
-          echo "Error|Invalid option: $1 argument requires a colon." >&2
+          echo_ansi "Error|Invalid option: $1 argument requires a colon." >&2
           usage
           exit 20
         fi
@@ -458,7 +458,7 @@ function process_command_line {
       ;;
       -*)
         # Unknown option
-        echo "Error|Unknown option: $1" >&2
+        echo_ansi "Error|Unknown option: $1" >&2
         usage
         exit 20
       ;;
@@ -475,14 +475,14 @@ function process_command_line {
   # Check for and assign positional arguments. Named override positional.
   if [ -n "$1" ]; then
     if [ -n "$striptracks_audiokeep" ]; then
-      echo "Warning|Both positional and named arguments set for audio. Using $striptracks_audiokeep" >&2
+      echo_ansi "Warning|Both positional and named arguments set for audio. Using $striptracks_audiokeep" >&2
     else
       export striptracks_audiokeep="$1"
     fi
   fi
   if [ -n "$2" ]; then
     if [ -n "$striptracks_subskeep" ]; then
-      echo "Warning|Both positional and named arguments set for subtitles. Using $striptracks_subskeep" >&2
+      echo_ansi "Warning|Both positional and named arguments set for subtitles. Using $striptracks_subskeep" >&2
     else
       export striptracks_subskeep="$2"
     fi
@@ -502,8 +502,8 @@ function strip_ansi_codes {
   # Remove ANSI escape sequences from stdin (e.g., before writing to log files)
   sed -E 's/\x1B\[[0-9;]*[mK]//g'
 }
-function echo {
-  # Override builtin echo to apply ANSI colors for terminal output only.
+function echo_ansi {
+  # Apply ANSI colors for terminal output only.
   # Colors are based on the message prefix (Error|, Warn|, Debug|).
   
   local opts=()
@@ -616,7 +616,7 @@ function initialize_mode_variables {
       # export striptracks_sonarr_json=" \"episodeIds\":[.episodes[].id],"
     else
       # Called in an unexpected way
-      echo -e "Error|Unknown or missing *_eventtype or *_transfermode environment variables.\nNot calling from Radarr/Sonarr? Try using Batch Mode option: -f <file>" >&2
+      echo_ansi "Error|Unknown or missing *_eventtype or *_transfermode environment variables.\nNot calling from Radarr/Sonarr? Try using Batch Mode option: -f <file>" >&2
       usage
       exit 7
     fi
@@ -893,7 +893,7 @@ function check_compat {
       # Unknown feature
       local message="Error|Unknown feature $compat_type in ${striptracks_type^}"
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
     ;;
   esac
   [ $striptracks_debug -ge 1 ] && echo "Debug|Feature $compat_type is $([ $return -eq 1 ] && echo "not ")compatible with ${striptracks_type^} v${striptracks_arr_version}" | log
@@ -925,11 +925,11 @@ function process_org_code {
     if [ "${striptracks_mode,,}" = "batch" ]; then
       local message="Warn|${track_type^} argument contains ':org' code, but this is undefined for Batch mode! Unexpected behavior may result."
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
     elif ! check_compat originallanguage; then
       local message="Warn|${track_type^} argument contains ':org' code, but this is undefined and not compatible with this mode/version! Unexpected behavior may result."
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
     fi
 
     # Log debug message if applicable
@@ -962,19 +962,19 @@ function check_log {
 
   # Check that log path exists
   if [ ! -d "$(dirname "$striptracks_log")" ]; then
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Log file path does not exist: '$(dirname "$striptracks_log")'. Using log file in current directory."
+    [ $striptracks_debug -ge 1 ] && echo_ansi "Debug|Log file path does not exist: '$(dirname "$striptracks_log")'. Using log file in current directory."
     export striptracks_log=./striptracks.txt
   fi
 
   # Check that the log file exists
   if [ ! -f "$striptracks_log" ]; then
-    echo "Info|Creating a new log file: $striptracks_log"
+    echo_ansi "Info|Creating a new log file: $striptracks_log"
     touch "$striptracks_log"
   fi
 
   # Check that the log file is writable
   if [ ! -w "$striptracks_log" ]; then
-    echo "Error|Log file '$striptracks_log' is not writable or does not exist." >&2
+    echo_ansi "Error|Log file '$striptracks_log' is not writable or does not exist." >&2
     export striptracks_log=/dev/null
     change_exit_status 12
   fi
@@ -986,7 +986,7 @@ function check_required_binaries {
     if [ ! -f "$striptracks_file" ]; then
       local message="Error|$striptracks_file is required by this script"
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       end_script 4
     fi
   done
@@ -998,7 +998,7 @@ function log_first_debug_messages {
   if [ $striptracks_debug -ge 1 ]; then
     local message="Debug|Running ${striptracks_script} version ${striptracks_ver/{{VERSION\}\}/unknown} in ${striptracks_mode} mode with debug logging level ${striptracks_debug}. Video: $striptracks_title"
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
   fi
 
   # Log command line parameters
@@ -1023,7 +1023,7 @@ function check_eventtype {
   if [[ "${striptracks_event}" =~ Grab|Rename|MovieAdded|MovieDelete|MovieFileDelete|SeriesAdd|SeriesDelete|EpisodeFileDelete|HealthIssue|ApplicationUpdate ]]; then
     local message="Error|${striptracks_type^} event ${striptracks_event} is not supported. Exiting."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     end_script 20
   fi
 
@@ -1032,7 +1032,7 @@ function check_eventtype {
     echo "Info|${striptracks_type^} event: ${striptracks_event}" | log
     local message="Info|Script was test executed successfully."
     echo "$message" | log
-    echo "$message"
+    echo_ansi "$message"
     end_script 0
   fi
 }
@@ -1105,7 +1105,7 @@ function check_config_file {
       # curl errored out. API calls are really broken at this point.
       local message="Error|[$return] Unable to get ${striptracks_type^} version information. It is not safe to continue."
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       end_script 17
     }
     export striptracks_arr_version="$(echo $striptracks_result | jq -crM .version)"
@@ -1116,14 +1116,14 @@ function check_config_file {
       # Radarr/Sonarr version 3 required
       local message="Error|This script does not support ${striptracks_type^} version ${striptracks_arr_version}. Please upgrade."
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       end_script 8
     fi
   else
     # No config file means we can't call the API.  Best effort at this point.
     local message="Warn|Unable to locate ${striptracks_type^} config file: '$striptracks_arr_config'"
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
   fi
 }
 function call_api {
@@ -1188,14 +1188,14 @@ function call_api {
         local error_message="$(echo $striptracks_result | jq -jcM 'if type=="array" then map(.errorMessage) | join(", ") else (if has("title") then "[HTTP \(.status?)] \(.title) \(.errors?)" elif has("message") then .message else "Unknown JSON format." end) end')"
         local message=$(echo -e "[$curl_return] curl error when calling: \"$url\"$data_info\nWeb server returned: $error_message" | awk '{print "Error|"$0}')
         echo "$message" | log
-        echo "$message" >&2
+        echo_ansi "$message" >&2
       fi
       break
     fi
     if [ $i -eq 5 ]; then
       local message="Error|Database is locked after 5 attempts when calling ${striptracks_type^} API using $method and URL '$url'${data:+ with ${data[@]}}"
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
     fi
   done
 
@@ -1262,7 +1262,7 @@ function execute_mkv_command {
     2)
       local message=$(echo -e "[$return] Error when $action.\n$shortcommand returned: $(echo "$striptracks_mkvresult" | jq -RcrM '. as $raw | try ($raw | fromjson | .errors[]) catch $raw')" | awk '{print "Error|"$0}')
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       end_script 13
     ;;
   esac
@@ -1270,7 +1270,7 @@ function execute_mkv_command {
   if [ "$(echo "$striptracks_mkvresult" | jq -crM '.container.supported')" = "false" ]; then
     local message="Error|Video format is unsupported. Unable to continue. $shortcommand returned container info: $(echo $striptracks_mkvresult | jq -crM .container)"
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     end_script 9
   fi
   return $return
@@ -1282,7 +1282,7 @@ function check_video {
   if [ -z "$striptracks_video" ]; then
     local message="Error|No video file found! radarr_moviefile_path or sonarr_episodefile_path environment variable missing and -f option not specified on command line."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     usage 
     end_script 1
   fi
@@ -1291,7 +1291,7 @@ function check_video {
   if [ ! -f "$striptracks_video" ]; then
     local message="Error|Input video file not found: '$striptracks_video'"
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     end_script 5
   fi
 
@@ -1301,7 +1301,7 @@ function check_video {
   if [ "$refcount" != "1" ]; then
     local message="Warn|Input video file is a hardlink and this will be broken by remuxing."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
   fi
 
   # Create temporary filename
@@ -1323,7 +1323,7 @@ function move_video {
   local return=$?; [ $return -ne 0 ] && {
     local message=$(echo -e "[$return] Unable to move video: \"$source\" to: \"$dest\".  Halting.\nmv returned: $result" | awk '{print "Error|"$0}')
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     end_script 6
   }          
 }
@@ -1336,7 +1336,7 @@ function exit_if_profile_skipped {
       if [ "$skip_profile" = "$profileName" ]; then
         local message="Info|Skipping processing because quality profile '$profileName' is configured to be skipped."
         echo "$message" | log
-        echo "$message"
+        echo_ansi "$message"
         if [ "${striptracks_mode,,}" = "import" ]; then
           # mv the video just before exit
           move_video "$striptracks_video" "$striptracks_newvideo"
@@ -1361,7 +1361,7 @@ function detect_languages {
       # No URL means we can't call the API
     local message="Warn|Unable to determine ${striptracks_type^} API URL."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     change_exit_status 20
     return
   fi
@@ -1371,7 +1371,7 @@ function detect_languages {
     # Get language codes API failed
     local message="Warn|Unable to retrieve language codes from 'language' API (curl error or returned a null name)."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     change_exit_status 17
     return
   fi
@@ -1384,7 +1384,7 @@ function detect_languages {
     if [ "${striptracks_mode,,}" != "import" ]; then
       local message="Warn|Could not find a video file for $striptracks_video_api id '$striptracks_video_id'"
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       change_exit_status 17
     else
       [ $striptracks_debug -ge 1 ] && echo "Debug|No video file available via API in ${striptracks_mode^} mode" | log
@@ -1402,7 +1402,7 @@ function detect_languages {
       # No '.path' in returned JSON
       local message="Warn|The '$striptracks_videofile_api' API with id $striptracks_videofile_id returned no path."
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       change_exit_status 20
     fi  
     export striptracks_videofile_info="$striptracks_result"
@@ -1417,7 +1417,7 @@ function detect_languages {
     # Get qualityprofile API failed
     local message="Warn|Unable to retrieve quality profiles from ${striptracks_type^} API"
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     change_exit_status 17
   fi  
   local qualityProfiles="$striptracks_result"
@@ -1493,7 +1493,7 @@ function detect_languages {
       # languageProfile API failed
       local message="Warn|The 'languageprofile' API returned an error."
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       change_exit_status 17
     fi
   fi
@@ -1502,7 +1502,7 @@ function detect_languages {
   if [ -z "$profileLanguages" -o "$profileLanguages" = "[null]" ]; then
     local message="Warn|No languages found in any profile or custom format. Unable to use automatic language detection."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
   else
     # Final determination of configured languages in profiles or custom formats
     local profileLangNames="$(echo $profileLanguages | jq -crM '[.[].name]')"
@@ -1538,7 +1538,7 @@ function check_arr_config {
     # No '.id' in returned JSON
     local message="Warn|The Media Management Config API returned no id."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     change_exit_status 17
   }
   # ...to unmonitor deleted videos
@@ -1555,7 +1555,7 @@ function check_arr_config {
     if [ "${striptracks_mode,,}" = "custom script" -a "$striptracks_importscript" = "$0" ]; then
       local message="Error|${striptracks_type^} is configured to use ${striptracks_script} as an Import script, but called it as a Custom Script, which would result in duplicate processing. Halting."
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       end_script 20
     fi
   fi
@@ -1567,7 +1567,7 @@ function resolve_code_conflict {
   if [ -z "$striptracks_audiokeep" -a -z "$striptracks_profileLangCodes" ]; then
     local message="Error|No audio languages specified or detected!"
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     usage
     end_script 2
   fi
@@ -1870,7 +1870,7 @@ function process_mkvmerge_json {
   if [ "$(echo "$striptracks_json_processed" | jq -crM '.tracks|map(select(.type=="audio" and .striptracks_keep))')" = "[]" ]; then
     local message="Error|Unable to determine any audio tracks to keep. Exiting."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     end_script 11
   fi
 }
@@ -2072,7 +2072,7 @@ function remux_video {
   if [ ! -s "$striptracks_tempvideo" ]; then
     local message="Error|Unable to locate or invalid remuxed file: '$striptracks_tempvideo'.  Halting."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     end_script 10
   fi
 }
@@ -2088,7 +2088,7 @@ function set_perms_and_owner {
     local return=$?; [ $return -ne 0 ] && {
       local message=$(echo -e "[$return] Error when changing owner of file: '$striptracks_tempvideo'\nchown returned: $result" | awk '{print "Error|"$0}')
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       change_exit_status 15
     }
   else
@@ -2101,7 +2101,7 @@ function set_perms_and_owner {
   local return=$?; [ $return -ne 0 ] && {
     local message=$(echo -e "[$return] Error when changing permissions of file: '$striptracks_tempvideo'\nchmod returned: $result" | awk '{print "Error|"$0}')
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     change_exit_status 15
   }
 }
@@ -2116,7 +2116,7 @@ function replace_original_video {
     local return=$?; [ $return -ne 0 ] && {
       local message=$(echo -e "[$return] Error when deleting video: '$striptracks_video'\nrm returned: $result" | awk '{print "Error|"$0}')
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       change_exit_status 16
     }
   else
@@ -2125,7 +2125,7 @@ function replace_original_video {
     local return=$?; [ $return -ne 0 ] && {
       local message="Error|[$return] ${striptracks_type^} error when deleting the original video: '$striptracks_video'"
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       change_exit_status 17
     }
   fi
@@ -2134,7 +2134,7 @@ function replace_original_video {
   if [ ! -f "$striptracks_tempvideo" ]; then
     local message="Error|${striptracks_type^} deleted the temporary remuxed file: '$striptracks_tempvideo'.  Halting."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     end_script 10
   fi
 
@@ -2164,7 +2164,7 @@ function rescan_and_cleanup {
       # Not MKV
       local message="Warn|Original video was not an MKV, so both the remuxed MKV and original file will appear in ${striptracks_type^}. Automatic cleanup is not possible in Import mode."
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       rescan
     fi
     [ $striptracks_debug -ge 1 ] && echo "Debug|Automatic cleanup not possible in Import mode." | log
@@ -2176,7 +2176,7 @@ function rescan_and_cleanup {
     # No URL means we can't call the API
     local message="Warn|Unable to determine ${striptracks_type^} API URL."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     change_exit_status 20
     return
   fi
@@ -2186,7 +2186,7 @@ function rescan_and_cleanup {
     # No video ID means we can't call the API
     local message="Warn|Missing or empty environment variable: striptracks_video_id='$striptracks_video_id' or striptracks_videofile_id='$striptracks_videofile_id'. Cannot rescan for remuxed video."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     change_exit_status 20
     return
   fi
@@ -2197,7 +2197,7 @@ function rescan_and_cleanup {
   # if ! get_import_info; then
     #  local message="Error|${striptracks_type^} error getting import file list in \"$striptracks_video_folder\" for $striptracks_video_type ID $striptracks_rescan_id. Cannot import remuxed video."
     #  echo "$message" | log
-    #  echo "$message" >&2
+    #  echo_ansi "$message" >&2
     #  change_exit_status 17
     #  return
   # fi  
@@ -2215,7 +2215,7 @@ function rescan_and_cleanup {
   # return=$?; [ $return -ne 0 ] && {
     # message="Error|[$return] ${striptracks_type^} error when importing new video!"
     # echo "$message" | log
-    # echo "$message" >&2
+    # echo_ansi "$message" >&2
     # change_exit_status 17
   # }
   # striptracks_jobid="$(echo $striptracks_result | jq -crM .id)"
@@ -2233,7 +2233,7 @@ function rescan_and_cleanup {
     # Error from rescan API
     local message="Error|The '$striptracks_rescan_api' API with ${striptracks_video_type}Id $striptracks_rescan_id failed."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     change_exit_status 17
     return
   fi  
@@ -2258,7 +2258,7 @@ function rescan_and_cleanup {
       ;;
     esac
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     end_script
   }
 
@@ -2267,7 +2267,7 @@ function rescan_and_cleanup {
     # 'hasFile' is False in returned JSON
     local message="Warn|Could not find a video file for $striptracks_video_api id '$striptracks_video_id'"
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     change_exit_status 17
     return
   fi
@@ -2288,7 +2288,7 @@ function rescan_and_cleanup {
     # No '.path' in returned JSON
     local message="Warn|The '$striptracks_videofile_api' API with ${striptracks_video_api}File id $striptracks_videofile_id returned no path."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     change_exit_status 17
     return
   fi
@@ -2305,7 +2305,7 @@ function rescan_and_cleanup {
     else
       local message="Warn|Unable to update ${striptracks_type^} $striptracks_video_api '$striptracks_title' to quality '$(echo $striptracks_original_metadata | jq -crM .quality.quality.name)' or release group to '$(echo $striptracks_original_metadata | jq -crM '.releaseGroup | select(. != null)')'"
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       change_exit_status 17
     fi
   else
@@ -2339,7 +2339,7 @@ function rescan_and_cleanup {
         local return=$?; [ $return -ne 0 ] && {
           local message="Error|${striptracks_type^} error when updating video language(s)."
           echo "$message" | log
-          echo "$message" >&2
+          echo_ansi "$message" >&2
           change_exit_status 17
         }
       else
@@ -2353,7 +2353,7 @@ function rescan_and_cleanup {
         local return=$?; [ $return -ne 0 ] && {
           local message="Error|${striptracks_type^} error when updating video language(s)."
           echo "$message" | log
-          echo "$message" >&2
+          echo_ansi "$message" >&2
           change_exit_status 17
         }
       else
@@ -2364,7 +2364,7 @@ function rescan_and_cleanup {
       # Some unknown JSON formatting
       local message="Warn|The '$striptracks_videofile_api' API returned unknown JSON language node."
       echo "$message" | log
-      echo "$message" >&2
+      echo_ansi "$message" >&2
       change_exit_status 20
     fi
   elif [ "$newvideo_langcodes" = "und" ]; then
@@ -2374,7 +2374,7 @@ function rescan_and_cleanup {
     # Video language not in striptracks_isocodemap
     local message="Warn|Video language code(s) '${newvideo_langcodes//$'\n'/,}' not found in the ISO Codemap. Cannot evaluate."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     change_exit_status 20
   fi
 
@@ -2383,7 +2383,7 @@ function rescan_and_cleanup {
   local return=$?; [ $return -ne 0 ] && {
     local message="Warn|[$return] ${striptracks_type^} error when getting list of videos to rename."
     echo "$message" | log
-    echo "$message" >&2
+    echo_ansi "$message" >&2
     change_exit_status 17
   }
   # Check if new video is in list of files that can be renamed
@@ -2395,7 +2395,7 @@ function rescan_and_cleanup {
       local return=$?; [ $return -ne 0 ] && {
         local message="Error|[$return] ${striptracks_type^} error when renaming \"$(basename "$striptracks_newvideo")\" to \"$(basename "$renamedvideo")\""
         echo "$message" | log
-        echo "$message" >&2
+        echo_ansi "$message" >&2
         change_exit_status 17
       }
     else

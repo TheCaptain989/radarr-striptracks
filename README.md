@@ -235,7 +235,8 @@ All language conditions with positive scores *and* Negated conditions with negat
 ### Options and Arguments
 The script also supports command-line arguments that will override the automatic language detection.  More granular control can therefore be exerted or extended using tagging and defining multiple *Connect* scripts (this is native Radarr/Sonarr functionality outside the scope of this documentation).
 
-The syntax for the command-line is:  
+The syntax for the command-line is:
+
 ```shell
 striptracks.sh [{-a|--audio} <audio_languages>[{+|-}modifiers][=name] [{-s|--subs} <subtitle_languages>[{+|-}modifiers][=name]] [{-f|--file} <video_file>]]
                [--reorder]
@@ -411,8 +412,8 @@ There is no way to force the script to remove audio tracks with these codes.
                                   # languages detected from Radarr/Sonarr
 -a :eng:und -s :eng               # Keep English and Unknown audio, and English subtitles
 -a :org:eng -s :any+f:eng         # Keep English and Original audio, and all forced or English subtitles
--a :eng -s ""                     # Keep English audio and remove all subtitles
--a :any -s ""                     # Keep all audio and remove all subtitles
+-a :eng                           # Keep English audio and remove all subtitles
+-a :any                           # Keep all audio and remove all subtitles
 -d -a :eng:kor:jpn -s :eng:spa    # Enable debugging level 1, keeping English, Korean, and Japanese audio,
                                   # and English and Spanish subtitles
 -f "/movies/Finding Nemo (2003).mkv" -a :eng:und -s :eng
