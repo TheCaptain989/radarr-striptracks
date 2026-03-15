@@ -247,6 +247,7 @@ striptracks.sh [{-a|--audio} <audio_languages>[{+|-}modifiers][=name] [{-s|--sub
                [{-c|--config} <config_file>]
                [{-p|--priority} {idle|low|medium|high}]
                [{-d|--debug} [<level>]]
+               [--no-ansi]
 ```
 
 <details>
@@ -266,6 +267,7 @@ Option|Argument|Description
 `-c`, `--config`|`<config_file>`|Radarr/Sonarr XML configuration file<br/>Default is `/config/config.xml`
 `-p`, `--priority`|`idle`, `low`, `medium`, `high`|CPU and I/O process priority for mkvmerge<br/>Default is `medium`<br/>![notes] High priority can consume all system resources. When processing a large video file your system may become unresponsive!
 `-d`, `--debug`|`[<level>]`|Enables debug logging. Level is optional.<br/>Default is `1` (low)<br/>`2` includes JSON output<br/>`3` contains even more JSON output
+`--no-ansi`||Force disable ANSI color codes in terminal output
 `--help`||Display help and exit.
 `--version`||Display script version and exit.
 

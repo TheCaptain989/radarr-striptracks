@@ -79,6 +79,8 @@ function main {
   ### MAIN
 
   initialize_variables
+  # Setup ANSI color support (only when running in a terminal)
+  setup_ansi_colors
   process_command_line "$@"
   initialize_mode_variables
   check_log
@@ -136,6 +138,7 @@ Usage:
       [{-c|--config} <config_file>]
       [{-p|--priority} {idle|low|medium|high}]
       [{-d|--debug} [<level>]]
+      [--no-ansi]
 
   Options can also be set via the STRIPTRACKS_ARGS environment variable.
   Command-line arguments override the environment variable.
@@ -207,6 +210,8 @@ Options and Arguments:
                     3 contains even more JSON output
                   [default: 1]
 
+      --no-ansi
+                  Force disable ANSI color codes in terminal output
       --help
                   Display this help and exit
 
@@ -407,6 +412,11 @@ function process_command_line {
         export striptracks_recycle="false"
         shift
       ;;
+      --no-ansi )
+        # Disable all ANSI colors in output
+        export striptracks_noansi="true"
+        shift
+      ;;
       --skip-profile )
         # Skip processing if the video was downloaded using the specified quality profile name. (see issue #108)
         # May be specified multiple times to skip multiple profiles.
@@ -479,17 +489,59 @@ function process_command_line {
   fi
 }
 function setup_ansi_colors {
-  # TODO: Add ANSI color codes to output text
-  # Test for terminal
-  if [ -t 1 ]; then
-    export striptracks_ansi=true
-    export ansi_red='\033[0;31m'
-    export ansi_green='\033[0;32m'
-    export ansi_yellow='\033[0;33m'
-    export ansi_cyan='\033[0;36m'
-    export ansi_nc='\033[0m' # No Color
+  # Setup ANSI color codes and determine when to use them.
+  # Colors should only be used when the script is writing to an interactive terminal.
+
+  export ansi_red='\033[0;31m'
+  export ansi_green='\033[0;32m'
+  export ansi_yellow='\033[0;33m'
+  export ansi_cyan='\033[0;36m'
+  export ansi_nc='\033[0m' # No Color
+}
+function strip_ansi_codes {
+  # Remove ANSI escape sequences from stdin (e.g., before writing to log files)
+  sed -E 's/\x1B\[[0-9;]*[mK]//g'
+}
+function echo {
+  # Override builtin echo to apply ANSI colors for terminal output only.
+  # Colors are based on the message prefix (Error|, Warn|, Debug|).
+  
+  local opts=()
+  while [[ $# -gt 0 && "$1" =~ ^- ]]; do
+    case "$1" in
+      -n|-e|-E|--)
+        opts+=("$1")
+        shift
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+  
+  if [ $# -eq 0 ]; then
+    builtin echo "${opts[@]}"
+    return
+  fi
+  
+  local msg="$*"
+  local prefix="${msg%%|*}"
+  local color=""
+  case "$prefix" in
+    Error) color="$ansi_red" ;;
+    Warn)  color="$ansi_yellow" ;;
+    Debug) color="$ansi_cyan" ;;
+  esac
+  
+  local use_color=false
+  if [ -t 1 -a -t 2 ] && [ -z "$striptracks_noansi" ]; then
+    use_color=true
+  fi
+  
+  if $use_color && [ -n "$color" ]; then
+    builtin echo -e "${opts[@]}" "${color}${msg}${ansi_nc}"
   else
-    export striptracks_ansi=false
+    builtin echo "${opts[@]}" "$msg"
   fi
 }
 function initialize_mode_variables {
@@ -596,8 +648,12 @@ function log {(
 
   while read -r
   do
+    # Ensure ANSI escape sequences are stripped from log output
+    local line="$REPLY"
+    line="$(printf '%s' "$line" | strip_ansi_codes)"
+
     # shellcheck disable=2046
-    echo $(date +"%Y-%m-%d %H:%M:%S.%1N")"|[$striptracks_pid]$REPLY" >>"$striptracks_log"
+    builtin echo $(date +"%Y-%m-%d %H:%M:%S.%1N")"|[$striptracks_pid]$line" >>"$striptracks_log"
     local filesize=$(stat -c %s "$striptracks_log")
     if [ $filesize -gt $striptracks_maxlogsize ]
     then
