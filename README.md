@@ -73,28 +73,42 @@ The following features are only available from this repository.  These are eithe
 
       </details>
       <details>
-      <summary>Synology Screenshot</summary>
+      <summary>Synology DSM 6 Screenshot</summary>
 
-      *Example Synology Configuration*  
+      *Example Synology DSM 6 Configuration*  
       ![striptracks](.assets/striptracks-synology.png "Synology container settings")
 
       </details>
 
    2. Start the container.
 
-2. Configure a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen and type the following in the **Path** field:  
-   `/usr/local/bin/striptracks.sh`  
+2. Either:  
+    1. Configure a custom script from Radarr's or Sonarr's *Settings* > *Connect* screen and type the following in the **Path** field:  
+        `/usr/local/bin/striptracks.sh`  
 
-   <details>
-   <summary>Screenshot</summary>
+        <details>
+        <summary>Screenshot</summary>
 
-   *Example Custom Script*  
-   ![striptracks custom script](.assets/striptracks-v3-custom-script.png "Radarr/Sonarr custom script settings")
+        *Example Custom Script*  
+        ![striptracks custom script](.assets/striptracks-v3-custom-script.png "Radarr/Sonarr custom script settings")
 
-   </details>
+        </details>
 
-   The script will detect the language(s) defined in Radarr/Sonarr for the movie or TV show and only keep the audio and subtitles selected.  
-   Alternatively, a wrapper script or an environment variable may be used to more granularly define which tracks to keep.  See [Wrapper Scripts](#wrapper-scripts) or [Environment Variable](#environment-variable) for more details.
+    *or*
+
+    2. Configure an [import script](#import-using-script) from Radarr's or Sonarr's *Settings* > *Media Management* > *Importing* > *Import Using Script* screen and type the following in the **Import Script Path** field:  
+        `/usr/local/bin/striptracks.sh`
+
+        <details>
+        <summary>Screenshot</summary>
+
+        *Example Import Script*  
+        ![striptracks import script](.assets/radarr_import.png "Radarr/Sonarr import script settings")
+
+        </details>
+
+    The script will detect the language(s) defined in Radarr/Sonarr for the movie or TV show and only keep the audio and subtitles selected.  
+    Alternatively, a wrapper script or an environment variable may be used to more granularly define which tracks to keep.  See [Wrapper Scripts](#wrapper-scripts) or [Environment Variable](#environment-variable) for more details.
 
 > [!IMPORTANT]
 > You **must** configure language(s) in Radarr/Sonarr *or* pass command-line arguments for the script to do anything!  See the next section for an example.
@@ -140,17 +154,17 @@ See [Automatic Language Detection](#automatic-language-detection) for more detai
 
 # Usage Details
 The source video can be any mkvtoolnix supported video format. The output is an MKV file with the same name and the same permissions. Owner is preserved if the script is executed as root.  
-Chapters, if they exist, are preserved. The Title attribute in the MKV is set to the movie title plus year  
-(ex: `The Sting (1973)`) or the series title plus episode information (ex: `Happy! 01x01 - What Smiles Are For`).  
-The language of the video file will be updated in the Radarr or Sonarr database to reflect the actual languages preserved in the remuxed video, and the video will be renamed according to the Radarr/Sonarr rules if needed (for example, if a removed track would trigger a name change.)
+Chapters, if they exist, are preserved. The Title attribute in the MKV is set to the movie title plus year (ex: `The Sting (1973)`)
+or the series title plus episode information (ex: `Happy! 01x01 - What Smiles Are For`).  
+Unless in Import mode, the language of the video file will be updated in the Radarr or Sonarr database to reflect the actual languages preserved in the remuxed video, and the video will be renamed according to the Radarr/Sonarr rules if needed (for example, if a removed track would trigger a name change.)
 
 If the resulting video file would contain the same tracks as the original, and it's already an MKV, the remux step is skipped.
 
 > [!TIP]
-> If you've configured the Radarr/Sonarr **Recycle Bin** path correctly, the original video will be moved there unless disabled with the `--disable-recycle` option.  
+> Unless in Import mode, if you've configured the Radarr/Sonarr **Recycle Bin** path correctly, the original video will be moved there unless disabled with the `--disable-recycle` option.  
 
 > [!CAUTION]
-> If you have ***not*** configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost.
+> If you have ***not*** configured the Recycle Bin, the original video file will be deleted/overwritten and permanently lost. When in Import mode, the source video is always deleted.
 
 ## Automatic Language Detection
 When the script is called with no arguments, it will attempt to detect the language(s) configured within Radarr/Sonarr on the particular movie or TV show.  
@@ -222,7 +236,7 @@ All language conditions with positive scores *and* Negated conditions with negat
 The script also supports command-line arguments that will override the automatic language detection.  More granular control can therefore be exerted or extended using tagging and defining multiple *Connect* scripts (this is native Radarr/Sonarr functionality outside the scope of this documentation).
 
 The syntax for the command-line is:  
-`striptracks.sh [{-a|--audio} <audio_languages>[{+|-}modifier(s)][=name] [{-s|--subs} <subtitle_languages>[{+|-}modifier(s)][=name]]] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [--skip-profile <profile_name>]... [--set-default-audio <language_code>[{+|-}modifier(s)][=name]] [--set-default-subs <language_code>[{+|-}modifier(s)][=name]]
+`striptracks.sh [{-a|--audio} <audio_languages>[{+|-}modifier(s)][=name] [{-s|--subs} <subtitle_languages>[{+|-}modifier(s)][=name]]] [{-f|--file} <video_file>]] [--reorder] [--disable-recycle] [--skip-profile <profile_name>]... [--set-default-audio <audio_languages>[{+|-}modifier(s)][=name]] [--set-default-subs <subtitle_languages>[{+|-}modifier(s)][=name]]
 [{-l|--log} <log_file>] [{-c|--config} <config_file>] [{-p|--priority} {idle|low|medium|high}] [{-d|--debug} [<level>]]`  
 
 <details>
@@ -236,8 +250,8 @@ Option|Argument|Description
 `--reorder`||Reorder audio and subtitles tracks to match the language code order specified in the `<audio_languages>` and `<subtitle_languages>` arguments.
 `--disable-recycle`||Disable recycle bin use, even if configured in Radarr/Sonarr
 `--skip-profile`|`<profile_name>`|Skip processing if the video was downloaded using the specified Quality Profile name. May be specified multiple times to skip multiple profiles.
-`--set-default-audio`|`<language_code>[{+\|-}modifier(s)][=name]`|[Set the default](#setting-default-track) audio track to the first track of the specified language, and all other tracks are marked as not default.<br/>The code may optionally be followed by a plus (`+`) or minus (`-`) and one or more modifiers.<br/>The code may optionally be followed by an equals (`=`) and a track name matching string.<br/>If multiple codes are specified, the first match wins.
-`--set-default-subs`|`<language_code>[{+\|-}modifier(s)][=name]`|Set the default subtitles track to the first track of the specified language, and all other tracks are marked as not default.<br/>The code may optionally be followed by a plus (`+`) or minus (`-`) and one or more modifiers.<br/>The code may optionally be followed by an equals (`=`) and a track name string.<br/>If multiple codes are specified, the first match wins.
+`--set-default-audio`|`<audio_languages>[{+\|-}modifier(s)][=name]`|[Set the default](#setting-default-track) audio track to the first track that matches, and all other tracks are marked as not default.<br/>Each code may optionally be followed by a plus (`+`) or minus (`-`) and one or more modifiers.<br/>Each code may optionally be followed by an equals (`=`) and a track name matching string.
+`--set-default-subs`|`<subtitle_languages>[{+\|-}modifier(s)][=name]`|Set the default subtitles track to the first track the matches, and all other tracks are marked as not default.<br/>Each code may optionally be followed by a plus (`+`) or minus (`-`) and one or more modifiers.<br/>Each code may optionally be followed by an equals (`=`) and a track name string.
 `-l`, `--log`|`<log_file>`|The log filename<br/>Default is `/config/log/striptracks.txt`
 `-c`, `--config`|`<config_file>`|Radarr/Sonarr XML configuration file<br/>Default is `/config/config.xml`
 `-p`, `--priority`|`idle`, `low`, `medium`, `high`|CPU and I/O process priority for mkvmerge<br/>Default is `medium`<br/>![notes] High priority can consume all system resources. When processing a large video file your system may become unresponsive!
@@ -271,7 +285,7 @@ Modifier|Function
 ---|---
 `f`|When prefixed with `+`: selects only tracks with the forced flag set.<br/>When prefixed with `-`: selects only tracks without the forced flag set.
 `d`|When prefixed with `+`: selects only tracks with the default flag set.<br/>When prefixed with `-`: selects only tracks without the default flag set.
-`[0-9]`|Specifies the maximum number of tracks to select.<br/>Based on the order of the tracks in the original source video.
+`[0-9]`|Specifies the maximum number of tracks to select.<br/>Based on the order of the tracks in the original source video.<br/>This is meaningless for the `--set-default-audio` and `--set-default-subs` options as they always only select 1 track.
 
 </details>
 
@@ -289,18 +303,16 @@ Modifiers may be combined, such as `:any+fd` to keep all forced and all default 
 You can also exclude tracks with specific characteristics. For example, `:eng:fre-f` keeps all English audio tracks and French audio tracks not marked as forced.
 
 ### Track Name Matching
-Each language code can optionally be followed by an equals (`=`) and a string which is matched against the track name using substring matching (case-insensitive). Tracks that matche the specified language and with a name that matches the string will be kept.
+Each language code can optionally be followed by an equals (`=`) and a string which is matched against the track name using substring matching (case-insensitive). Tracks that match the specified language and with a name that matches the string will be kept.
 
 Name matching can be combined with modifiers, such as `:eng+f=Commentary` to keep only forced English tracks with "commentary" in the name.
 
 ### Setting Default Track
-Use the `--set-default-audio` and `--set-default-subs` options to choose which track appears first when the video is played. Only one audio and one subtitles track may be set as default. The language code is the same colon (`:`) prepended ISO 639-2 language code used with the `--audio` and `--subs` options.
+Use the `--set-default-audio` and `--set-default-subs` options to choose which track appears first when the video is played. Only one audio and one subtitles track may be set as default. The language codes are the same colon (`:`) prepended ISO 639-2 language codes used with the `--audio` and `--subs` options.
 
-The first track of the specified language will have its default flag set and all other tracks (of any language) will have their default flag disabled.
+The first track of the specified language will have its default flag set and all other tracks (of any language) will have their default flag disabled. Multiple codes are evaluated in the order of precedence, with the first match being set as the default track.
 
 These options can also use the same modifiers (`f` and `d`) and optional name matching (`=`) that the regular track selection logic uses. (Though the `d` options doesn't make much sense here, since that's what you're setting.)  You could use this to set the default subtitles track to hearing impaired (SDH), for example.
-
-Multiple codes are evaluated in the order of precendece, with the first match being set as the default track.
 
 The setting of default track flags occurs after the track selection logic.
 
@@ -340,7 +352,7 @@ The `:und` language code is a special code. When used, the script will match on 
 > It is common for M2TS and AVI files to have tracks with unknown languages! It is recommended to include `:und` in most instances unless you know exactly what you're doing.
 
 ### Reorder Option
-The `--reorder` option uses the order the language codes are specified to re-order the tracks in the output MKV video file.  Video tracks are always first, followed by audio tracks, and then subtitles.  Track removals and preservations occur the way they normally would.
+The `--reorder` option uses the order the language codes are specified in the `--audio` and `--subs` options to re-order the tracks in the output MKV video file.  Video tracks are always first, followed by audio tracks, and then subtitles.  Track removals and preservations occur the way they normally would.
 
 <details>
 <summary>Reorder Example</summary>
@@ -374,7 +386,7 @@ Will create an MKV file with tracks:
 The script is smart enough to not remove the last audio track. There is in fact no way to force the script to remove all audio. This way you don't have to specify every possible language if you are importing a foreign film, for example.
 
 Additionally, two ISO 639-2 language codes are handled specially: the "*Uncoded languages*" code of `mis` and the "*No linguistic content*" code of `zxx`.  
-Tracks with either of these codes are always retained as they are often used for instrumental tracks in silent films.  
+Audio tracks with either of these codes are always retained as they are often used for instrumental tracks in silent films.  
 There is no way to force the script to remove audio tracks with these codes.
 
 ## Examples
@@ -400,10 +412,10 @@ There is no way to force the script to remove audio tracks with these codes.
                                   # (first audio track flagged as Default as it appears in the source file),
                                   # one English subtitles track and two forced subtitles regardless of
                                   # language (as they appear in the source file)
---audio :org:eng:fre:fra --subs :org:eng:fre:fra --reorder --disable-recycle --set-default-audio :org --set-default-subs :eng-f
+--audio :org:eng:fre:fra --subs :org:eng:fre:fra --reorder --disable-recycle --set-default-audio :org:eng --set-default-subs :eng-f
                                   # Keep the Original, English, and French audio and subtitles
-                                  # Reorder the tracks to match the above order (audio first, then substitles)
-                                  # Set the first Original language audio track as default
+                                  # Reorder the tracks to match the above order (audio first, then subtitles)
+                                  # Set the first Original language audio track, and if not found, the first English audio track, as default
                                   # Set the first non-forced English subtitles tracks as default
                                   # Force delete the original video after remuxing
 ```
@@ -495,15 +507,26 @@ In a `docker run` command, it would be:
 </details>
 
 <details>
-<summary>Synology Screenshot</summary>
+<summary>Synology DSM 6 Screenshot</summary>
 
-*Example Synology Configuration*  
+*Example Synology DSM 6 Configuration*  
 ![synology striptracks_args](.assets/striptracks-synology-2.png "Synology container settings")
 
 </details>
 
-## Triggers
-The only events/notification triggers that are supported are **On Import** and **On Upgrade**.  The script will log an error if executed by any other trigger.
+## Custom Script Triggers
+The only events/notification triggers that are supported in Custom Script mode are **On Import** and **On Upgrade**.  The script will log an error if executed by any other trigger.
+
+## Import Using Script
+The script can also be configured as an import script.  When configured this way, Radarr/Sonarr will run this script to pickup the downloaded video from your download client.  This places the script in Import mode.
+This mode allows the script to process the video tracks before the file is fully added to the library, ensuring only desired languages are kept during the import process.
+
+### Script Execution Differences in Import Mode
+In Import mode, the script behaves similarly to Custom Script mode but with the following differences:
+* *Metadata is automatically preserved (if the source is an MKV).*<br/>Radarr/Sonarr does not update its database until after the script exits.
+* *Duplicate Radarr/Sonarr entries will exist when the source video is not an MKV.*<br/>A manual rescan will delete the duplicate entry, but the script cannot correct this due to the database update timing.
+* *Other automated database cleanup steps, like rename and language code updates cannot be processed.*<br/>Database update timing prevents this.
+* *Original video files are deleted.*<br/>The Recycle Bin function is not available.
 
 ## Batch Mode
 Batch mode allows the script to be executed independently of Radarr or Sonarr.  It converts the file specified on the command-line and ignores any environment variables that are normally expected to be set by the video management program.
@@ -552,7 +575,7 @@ Log rotation is performed with 5 log files of 512KB each being kept.
 > If debug logging is enabled with a level above 1, the log file can grow very large very quickly.  *Do not leave high-level debug logging enabled permanently.*
 
 # Limitations
-It should be noted that this script's core functionality nulifies some of the benefits of [hardlinks](https://trash-guides.info/hardlinks/).
+It should be noted that this script's core functionality nullifies some of the benefits of [hardlinks](https://trash-guides.info/hardlinks/).
 However, configuring hardlinks is still recommended.
 
 <details>

@@ -163,14 +163,14 @@ Options and Arguments:
                                    using the specified quality profile name.
                                    May be specified multiple times to skip
                                    multiple profiles.
-      --set-default-audio <language_code>[{+|-}modifier(s)[=name]]
+      --set-default-audio <language_codes>[{+|-}modifier(s)[=name]]
                                    Set the default audio track to the first
                                    track of the specified language.
                                    The code may optionally be followed by a
                                    plus \`+\` or \`-\` and one or more modifiers.
                                    The code may optionally be followed by an
                                    equals \`=\` and a track name.
-      --set-default-subs <language_code>[{+|-}modifier(s)[=name]]
+      --set-default-subs <language_codes>[{+|-}modifier(s)[=name]]
                                    Set the default subtitles track to the first
                                    track of the specified language.
                                    The code may optionally be followed by a
@@ -208,6 +208,12 @@ Batch Mode:
   any environment variables that are normally expected.  The MKV embedded title
   attribute is set to the basename of the file minus the extension.
 
+Import Using Script:
+  The script can also be used to import the video directly from the download
+  client by selecting Settings > Media Management > Importing > Import Using
+  Script setting in Radarr/Sonarr.  Doing so will process the video file
+  before it is added to the library.
+
 Examples:
   $striptracks_script -d 2
                   # Enable debugging level 2, audio and subtitles languages
@@ -242,7 +248,7 @@ Examples:
 
   $striptracks_script --audio :org:eng:fre:fra --subs :org:eng:fre:fra --reorder --disable-recycle --set-default-audio :org --set-default-subs :eng-f
                   # Keep the Original, English, and French audio and subtitles
-                  # Reorder the tracks to match the above order (audio first, then substitles)
+                  # Reorder the tracks to match the above order (audio first, then subtitles)
                   # Set the first Original language audio track as default
                   # Set the first non-forced English subtitles tracks as default
                   # Force delete the original video after remuxing
@@ -478,7 +484,7 @@ function initialize_mode_variables {
     export striptracks_type="$transfermode"    # "radarr", "sonarr"
   fi
 
-  # Mode specfic variable assignment
+  # Mode specific variable assignment
   if [[ "${striptracks_mode,,}" = "batch" ]]; then
     # Batch mode
     export striptracks_type="batch"
@@ -792,7 +798,7 @@ function check_compat {
       [ ${striptracks_arr_version/.*/} -ge 3 ] && local return=0
     ;;
     languageprofile)
-      # Langauge Profiles
+      # Language Profiles
       [ "${striptracks_type,,}" = "sonarr" ] && [ ${striptracks_arr_version/.*/} -eq 3 ] && local return=0
     ;;
     customformat)
@@ -1871,7 +1877,7 @@ function set_default_tracks {
     local rules_json
     # The track type argument is not needed here since the default track selection logic is the same for audio and subtitles, but we have to pass something
     # or the parser will treat it as audio and add "mis" and "zxx" codes that we don't want for this logic
-    rules_json=$(parse_language_codes_to_json "$currentcfg" "dummmy")
+    rules_json=$(parse_language_codes_to_json "$currentcfg" "dummy")
 
     # Use jq to find the track ID using case-insensitive substring match on track name, trying each rule until one matches
     local track_id=$(echo "$striptracks_json_processed" | jq -crM --arg type "$tracktype" --argjson RulesJSON "$rules_json" '
@@ -2144,7 +2150,7 @@ function rescan_and_cleanup {
 
   # Rescan if recycle bin use is disabled to remove the original video from the database
   if [ "$striptracks_recycle" = "false" ]; then
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Recycle Bin use is disabled and original video has been deleted. Rescaning to remove the original video from the ${striptracks_type^} database." | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Recycle Bin use is disabled and original video has been deleted. Rescanning to remove the original video from the ${striptracks_type^} database." | log
     rescan
     sleep 1
   fi
