@@ -21,6 +21,10 @@ test_cmd_unknown_option() {
   assert_status_code 20 "process_command_line --will-fail"
 }
 
+test_cmd_invalid_file_option() {
+  assert_status_code 2 "process_command_line --file dummy"
+}
+
 test_cmd_invalid_audio_option() {
   assert_status_code 2 "process_command_line --audio eng"
 }
@@ -75,6 +79,11 @@ test_multiple_skips() {
   process_command_line --skip-profile 123 --skip-profile 456
   local IFS=,
   assert_equals "123,456" "${striptracks_skip_profile[*]}"
+}
+
+test_no_ansi(){
+  process_command_line --no-ansi
+  assert_equals "true" "$striptracks_noansi"
 }
 
 teardown() {

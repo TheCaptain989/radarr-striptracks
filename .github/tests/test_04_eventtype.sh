@@ -28,6 +28,20 @@ test_sonarr_eventtype() {
   assert_equals "series" "$striptracks_video_type"
 }
 
+test_radarr_transfermode() {
+  export radarr_transfermode="Move"
+  initialize_variables
+  initialize_mode_variables
+  assert_equals "movie" "$striptracks_video_type"
+}
+
+test_sonarr_transfermode() {
+  export sonarr_transfermode="Move"
+  initialize_variables
+  initialize_mode_variables
+  assert_equals "series" "$striptracks_video_type"
+}
+
 test_unsupported_eventtype() {
   export radarr_eventtype="Grab"
   initialize_variables
@@ -43,5 +57,5 @@ test_test_event() {
 }
 
 teardown() {
-  unset radarr_eventtype sonarr_eventtype striptracks_video_type
+  unset radarr_eventtype sonarr_eventtype radarr_transfermode sonarr_transfermode striptracks_video_type
 }

@@ -134,4 +134,4 @@ echo "$striptracks_json_processed" | jq -c '.'
 
 # Set default tracks
 execute_mkv_command() { echo "Simulated:" $1 $2; }
-set_default_tracks "$striptracks_video"
+map_default_tracks

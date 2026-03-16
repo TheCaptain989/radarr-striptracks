@@ -309,8 +309,8 @@ else
   echo -e "\t     New: $striptracks_neworder"
 fi
 
-# Test set_default_tracks function
-echo -e "${ansi_cyan}Testing set_default_tracks function...${ansi_nc}"
+# Test map_default_tracks function
+echo -e "${ansi_cyan}Testing map_default_tracks function...${ansi_nc}"
 striptracks_default_audio=":eng=Should include"
 striptracks_default_subtitles=":any-f"
 
@@ -389,14 +389,14 @@ function set_default_tracks_org {
   fi
 }
 set_default_tracks_org
-set_default_tracks "$striptracks_video"
+map_default_tracks
 
-if [ "$striptracks_default_flags" = "$striptracks_default_flags_org" ]; then
+if [ "$striptracks_mkvpropedit_default_args" = "$striptracks_default_flags_org" ]; then
   echo -e "\t${ansi_green}Default flags test passed!${ansi_nc}"
 else
   echo -e "${ansi_red}ERROR: New default flags differ from original processing!${ansi_nc}"
   echo -e "\tOriginal: $striptracks_default_flags_org"
-  echo -e "\t     New: $striptracks_default_flags"
+  echo -e "\t     New: $striptracks_mkvpropedit_default_args"
 fi
 
 # Test issue #117 specific case
@@ -520,4 +520,4 @@ striptracks_default_subtitles=":fre-f"
 
 process_mkvmerge_json
 determine_track_order
-set_default_tracks "$striptracks_video"
+map_default_tracks

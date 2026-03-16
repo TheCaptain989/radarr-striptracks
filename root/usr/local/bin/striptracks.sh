@@ -103,9 +103,9 @@ function main {
   get_mediainfo "$striptracks_video"
   process_mkvmerge_json
   determine_track_order
+  map_default_tracks
   set_title_and_exit_if_nothing_removed
   remux_video
-  set_default_tracks "$striptracks_tempvideo"
   set_perms_and_owner
   replace_original_video
   rescan_and_cleanup
@@ -487,6 +487,13 @@ function process_command_line {
       export striptracks_subskeep="$2"
     fi
   fi
+
+  # Test for -f with -a
+  if [ "${striptracks_mode,,}" = "batch" ] && [ -z "$striptracks_audiokeep" ]; then
+    echo_ansi "Error|Batch mode requires the --audio option to also be set." >&2
+    usage
+    exit 2
+  fi
 }
 function setup_ansi_colors {
   # Setup ANSI color codes and determine when to use them.
@@ -506,24 +513,6 @@ function echo_ansi {
   # Apply ANSI colors for terminal output only.
   # Colors are based on the message prefix (Error|, Warn|, Debug|).
   
-  local opts=()
-  while [[ $# -gt 0 && "$1" =~ ^- ]]; do
-    case "$1" in
-      -n|-e|-E|--)
-        opts+=("$1")
-        shift
-        ;;
-      *)
-        break
-        ;;
-    esac
-  done
-  
-  if [ $# -eq 0 ]; then
-    builtin echo "${opts[@]}"
-    return
-  fi
-  
   local msg="$*"
   local prefix="${msg%%|*}"
   local color=""
@@ -539,9 +528,9 @@ function echo_ansi {
   fi
   
   if $use_color && [ -n "$color" ]; then
-    builtin echo -e "${opts[@]}" "${color}${msg}${ansi_nc}"
+    builtin echo -e "${color}${msg}${ansi_nc}"
   else
-    builtin echo "${opts[@]}" "$msg"
+    builtin echo "$msg"
   fi
 }
 function initialize_mode_variables {
@@ -1932,10 +1921,12 @@ function determine_track_order {
     echo "$message" | log
   fi
 }
-function set_default_tracks {
+function map_default_tracks {
   # Build mkvpropedit parameters to set default flags on audio and subtitle tracks.
 
-  local videofile="$1" # Full path to video
+  # Two variables needed because mkvmerge and mkvpropedit use different arguments and track numbering (because of course the do)
+  export striptracks_mkvmerge_default_args
+  export striptracks_mkvpropedit_default_args
 
   # Process audio and subtitle --set-default track settings
   for tracktype in audio subtitles; do
@@ -1981,28 +1972,37 @@ function set_default_tracks {
       .[0] // ""
     ')
 
-    if [ -n "$track_id" ]; then
-      # The track IDs must be converted to 1-based for mkvpropedit (add 1)
-      # Use variable to set default only on selected track (unset others of same type)
-      export striptracks_default_flags
-      striptracks_default_flags+=" --edit track:$((track_id + 1)) --set flag-default=1"
-      # Find other kept tracks of same type to unset default flag
-      local unset_ids=$(echo "$striptracks_json_processed" | jq -crM --arg type "$tracktype" --argjson track_id "$track_id" '.tracks | map(select(.type == $type and .striptracks_keep and .id != $track_id) | .id) | join(",")')
-      striptracks_default_flags+="$(echo $unset_ids | awk 'BEGIN {RS=","}; /[0-9]+/ {print " --edit track:" ($0 += 1) " --set flag-default=0"}' | tr -d '\n')"
-      local message="Info|Setting ${tracktype} track ${track_id} as default$([ -n "$unset_ids" ] && echo " and removing default from track(s) '$unset_ids'")."
-      echo "$message" | log
-      # Remove leading space
-      striptracks_default_flags="${striptracks_default_flags# }"
-    else
+    # No track matched
+    if [ -z "$track_id" ]; then
       local message="Warn|No ${tracktype} track matched default specification '${currentcfg}'. No changes made to default ${tracktype} tracks."
       echo "$message" | log
+      continue
     fi
+    
+    # Use variables to hold full argument string (unset others of same type)
+    # The track IDs must be converted to 1-based for mkvpropedit (add 1)
+    striptracks_mkvmerge_default_args+=" --default-track-flag ${track_id}:1"
+    striptracks_mkvpropedit_default_args+=" --edit track:$((track_id + 1)) --set flag-default=1"
+    # Find other kept tracks of same type to unset default flag
+    local unset_ids=$(echo "$striptracks_json_processed" | jq -crM --arg type "$tracktype" --argjson track_id "$track_id" '.tracks | map(select(.type == $type and .striptracks_keep and .id != $track_id) | .id) | join(",")')
+    striptracks_mkvmerge_default_args+="$(echo $unset_ids | awk 'BEGIN {RS=","}; /[0-9]+/ {print " --default-track-flag " $0 ":0"}' | tr -d '\n')"
+    striptracks_mkvpropedit_default_args+="$(echo $unset_ids | awk 'BEGIN {RS=","}; /[0-9]+/ {print " --edit track:" ($0 += 1) " --set flag-default=0"}' | tr -d '\n')"
+    local message="Info|Setting ${tracktype} track ${track_id} as default$([ -n "$unset_ids" ] && echo " and removing default from track(s) '$unset_ids'")."
+    echo "$message" | log
+    # Remove leading space
+    striptracks_mkvmerge_default_args="${striptracks_mkvmerge_default_args# }"
+    striptracks_mkvpropedit_default_args="${striptracks_mkvpropedit_default_args# }"
   done
+}
+function set_default_tracks {
+  # Use mkvpropedit to edit default tracks
 
-  if [ -n "$striptracks_default_flags" ]; then
+  local videofile="$1" # Full path to video
+
+  if [ -n "$striptracks_mkvpropedit_default_args" ] && ! [[ $videofile == *.mkv ]]; then
     # Execute mkvpropedit to set default flags on tracks
     local mkvcommand="/usr/bin/mkvpropedit"
-    execute_mkv_command "setting default track flags" "$mkvcommand" -q $striptracks_default_flags "$videofile"
+    execute_mkv_command "setting default track flags" "$mkvcommand" -q $striptracks_mkvpropedit_default_args "$videofile"
   fi
 }
 function set_title_and_exit_if_nothing_removed {
@@ -2066,7 +2066,7 @@ function remux_video {
 
   # Execute MKVmerge (remux then rename, see issue #46)
   local mkvcommand="$striptracks_nice /usr/bin/mkvmerge"
-  execute_mkv_command "remuxing video" "$mkvcommand" -o "$striptracks_tempvideo" -q --title "$(escape_string "$striptracks_title")" $audioarg $subsarg $striptracks_neworder "$striptracks_video"
+  execute_mkv_command "remuxing video" "$mkvcommand" -o "$striptracks_tempvideo" -q --title "$(escape_string "$striptracks_title")" $audioarg $subsarg $striptracks_mkvmerge_default_args $striptracks_neworder "$striptracks_video"
 
   # Check for non-empty file
   if [ ! -s "$striptracks_tempvideo" ]; then

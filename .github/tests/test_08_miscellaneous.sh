@@ -16,9 +16,9 @@ test_org_code_in_audio() {
   fake check_compat :
   striptracks_type="radarr"
   striptracks_audiokeep=":eng:org"
-  striptracks_originalLangCode=":eng"
+  striptracks_originalLangCode=":jpn"
   process_org_code audio striptracks_audiokeep
-  assert_equals ":eng:eng" "$striptracks_audiokeep"
+  assert_equals ":eng:jpn" "$striptracks_audiokeep"
 }
 
 test_org_code_in_default_subtitles() {
@@ -39,36 +39,40 @@ test_track_reorder() {
   assert_equals "0:0,0:1,0:3,0:2" "$striptracks_neworder"
 }
 
-test_set_default_with_skip_flag() {
+test_map_default_with_skip_flag() {
   fake execute_mkv_command :
   export striptracks_json_processed='{"tracks":[{"id":0,"type":"video","language":"und","striptracks_keep":true},{"id":1,"type":"audio","language":"eng","name":"name","striptracks_keep":true},{"id":2,"type":"subtitles","language":"eng","name":"comment forced","forced":true,"striptracks_keep":true},{"id":3,"type":"subtitles","language":"eng","name":"comment","forced":false,"striptracks_keep":true}]}'
   export striptracks_default_subtitles=":eng-f"
-  set_default_tracks "$striptracks_video"
-  assert_matches '--edit track:4 --set flag-default=1 --edit track:3 --set flag-default=0' "$striptracks_default_flags"
+  map_default_tracks
+  assert_matches '--default-track-flag 3:1 --default-track-flag 2:0' "$striptracks_mkvmerge_default_args"
+  assert_matches '--edit track:4 --set flag-default=1 --edit track:3 --set flag-default=0' "$striptracks_mkvpropedit_default_args"
 }
 
-test_set_default_with_name() {
+test_map_default_with_name() {
   fake execute_mkv_command :
   export striptracks_json_processed='{"tracks":[{"id":0,"type":"video","language":"und","striptracks_keep":true},{"id":1,"type":"audio","language":"eng","name":"name","striptracks_keep":true},{"id":2,"type":"subtitles","language":"eng","name":"comment forced","forced":true,"striptracks_keep":true},{"id":3,"type":"subtitles","language":"eng","name":"comment","forced":false,"striptracks_keep":true}]}'
   export striptracks_default_subtitles=":eng=comment"
-  set_default_tracks "$striptracks_video"
-  assert_matches '--edit track:3 --set flag-default=1 --edit track:4 --set flag-default=0' "$striptracks_default_flags"
+  map_default_tracks
+  assert_matches '--default-track-flag 2:1 --default-track-flag 3:0' "$striptracks_mkvmerge_default_args"
+  assert_matches '--edit track:3 --set flag-default=1 --edit track:4 --set flag-default=0' "$striptracks_mkvpropedit_default_args"
 }
 
-test_set_default_with_name_and_skip() {
+test_map_default_with_name_and_skip() {
   fake execute_mkv_command :
   export striptracks_json_processed='{"tracks":[{"id":0,"type":"video","language":"und","striptracks_keep":true},{"id":1,"type":"audio","language":"eng","name":"name","striptracks_keep":true},{"id":2,"type":"subtitles","language":"eng","name":"comment forced","forced":true,"striptracks_keep":true},{"id":3,"type":"subtitles","language":"eng","name":"comment","forced":false,"striptracks_keep":true}]}'
   export striptracks_default_subtitles=":eng-f=comment"
-  set_default_tracks "$striptracks_video"
-  assert_matches '--edit track:4 --set flag-default=1 --edit track:3 --set flag-default=0' "$striptracks_default_flags"
+  map_default_tracks
+  assert_matches '--default-track-flag 3:1 --default-track-flag 2:0' "$striptracks_mkvmerge_default_args"
+  assert_matches '--edit track:4 --set flag-default=1 --edit track:3 --set flag-default=0' "$striptracks_mkvpropedit_default_args"
 }
 
-test_set_default_multiple_codes() {
+test_map_default_multiple_codes() {
   fake execute_mkv_command :
   export striptracks_json_processed='{"tracks":[{"id":0,"type":"video","language":"und","striptracks_keep":true},{"id":1,"type":"audio","language":"eng","name":"name","striptracks_keep":true},{"id":2,"type":"audio","language":"fra","name":"comment forced","forced":true,"striptracks_keep":true},{"id":3,"type":"subtitles","language":"eng","name":"comment","forced":false,"striptracks_keep":true}]}'
   export striptracks_default_audio=":dut:fra"
-  set_default_tracks "$striptracks_video"
-  assert_matches '--edit track:3 --set flag-default=1 --edit track:2 --set flag-default=0' "$striptracks_default_flags"
+  map_default_tracks
+  assert_matches '--default-track-flag 2:1 --default-track-flag 1:0' "$striptracks_mkvmerge_default_args"
+  assert_matches '--edit track:3 --set flag-default=1 --edit track:2 --set flag-default=0' "$striptracks_mkvpropedit_default_args"
 }
 
 test_process_mkvmerge_json_keeps_matching_tracks() {
@@ -107,4 +111,8 @@ test_process_mkvmerge_json_complex_modifiers() {
   assert_equals "1" "$(echo "$striptracks_json_processed" | jq -crM '[.tracks[] | select(.type == "audio" and .language == "fra" and .striptracks_keep)] | length')"
   # Check that non-forced English is not kept
   assert_equals "false" "$(echo "$striptracks_json_processed" | jq -crM '.tracks[] | select(.type == "audio" and .language == "eng" and .forced == false) | .striptracks_keep')"
+}
+
+teardown() {
+  unset striptracks_json_processed striptracks_audiokeep striptracks_default_subtitles striptracks_neworder striptracks_mkvmerge_default_args striptracks_mkvpropedit_default_args
 }

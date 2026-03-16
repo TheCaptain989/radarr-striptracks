@@ -161,7 +161,7 @@ test_set_default_audio() {
   check_video
   get_mediainfo "$striptracks_video"
   process_mkvmerge_json
-  set_default_tracks "$striptracks_video"
+  map_default_tracks
   remux_video
   replace_original_video
   assert_equals true "$(mkvmerge -J "$striptracks_video" | jq -crM '.tracks[] | select(.type == "audio" and .properties.track_name == "Commentary") | .properties.default_track')"

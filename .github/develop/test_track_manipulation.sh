@@ -15,24 +15,24 @@ export striptracks_reorder="true"
 determine_track_order 
 echo "determine_track_order -> $striptracks_neworder" 
  
-# check set_default_tracks scenarios 
+# check map_default_tracks scenarios 
 export striptracks_json_processed='{"tracks":[{"id":0,"type":"video","language":"und","striptracks_keep":true},{"id":1,"type":"audio","language":"eng","name":"name","striptracks_keep":true},{"id":2,"type":"subtitles","language":"eng","name":"comment forced","forced":true,"striptracks_keep":true},{"id":3,"type":"subtitles","language":"eng","name":"comment","forced":false,"striptracks_keep":true}]}' 
 striptracks_default_subtitles=":eng-f" 
-striptracks_default_flags="" 
-set_default_tracks "$striptracks_video"
-echo "default_flags for :eng-f -> $striptracks_default_flags" 
+striptracks_mkvpropedit_default_args="" 
+map_default_tracks
+echo "default_flags for :eng-f -> $striptracks_mkvpropedit_default_args" 
  
 striptracks_default_subtitles=":eng=comment" 
-striptracks_default_flags="" 
-set_default_tracks "$striptracks_video"
-echo "default_flags for :eng=comment -> $striptracks_default_flags" 
+striptracks_mkvpropedit_default_args="" 
+map_default_tracks
+echo "default_flags for :eng=comment -> $striptracks_mkvpropedit_default_args" 
  
 striptracks_default_subtitles=":eng=comment-f" 
-striptracks_default_flags="" 
-set_default_tracks "$striptracks_video"
-echo "default_flags for :eng=comment-f -> $striptracks_default_flags" 
+striptracks_mkvpropedit_default_args="" 
+map_default_tracks
+echo "default_flags for :eng=comment-f -> $striptracks_mkvpropedit_default_args" 
  
 striptracks_default_subtitles=":eng-f=comment" 
-striptracks_default_flags="" 
-set_default_tracks "$striptracks_video"
-echo "default_flags for :eng-f=comment -> $striptracks_default_flags"
+striptracks_mkvpropedit_default_args="" 
+map_default_tracks
+echo "default_flags for :eng-f=comment -> $striptracks_mkvpropedit_default_args"
