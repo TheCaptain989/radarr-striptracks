@@ -1522,6 +1522,12 @@ function detect_languages {
 function check_arr_config {
   # Check Radarr/Sonarr configuration...
 
+  # Bypass if using Batch mode
+  if [ "${striptracks_mode,,}" = "batch" ]; then
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Cannot detect languages in Batch mode." | log
+    return
+  fi
+
   get_media_config
   local return=$?; [ $return -ne 0 ] && {
     # No '.id' in returned JSON
