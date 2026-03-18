@@ -73,6 +73,7 @@ test_set_title_and_exit_if_nothing_removed() {
   export striptracks_title="Test Title"
   set_title_and_exit_if_nothing_removed
   # Should call end_script since nothing removed
+  # shellcheck disable=SC2154
   assert_equals "1" "$end_script_called"
 }
 
