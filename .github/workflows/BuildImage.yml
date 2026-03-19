@@ -26,7 +26,11 @@ jobs:
         run: |
           # Start Radarr in the background
           /app/radarr/bin/Radarr -nobrowser -data=/config &
-          sleep 1  # Wait for Radarr to start
+          echo "Waiting for Radarr to start..."
+          until curl -s -I http://localhost:7878/ping > /dev/null; do
+            sleep 2
+          done
+          echo "Radarr is up and running!"
 
       - name: Create temp directory
         run: |

@@ -32,7 +32,7 @@ param (
     # GitHub repository name
     [string]$Repository = "radarr-striptracks",
 
-    # GitHub respository release tag
+    # GitHub repository release tag
     [string]$Release = "latest",
 
     # GitHub API root URL

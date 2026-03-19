@@ -37,7 +37,7 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 
    ```yaml
    services:
-   sonarr:
+     sonarr:
        container_name: sonarr
        image: ghcr.io/hotio/sonarr
        ports:
@@ -72,10 +72,10 @@ This mod can now be used with [hotio](https://hotio.dev/) containers by using th
 
    </details>
    <details>
-   <summary>Synology Screenshot</summary>
+   <summary>Synology DSM 6 Screenshot</summary>
   
-   *Example Synology Configuration*  
-   ![striptracks hotio](hotio-striptracks-synology.png "Synology container ettings")
+   *Example Synology DSM 6 Configuration*  
+   ![striptracks hotio](hotio-striptracks-synology.png "Synology container settings")
 
    </details>
 

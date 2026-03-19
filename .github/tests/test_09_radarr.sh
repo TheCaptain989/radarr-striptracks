@@ -13,7 +13,8 @@ setup_suite() {
   export test_video1="Racism_is_evil.webm"
   export video1_dir="Carmencita (1894)"
   [ -d "$video1_dir" ] || mkdir "$video1_dir"
-  [ -f "$test_video1" ] || { wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "$video1_dir/$test_video1"; }
+  [ -f "/tmp/$test_video1" ] || { wget -q "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/e4/%27Racism_is_evil%2C%27_Trump_says.webm/%27Racism_is_evil%2C%27_Trump_says.webm.240p.vp9.webm?download" -O "/tmp/$test_video1"; }
+  [ -f "$video1_dir/$test_video1" ] || cp "/tmp/$test_video1" "./$video1_dir/"
 }
 
 setup() {
@@ -32,34 +33,34 @@ test_radarr_test_event() {
 
 test_radarr_version() {
   check_eventtype
-  check_config
+  check_config_file
   assert_within_delta 6 ${striptracks_arr_version/.*/} 2
 }
 
 test_radarr_get_languages() {
   check_eventtype
-  check_config
+  check_config_file
   get_language_codes
   assert_equals "English" "$(echo $striptracks_result | jq -crM '.[] | select(.id == 1) | .name')"
 }
 
 test_radarr_get_quality_profiles() {
   check_eventtype
-  check_config
+  check_config_file
   get_profiles quality
   assert_equals "Any" "$(echo $striptracks_result | jq -crM '.[] | select(.id == 1) | .name')"
 }
 
 test_radarr_call_api_with_json() {
   check_eventtype
-  check_config
+  check_config_file
   call_api 0 "Creating a test tag." "POST" "tag" '{"label":"test"}'
   assert_equals '{"label":"test","id":1}' "$(echo $striptracks_result | jq -jcM)"
 }
 
 test_radarr_call_api_with_urlencode() {
   check_eventtype
-  check_config
+  check_config_file
   call_api 0 "Getting tmp filesystem info." "GET" "filesystem" "path=/tmp/"
   assert_equals '{"parent":"/","directories":[],"files":[]}' "$(echo $striptracks_result | jq -jcM)"
 }
@@ -71,6 +72,8 @@ test_radarr_z01_video_load() {
   rescan
   sleep 1
   while ! check_job $striptracks_jobid; do
+    local exit_code=$?
+    [ $exit_code -ne 0 ] && { exit $exit_code; }
     echo -n "Waiting for Radarr job $striptracks_jobid to complete..."
     sleep 1
   done
@@ -95,7 +98,7 @@ test_radarr_z02_video_convert() {
   initialize_mode_variables
   check_eventtype
   log_script_start
-  check_config
+  check_config_file
   check_video
   detect_languages
   get_mediainfo "$striptracks_video"
@@ -119,12 +122,12 @@ test_radarr_z03_video_delete() {
 }
 
 load_video() {
-  check_config
+  check_config_file
   call_api 0 "Loading video file into Radarr." "POST" "movie" "{\"QualityProfileId\":1, \"TmdbId\":16612, \"Title\":\"Carmencita\", \"path\":\"$PWD/$video1_dir\", \"monitored\":true, \"rootFolderPath\":\"$PWD/\", \"movieFile\":{\"id\":1, \"path\":\"$PWD/$video1_dir/$test_video1\", \"quality\":{\"quality\":{\"id\":1,\"name\":\"Any\"},\"revision\":{\"version\":1,\"real\":1}}}}"
 }
 
 delete_video() {
-  check_config
+  check_config_file
   call_api 0 "Deleting video file from Radarr." "DELETE" "movie/$radarr_movie_id" "deleteFiles=true"
 }
 

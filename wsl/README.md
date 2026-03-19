@@ -59,7 +59,7 @@ installation script, entering your Linux user password when prompted:
    *New Custom Script Example*  
    ![wsl custom script](wsl-custom-script.png "New Custom Script")
 
-   <detials>
+   <details>
 
 # Explanation
 WSL provides a way to run a virtual Linux machine on Windows.  Radarr and/or Sonarr are running in Windows while the script and supporting MKVToolNix package are running in the virtual machine

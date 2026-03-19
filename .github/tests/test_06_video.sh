@@ -7,6 +7,7 @@ setup_suite() {
   source ../../root/usr/local/bin/striptracks.sh
   initialize_variables
   export striptracks_video="test_video.mp4"
+  export striptracks_newvideo="${striptracks_video%.*}.mkv"
   fake log :
 }
 
