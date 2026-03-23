@@ -68,6 +68,6 @@ get_video_info() {
 }
 
 teardown_suite() {
-  rm -f -d "striptracks.txt" "striptracks_env.txt" "$video1_dir/${test_video1%.webm}.mkv" "$video1_dir/${test_video1%.webm}.json" "$video1_dir/$test_video1" "$video1_dir" "/tmp/$test_video1"
+  rm -f -d "striptracks.txt" "striptracks_env.txt" "$video1_dir/${test_video1%.webm}.mkv" "$video1_dir/${test_video1%.webm}.json" "$video1_dir/$test_video1" "$video1_dir" "/tmp/$test_video1" "$test_video1"
   unset radarr_eventtype striptracks_arr_config
 }

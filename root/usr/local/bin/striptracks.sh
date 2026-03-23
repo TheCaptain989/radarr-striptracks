@@ -1999,17 +1999,6 @@ function map_default_tracks {
     striptracks_mkvpropedit_default_args="${striptracks_mkvpropedit_default_args# }"
   done
 }
-function set_default_tracks {
-  # Use mkvpropedit to edit default tracks
-
-  local videofile="$1" # Full path to video
-
-  if [ -n "$striptracks_mkvpropedit_default_args" ] && ! [[ $videofile == *.mkv ]]; then
-    # Execute mkvpropedit to set default flags on tracks
-    local mkvcommand="/usr/bin/mkvpropedit"
-    execute_mkv_command "setting default track flags" "$mkvcommand" -q $striptracks_mkvpropedit_default_args "$videofile"
-  fi
-}
 function set_title_and_exit_if_nothing_removed {
   # If no tracks are removed, and a variety of other conditions are met, we can skip remuxing, set the title, and exit early
 
@@ -2044,9 +2033,7 @@ function set_title_and_exit_if_nothing_removed {
     move_video "$striptracks_video" "$striptracks_newvideo"
   fi
   local mkvcommand="/usr/bin/mkvpropedit"
-  execute_mkv_command "setting video title" "$mkvcommand" -q --edit info --set "title=$(escape_string "$striptracks_title")" "$striptracks_newvideo"
-  # Set default tracks if configured
-  set_default_tracks "$striptracks_newvideo"
+  execute_mkv_command "setting video title" "$mkvcommand" -q --edit info --set "title=$(escape_string "$striptracks_title")" $striptracks_mkvpropedit_default_args "$striptracks_newvideo"
   end_script
 }
 function remux_video {
