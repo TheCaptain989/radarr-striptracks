@@ -190,6 +190,7 @@ Options and Arguments:
 
       --no-ansi
                   Force disable ANSI color codes in terminal output
+
       --help
                   Display this help and exit
 
@@ -634,8 +635,7 @@ function log {(
   # Can still go over striptracks_maxlog if read line is too long
   # Must include whole function in subshell for read to work!
 
-  while read -r
-  do
+  while read -r; do
     # Ensure ANSI escape sequences are stripped from log output
     local line="$REPLY"
     line="$(printf '%s' "$line" | strip_ansi_codes)"
@@ -643,8 +643,7 @@ function log {(
     # shellcheck disable=2046
     builtin echo $(date +"%Y-%m-%d %H:%M:%S.%1N")"|[$striptracks_pid]$line" >>"$striptracks_log"
     local filesize=$(stat -c %s "$striptracks_log")
-    if [ $filesize -gt $striptracks_maxlogsize ]
-    then
+    if [ $filesize -gt $striptracks_maxlogsize ]; then
       for i in $(seq $((striptracks_maxlog-1)) -1 0); do
         [ -f "${striptracks_log::-4}.$i.txt" ] && mv "${striptracks_log::-4}."{$i,$((i+1))}".txt"
       done
@@ -665,7 +664,7 @@ function get_version {
 
   call_api 0 "Getting ${striptracks_type^} version." "GET" "system/status"
   local json_test="$(echo $striptracks_result | jq -crM '.version?')"
-  [  "$json_test" != "null" ] && [ "$json_test" != "" ]
+  [ "$json_test" != "null" ] && [ "$json_test" != "" ]
   return
 }
 function get_video_info {
@@ -705,8 +704,7 @@ function check_job {
 
   local jobid="$1" # Job ID to check
 
-  local i=0
-  for ((i=1; i <= 15; i++)); do
+  for ((local i=1; i <= 15; i++)); do
     call_api 0 "Checking job $jobid completion." "GET" "command/$jobid"
     local api_return=$?; [ $api_return -ne 0 ] && {
       local return=10
@@ -1003,6 +1001,7 @@ function log_first_debug_messages {
   fi
 
   # Log environment
+  [ $striptracks_debug -ge 2 ] && id | sed 's/^/Debug|Running as: /' | log
   [ $striptracks_debug -ge 2 ] && printenv | sort | sed 's/^/Debug|/' | log
 }
 function check_eventtype {
@@ -1152,6 +1151,7 @@ function call_api {
   local data_info=""
   [ ${#curl_data_args[@]} -gt 0 ] && data_info=" with data: ${curl_data_args[*]}"
   [ $striptracks_debug -ge 1 ] && echo "Debug|$message Calling ${striptracks_type^} API using $method and URL '$url'$data_info" | log
+  # Special handling of GET method
   if [ "$method" = "GET" ]; then
     curl_args+=(-G)
   else
@@ -1166,8 +1166,7 @@ function call_api {
   declare -g striptracks_result
 
   # Retry up to five times if database is locked
-  local i=0
-  for ((i=1; i <= 5; i++)); do
+  for ((local i=1; i <= 5; i++)); do
     striptracks_result=$(curl "${curl_args[@]}")
     local curl_return=$?
     # If database is locked, log and loop
