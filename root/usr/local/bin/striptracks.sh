@@ -704,7 +704,8 @@ function check_job {
 
   local jobid="$1" # Job ID to check
 
-  for ((local i=1; i <= 15; i++)); do
+  local i
+  for ((i=1; i <= 15; i++)); do
     call_api 0 "Checking job $jobid completion." "GET" "command/$jobid"
     local api_return=$?; [ $api_return -ne 0 ] && {
       local return=10
@@ -1166,7 +1167,8 @@ function call_api {
   declare -g striptracks_result
 
   # Retry up to five times if database is locked
-  for ((local i=1; i <= 5; i++)); do
+  local i
+  for ((i=1; i <= 5; i++)); do
     striptracks_result=$(curl "${curl_args[@]}")
     local curl_return=$?
     # If database is locked, log and loop
