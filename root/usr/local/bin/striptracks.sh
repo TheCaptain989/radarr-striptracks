@@ -190,6 +190,7 @@ Options and Arguments:
 
       --no-ansi
                   Force disable ANSI color codes in terminal output
+
       --help
                   Display this help and exit
 
@@ -634,8 +635,7 @@ function log {(
   # Can still go over striptracks_maxlog if read line is too long
   # Must include whole function in subshell for read to work!
 
-  while read -r
-  do
+  while read -r; do
     # Ensure ANSI escape sequences are stripped from log output
     local line="$REPLY"
     line="$(printf '%s' "$line" | strip_ansi_codes)"
@@ -643,8 +643,7 @@ function log {(
     # shellcheck disable=2046
     builtin echo $(date +"%Y-%m-%d %H:%M:%S.%1N")"|[$striptracks_pid]$line" >>"$striptracks_log"
     local filesize=$(stat -c %s "$striptracks_log")
-    if [ $filesize -gt $striptracks_maxlogsize ]
-    then
+    if [ $filesize -gt $striptracks_maxlogsize ]; then
       for i in $(seq $((striptracks_maxlog-1)) -1 0); do
         [ -f "${striptracks_log::-4}.$i.txt" ] && mv "${striptracks_log::-4}."{$i,$((i+1))}".txt"
       done
@@ -665,7 +664,7 @@ function get_version {
 
   call_api 0 "Getting ${striptracks_type^} version." "GET" "system/status"
   local json_test="$(echo $striptracks_result | jq -crM '.version?')"
-  [  "$json_test" != "null" ] && [ "$json_test" != "" ]
+  [ "$json_test" != "null" ] && [ "$json_test" != "" ]
   return
 }
 function get_video_info {
@@ -705,7 +704,7 @@ function check_job {
 
   local jobid="$1" # Job ID to check
 
-  local i=0
+  local i
   for ((i=1; i <= 15; i++)); do
     call_api 0 "Checking job $jobid completion." "GET" "command/$jobid"
     local api_return=$?; [ $api_return -ne 0 ] && {
@@ -1003,6 +1002,7 @@ function log_first_debug_messages {
   fi
 
   # Log environment
+  [ $striptracks_debug -ge 2 ] && id | sed 's/^/Debug|Running as: /' | log
   [ $striptracks_debug -ge 2 ] && printenv | sort | sed 's/^/Debug|/' | log
 }
 function check_eventtype {
@@ -1152,6 +1152,7 @@ function call_api {
   local data_info=""
   [ ${#curl_data_args[@]} -gt 0 ] && data_info=" with data: ${curl_data_args[*]}"
   [ $striptracks_debug -ge 1 ] && echo "Debug|$message Calling ${striptracks_type^} API using $method and URL '$url'$data_info" | log
+  # Special handling of GET method
   if [ "$method" = "GET" ]; then
     curl_args+=(-G)
   else
@@ -1166,7 +1167,7 @@ function call_api {
   declare -g striptracks_result
 
   # Retry up to five times if database is locked
-  local i=0
+  local i
   for ((i=1; i <= 5; i++)); do
     striptracks_result=$(curl "${curl_args[@]}")
     local curl_return=$?
@@ -1999,17 +2000,6 @@ function map_default_tracks {
     striptracks_mkvpropedit_default_args="${striptracks_mkvpropedit_default_args# }"
   done
 }
-function set_default_tracks {
-  # Use mkvpropedit to edit default tracks
-
-  local videofile="$1" # Full path to video
-
-  if [ -n "$striptracks_mkvpropedit_default_args" ] && ! [[ $videofile == *.mkv ]]; then
-    # Execute mkvpropedit to set default flags on tracks
-    local mkvcommand="/usr/bin/mkvpropedit"
-    execute_mkv_command "setting default track flags" "$mkvcommand" -q $striptracks_mkvpropedit_default_args "$videofile"
-  fi
-}
 function set_title_and_exit_if_nothing_removed {
   # If no tracks are removed, and a variety of other conditions are met, we can skip remuxing, set the title, and exit early
 
@@ -2044,9 +2034,7 @@ function set_title_and_exit_if_nothing_removed {
     move_video "$striptracks_video" "$striptracks_newvideo"
   fi
   local mkvcommand="/usr/bin/mkvpropedit"
-  execute_mkv_command "setting video title" "$mkvcommand" -q --edit info --set "title=$(escape_string "$striptracks_title")" "$striptracks_newvideo"
-  # Set default tracks if configured
-  set_default_tracks "$striptracks_newvideo"
+  execute_mkv_command "setting video title" "$mkvcommand" -q --edit info --set "title=$(escape_string "$striptracks_title")" $striptracks_mkvpropedit_default_args "$striptracks_newvideo"
   end_script
 }
 function remux_video {

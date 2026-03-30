@@ -533,7 +533,7 @@ The only events/notification triggers that are supported in Custom Script mode a
 ## Import Mode
 When entered in Radarr's or Sonarr's *Import Script Path* field, the script is placed in Import mode.  In this mode, Radarr/Sonarr will run the script to pickup the downloaded video from your download client instead of using the built-in functionality.
 This mode allows the script to process the video tracks before the file is fully added to the library, gaining some efficiency by remuxing and moving the video at the same time.
-However, because the Radarr/Sonarr is not updated before the remux step, this introduces some inherent limitations.
+However, because the Radarr/Sonarr database is not updated before the remux step, this introduces some inherent limitations.
 
 ### Script Execution Differences in Import Mode
 In Import mode, the script behaves similarly to Custom Script mode but with the following differences:
