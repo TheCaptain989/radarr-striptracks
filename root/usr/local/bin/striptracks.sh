@@ -792,6 +792,7 @@ function check_job {
     case "$json_test" in
       completed) local return=0; break ;;
       queued)
+        # See issue #125
         [ $striptracks_debug -ge 1 ] && echo "Debug|Job still queued. Waiting 1 second." | log
         local return=1
         sleep 1
