@@ -791,8 +791,13 @@ function check_job {
     local json_test="$(echo "$striptracks_result" | jq -crM '.status?')"
     case "$json_test" in
       completed) local return=0; break ;;
+      queued)
+        # See issue #125
+        [ $striptracks_debug -ge 1 ] && echo "Debug|Job still queued. Waiting 1 second." | log
+        local return=1
+        sleep 1
+      ;;
       failed) local return=2; break ;;
-      queued) local return=3; break ;;
       *)
         # It may have timed out, so let's wait a second
         [ $striptracks_debug -ge 1 ] && echo "Debug|Job not done. Waiting 1 second." | log
