@@ -2460,7 +2460,7 @@ function rescan_and_cleanup {
       echo_ansi "$message" >&2
       change_exit_status 20
     }
-
+    # shellcheck disable=SC2154
     result=$(sqlite3 /config/sonarr.db "UPDATE EpisodeFiles SET SceneName='${sonarr_episodefile_scenename//\'/\'\'}' WHERE Id=${striptracks_videofile_id};")
     local return=$?; [ $return -ne 0 ] && {
       local message="Error|[$return] ${striptracks_type^} error when updating Sonarr database."
