@@ -281,6 +281,12 @@ function initialize_variables {
   export striptracks_mode="Custom Script"
   # Presence of '*_eventtype' variable sets script type when in Custom Script mode: "radarr", "sonarr"
   export striptracks_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
+  # Switch to Import mode if *_transfermode variable is found (see issues #52 and #121)
+  local transfermode=$(printenv | sed -n 's/_transfermode *=.*$//p')
+  if [ -n "$transfermode" ]; then
+    export striptracks_mode="Import"
+    export striptracks_type="$transfermode"    # "radarr", "sonarr"
+  fi
   export striptracks_arr_db="/config/${striptracks_type,,}.db"
   declare -g -x -a striptracks_skip_profile
 }
@@ -355,6 +361,20 @@ function process_command_line {
   # Log command-line arguments
   if [ $# -ne 0 ]; then
     export striptracks_prelogmessagedebug="Debug|Command line arguments are '$*'"
+  fi
+
+  # Check for running in Import mode, and skip the command line arguments that Radarr/Sonarr add
+  # These are not needed as the same data will be scraped from environment variables
+  if [ "$striptracks_mode" = "Import" ]; then
+    local sourcepath_var="${striptracks_type}_sourcepath"
+    local destinationpath_var="${striptracks_type}_destinationpath"
+    local sourcepath="${!sourcepath_var}"
+    local destinationpath="${!destinationpath_var}"
+
+    if [[ "$1" == "$sourcepath" ]] && [[ "$2" == "$destinationpath" ]]; then
+      export striptracks_prelogmessagedebug+=$'\n'"Debug|Import mode detected, skipping command line arguments '$1' and '$2' added by ${striptracks_type^} and using environment variables instead."
+      shift 2
+    fi
   fi
 
   # Check for environment variable arguments
@@ -626,14 +646,7 @@ function echo_ansi {
   fi
 }
 function initialize_mode_variables {
-  # Determines script mode and sets mode specific variables
-
-  # Switch to Import mode if *_transfermode variable is found (see issues #52 and #121)
-  local transfermode=$(printenv | sed -n 's/_transfermode *=.*$//p')
-  if [ -n "$transfermode" ]; then
-    export striptracks_mode="Import"
-    export striptracks_type="$transfermode"    # "radarr", "sonarr"
-  fi
+  # Sets script mode specific variables
 
   # Mode specific variable assignment
   if [[ "${striptracks_mode,,}" = "batch" ]]; then
