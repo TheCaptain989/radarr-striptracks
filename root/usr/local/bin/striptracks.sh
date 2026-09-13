@@ -792,7 +792,7 @@ function check_job {
     case "$json_test" in
       completed) local return=0; break ;;
       queued)
-        # See issue #125
+        # Correct return code (see issue #125)
         [ $striptracks_debug -ge 1 ] && echo "Debug|Job still queued. Waiting 1 second." | log
         local return=1
         sleep 1
@@ -859,7 +859,7 @@ function delete_videofile {
 function set_metadata {
   # Update file metadata in Radarr/Sonarr (see issue #97)
 
-  call_api 0 "Updating from quality '$(echo "$striptracks_videofile_info" | jq -crM .quality.quality.name)' to '$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)' and release group '$(echo "$striptracks_videofile_info" | jq -crM '.releaseGroup | select(. != null)')' to '$(echo "$striptracks_original_metadata" | jq -crM '.releaseGroup | select(. != null)')'." "PUT" "$striptracks_videofile_api/bulk" "$(echo "$striptracks_original_metadata" | jq -crM "[{id:${striptracks_videofile_id}, quality, releaseGroup}]")"
+  call_api 0 "Updating video metadata." "PUT" "$striptracks_videofile_api/bulk" "$(echo "$striptracks_original_metadata" | jq -crM "[{id:${striptracks_videofile_id}, quality, releaseGroup, sceneName, indexerFlags, edition, originalFilePath, releaseType}]")"
   [ "${#striptracks_result}" != 0 ]
   return
 }
@@ -1243,7 +1243,7 @@ function call_api {
   curl_args+=(--url "$url")
   [ $striptracks_debug -ge 2 ] && echo "Debug|Executing: curl ${curl_args[*]}" | sed -E 's/(X-Api-Key: )[^ ]+/\1[REDACTED]/' | log
   unset striptracks_result
-  # (See issue #104)
+  # Fix for argument list too long (see issue #104)
   declare -g striptracks_result
 
   # Retry up to five times if database is locked
@@ -1477,8 +1477,8 @@ function detect_languages {
     export striptracks_videofile_info="$striptracks_result"
 
     # Save original metadata
-    export striptracks_original_metadata="$(echo "$striptracks_videofile_info" | jq -crM '{quality, releaseGroup}')"
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Found video file quality '$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)' and release group '$(echo "$striptracks_original_metadata" | jq -crM '.releaseGroup | select(. != null)')'" | log
+    export striptracks_original_metadata="$(echo "$striptracks_videofile_info" | jq -crM '{quality, releaseGroup, sceneName, indexerFlags, edition, originalFilePath, releaseType}')"
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Found video file metadata quality:'$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)', release group '$(echo "$striptracks_original_metadata" | jq -crM '.releaseGroup | select(. != null)')', scene name '$(echo "$striptracks_original_metadata" | jq -crM .sceneName)', indexer flags '$(echo "$striptracks_original_metadata" | jq -crM .indexerFlags)', edition '$(echo "$striptracks_original_metadata" | jq -crM .edition)', original file path '$(echo "$striptracks_original_metadata" | jq -crM .originalFilePath)', release type '$(echo "$striptracks_original_metadata" | jq -crM .releaseType)'" | log
   fi
 
   # Get quality profile info
@@ -2137,7 +2137,7 @@ function remux_video {
     export striptracks_neworder="--track-order $striptracks_neworder"
   fi
 
-  # Execute MKVmerge (remux then rename, see issue #46)
+  # Execute MKVmerge, remux then rename (see issue #46)
   local mkvcommand="$striptracks_nice /usr/bin/mkvmerge"
   execute_mkv_command "remuxing video" "$mkvcommand" -o "$striptracks_tempvideo" -q --title "$(escape_string "$striptracks_title")" $audioarg $subsarg $striptracks_mkvmerge_default_args $striptracks_neworder "$striptracks_video"
 
@@ -2276,10 +2276,11 @@ function rescan_and_cleanup {
   # fi  
   # # Build JSON data
   # [ $striptracks_debug -ge 1 ] && echo "Debug|Building JSON data to import" | log
+  # # TODO: Get the original metadata from $striptracks_original_metadata and use it to set releaseGroup, sceneName, indexerFlags, edition, originalFilePath, releaseType in the jq query
   # striptracks_json=$(echo "$striptracks_result" | jq -jcM "
     # map(
     #   select(.path == \"$striptracks_newvideo\") |
-    #   {path, folderName, \"${striptracks_video_type}Id\":.${striptracks_video_type}.id,${striptracks_sonarr_json} quality, $striptracks_language_node}
+    #   {path, folderName, \"${striptracks_video_type}Id\":.${striptracks_video_type}.id,${striptracks_sonarr_json} quality, ${striptracks_language_node}, releaseGroup, sceneName, indexerFlags, edition, originalFilePath, releaseType}
     # )
   # ")
   
@@ -2350,12 +2351,14 @@ function rescan_and_cleanup {
 
   # Check if video monitored status changed after the delete/import (see issues #87 and #90)
   if [ -n "$striptracks_videomonitored" -a "$(echo "$striptracks_videoinfo" | jq -crM ".monitored")" != "$striptracks_videomonitored" ]; then
-    local message="Warn|Video monitor status changed after deleting the original.  Setting it back to '$striptracks_videomonitored'"
+    local message="Warn|Video monitor status changed after deleting the original. Setting it back to '$striptracks_videomonitored'"
     echo "$message" | log
     # Set video monitor state
     set_video_info
+  else
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Video monitor status unchanged after deleting the original." | log
   fi
-
+  
   # Get new video file info
   if ! get_videofile_info; then
     # No '.path' in returned JSON
@@ -2367,23 +2370,17 @@ function rescan_and_cleanup {
   fi
   export striptracks_videofile_info="$striptracks_result"
 
-  # Check that the metadata didn't get lost in the rescan. This is not necessary in Import mode
-  if [ -n "$striptracks_original_metadata" ] && [ -n "$striptracks_videofile_info" ] && [ "$(echo "$striptracks_videofile_info" | jq -crM .quality.quality.name)" != "$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)" -o "$(echo "$striptracks_videofile_info" | jq -crM '.releaseGroup | select(. != null)')" != "$(echo "$striptracks_original_metadata" | jq -crM '.releaseGroup | select(. != null)')" ]; then
-    # Put back the missing metadata
-    set_metadata
-    # Check that the returned result shows the updates
-    if [ "$(echo "$striptracks_result" | jq -crM .[].quality.quality.name)" = "$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)" ]; then
-      # Updated successfully
-      echo "Info|Successfully updated quality to '$(echo "$striptracks_result" | jq -crM .[].quality.quality.name)' and release group to '$(echo "$striptracks_result" | jq -crM '.[].releaseGroup | select(. != null)')'" | log
-    else
-      local message="Warn|Unable to update ${striptracks_type^} $striptracks_video_api '$striptracks_title' to quality '$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)' or release group to '$(echo "$striptracks_original_metadata" | jq -crM '.releaseGroup | select(. != null)')'"
-      echo "$message" | log
-      echo_ansi "$message" >&2
-      change_exit_status 17
-    fi
+  # Update the metadata lost in the rescan (see issue #128). This is not necessary in Import mode
+  set_metadata
+  # Check that the returned result shows the updates
+  if [ "$(echo "$striptracks_result" | jq -crM .[].quality.quality.name)" = "$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)" ]; then
+    # Updated successfully
+    echo "Info|Successfully updated metadata." | log
   else
-    # The metadata was already set correctly
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Metadata quality '$(echo "$striptracks_videofile_info" | jq -crM .quality.quality.name)' and release group '$(echo "$striptracks_videofile_info" | jq -crM '.releaseGroup | select(. != null)')' remained unchanged." | log
+    local message="Warn|Unable to update ${striptracks_type^} $striptracks_video_api '$striptracks_title' metadata."
+    echo "$message" | log
+    echo_ansi "$message" >&2
+    change_exit_status 17
   fi
 
   # Check the languages returned
@@ -2449,6 +2446,28 @@ function rescan_and_cleanup {
     echo "$message" | log
     echo_ansi "$message" >&2
     change_exit_status 20
+  fi
+
+  # Really, *really* bad way to update the Sonarr database, but there is no other way to get sceneName updated (see issue #128)
+  # FYI, originalFilePath in Radarr seems to have the same problem, but Custom Formats don't seem to care about it, so I'm not hacking up the Radarr database directly.
+  if [ "${striptracks_type,,}" = "sonarr" ]; then
+    # Check for and install sqlite3 (it's only about 2MB).  Container is required to be online.
+    local result
+    result=$(command -v sqlite3 >/dev/null 2>&1 || apk add sqlite --quiet)
+    local return=$?; [ $return -ne 0 ] && {
+      local message="Error|[$return] ${striptracks_type^} error when installing sqlite3."
+      echo "$message" | log
+      echo_ansi "$message" >&2
+      change_exit_status 20
+    }
+
+    result=$(sqlite3 /config/sonarr.db "UPDATE EpisodeFiles SET SceneName='${sonarr_episodefile_scenename//\'/\'\'}' WHERE Id=${striptracks_videofile_id};")
+    local return=$?; [ $return -ne 0 ] && {
+      local message="Error|[$return] ${striptracks_type^} error when updating Sonarr database."
+      echo "$message" | log
+      echo_ansi "$message" >&2
+      change_exit_status 20
+    }
   fi
 
   # Get list of videos that could be renamed (see issue #50)
