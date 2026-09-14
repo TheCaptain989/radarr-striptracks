@@ -71,10 +71,10 @@ function main {
   check_video
   detect_languages
   # Special handling for ':org' code from command line.
-  process_org_code "audio" "striptracks_audiokeep"
-  process_org_code "subtitles" "striptracks_subskeep"
-  process_org_code "audio" "striptracks_default_audio"
-  process_org_code "subtitles" "striptracks_default_subtitles"
+  process_org_code "striptracks_audiokeep"
+  process_org_code "striptracks_subskeep"
+  process_org_code "striptracks_default_audio"
+  process_org_code "striptracks_default_subtitles"
   resolve_code_conflict
   # Read in the output of mkvmerge info extraction
   get_mediainfo "$striptracks_video"
@@ -1019,26 +1019,25 @@ function set_video_monitored {
 function process_org_code {
   # Handle :org language code
 
-  local track_type="$1" # 'audio' or 'subtitles'
-  local keep_var="$2"  # 'striptracks_audiokeep', 'striptracks_subskeep', 'striptracks_default_audio', or 'striptracks_default_subtitles'
+  local var_name="$1"  # 'striptracks_audiokeep', 'striptracks_subskeep', 'striptracks_default_audio', or 'striptracks_default_subtitles'
 
-  if [[ "${!keep_var}" =~ :org ]]; then
+  if [[ "${!var_name}" =~ :org ]]; then
     # Check compatibility
     if [ "${striptracks_mode,,}" = "batch" ]; then
-      local message="Warn|${track_type^} argument contains ':org' code, but this is undefined for Batch mode! Unexpected behavior may result."
+      local message="Warn|${var_name} argument contains ':org' code, but this is undefined for Batch mode! Unexpected behavior may result."
       echo "$message" | log
       echo_ansi "$message" >&2
     elif ! check_compat originallanguage; then
-      local message="Warn|${track_type^} argument contains ':org' code, but this is undefined and not compatible with this mode/version! Unexpected behavior may result."
+      local message="Warn|${var_name} argument contains ':org' code, but this is undefined and not compatible with this mode/version! Unexpected behavior may result."
       echo "$message" | log
       echo_ansi "$message" >&2
     fi
 
     # Log debug message if applicable
-    [ $striptracks_debug -ge 1 ] && echo "Debug|${track_type^} argument ':org' specified. Changing '${!keep_var}' to '${!keep_var//:org/${striptracks_originalLangCode}}'" | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|${var_name} argument ':org' specified. Changing '${!var_name}' to '${!var_name//:org/${striptracks_originalLangCode}}'" | log
 
     # Replace :org with the original language code
-    declare -g "$keep_var=${!keep_var//:org/${striptracks_originalLangCode}}"
+    declare -g "$var_name=${!var_name//:org/${striptracks_originalLangCode}}"
   fi
 }
 function end_script {
@@ -2049,8 +2048,13 @@ function determine_track_order {
               ($rule.lang | in({"any":0,($track.language):0})) and
               (
                 ($rule.mods | length == 0) or
-                ( ($rule.mods | map(.forced? // false) | index(true) != null) and $track.forced ) or
-                ( ($rule.mods | map(.default? // false) | index(true) != null) and $track.default )
+                # Negative modifiers (e.g. -f, -d) must match too, so compare each modifier to the
+                # track flag instead of only looking for true. Multiple modifiers are combined with
+                # OR, matching the keep logic in process_mkvmerge_json.
+                any($rule.mods[];
+                  ( has("forced") and .forced == ($track.forced == true) ) or
+                  ( has("default") and .default == ($track.default == true) )
+                )
               )
             ) |
             .id as $id |
