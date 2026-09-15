@@ -1035,7 +1035,7 @@ function process_org_code {
         echo_ansi "$message" >&2
       fi
     fi
-    striptracks_checked_org_compat=$(($striptracks_checked_org_compat + 1))
+    striptracks_checked_org_compat=$((striptracks_checked_org_compat + 1))
 
     # Log debug message if applicable
     [ $striptracks_debug -ge 1 ] && echo "Debug|${var_name} argument ':org' specified. Changing '${!var_name}' to '${!var_name//:org/${striptracks_originalLangCode}}'" | log
