@@ -288,6 +288,7 @@ function initialize_variables {
     export striptracks_type="$transfermode"    # "radarr", "sonarr"
   fi
   export striptracks_arr_db="/config/${striptracks_type,,}.db"
+  export striptracks_checked_org_compat=0
   declare -g -x -a striptracks_skip_profile
 }
 function parse_arg_string {
@@ -1022,16 +1023,19 @@ function process_org_code {
   local var_name="$1"  # 'striptracks_audiokeep', 'striptracks_subskeep', 'striptracks_default_audio', or 'striptracks_default_subtitles'
 
   if [[ "${!var_name}" =~ :org ]]; then
-    # Check compatibility
-    if [ "${striptracks_mode,,}" = "batch" ]; then
-      local message="Warn|${var_name} argument contains ':org' code, but this is undefined for Batch mode! Unexpected behavior may result."
-      echo "$message" | log
-      echo_ansi "$message" >&2
-    elif ! check_compat originallanguage; then
-      local message="Warn|${var_name} argument contains ':org' code, but this is undefined and not compatible with this mode/version! Unexpected behavior may result."
-      echo "$message" | log
-      echo_ansi "$message" >&2
+    if [ "$striptracks_checked_org_compat" -eq 0 ]; then
+      # Check compatibility (first time only)
+      if [ "${striptracks_mode,,}" = "batch" ]; then
+        local message="Warn|${var_name} argument contains ':org' code, but this is undefined for Batch mode! Unexpected behavior may result."
+        echo "$message" | log
+        echo_ansi "$message" >&2
+      elif ! check_compat originallanguage; then
+        local message="Warn|${var_name} argument contains ':org' code, but this is undefined and not compatible with this mode/version! Unexpected behavior may result."
+        echo "$message" | log
+        echo_ansi "$message" >&2
+      fi
     fi
+    striptracks_checked_org_compat=$(($striptracks_checked_org_compat + 1))
 
     # Log debug message if applicable
     [ $striptracks_debug -ge 1 ] && echo "Debug|${var_name} argument ':org' specified. Changing '${!var_name}' to '${!var_name//:org/${striptracks_originalLangCode}}'" | log
