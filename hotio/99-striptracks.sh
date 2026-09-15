@@ -78,21 +78,21 @@ if [ ! -f /usr/bin/mkvmerge ]; then
 
   if [ -f /usr/bin/apt ]; then
     # Ubuntu
-    echo "[mod-install] Installing MKVToolNix using apt-get"
+    echo "[mod-install] Installing MKVToolNix and SQLite using apt-get"
     apt-get update && \
-        apt-get -y install mkvtoolnix && \
+        apt-get -y install mkvtoolnix sqlite && \
         rm -rf /var/lib/apt/lists/*
   elif [ -f /sbin/apk ]; then
     # Alpine
-    echo "[mod-install] Installing MKVToolNix using apk"
+    echo "[mod-install] Installing MKVToolNix andSQLite using apk"
     apk upgrade --no-cache && \
-        apk add --no-cache mkvtoolnix && \
+        apk add --no-cache mkvtoolnix sqlite&& \
         rm -rf /var/lib/apt/lists/*
   else
     # Unknown
-    echo "[mod-install] Unknown package manager.  Attempting to install MKVToolNix using apt-get"
+    echo "[mod-install] Unknown package manager.  Attempting to install MKVToolNix and SQLiteusing apt-get"
     apt-get update && \
-        apt-get -y install mkvtoolnix && \
+        apt-get -y install mkvtoolnix sqlite && \
         rm -rf /var/lib/apt/lists/*
   fi
 fi

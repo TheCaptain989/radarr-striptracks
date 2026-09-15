@@ -12,7 +12,7 @@
 
 # NOTE: ShellCheck linter directives appear as comments
 
-# Dependencies:      # sudo apt install mkvtoolnix jq
+# Dependencies:      # sudo apt install mkvtoolnix jq sqlite
 #  From mkvtoolnix:
 #   mkvmerge
 #   mkvpropedit
@@ -67,13 +67,14 @@ function main {
   log_script_start
   check_config_file
   check_arr_config
+  check_arr_db
   check_video
   detect_languages
   # Special handling for ':org' code from command line.
-  process_org_code "audio" "striptracks_audiokeep"
-  process_org_code "subtitles" "striptracks_subskeep"
-  process_org_code "audio" "striptracks_default_audio"
-  process_org_code "subtitles" "striptracks_default_subtitles"
+  process_org_code "striptracks_audiokeep"
+  process_org_code "striptracks_subskeep"
+  process_org_code "striptracks_default_audio"
+  process_org_code "striptracks_default_subtitles"
   resolve_code_conflict
   # Read in the output of mkvmerge info extraction
   get_mediainfo "$striptracks_video"
@@ -173,6 +174,10 @@ Options and Arguments:
   -c, --config <config_file>
                   Radarr/Sonarr XML configuration file
                   [default: /config/config.xml]
+
+      --database <database_file>
+                  Radarr/Sonarr SQlite database file
+                  [default: /config/radarr.db or /config/sonarr.db]
 
   -p, --priority idle|low|medium|high
                   CPU and I/O process priority for mkvmerge
@@ -276,6 +281,14 @@ function initialize_variables {
   export striptracks_mode="Custom Script"
   # Presence of '*_eventtype' variable sets script type when in Custom Script mode: "radarr", "sonarr"
   export striptracks_type=$(printenv | sed -n 's/_eventtype *=.*$//p')
+  # Switch to Import mode if *_transfermode variable is found (see issues #52 and #121)
+  local transfermode=$(printenv | sed -n 's/_transfermode *=.*$//p')
+  if [ -n "$transfermode" ]; then
+    export striptracks_mode="Import"
+    export striptracks_type="$transfermode"    # "radarr", "sonarr"
+  fi
+  export striptracks_arr_db="/config/${striptracks_type,,}.db"
+  export striptracks_checked_org_compat=0
   declare -g -x -a striptracks_skip_profile
 }
 function parse_arg_string {
@@ -349,6 +362,20 @@ function process_command_line {
   # Log command-line arguments
   if [ $# -ne 0 ]; then
     export striptracks_prelogmessagedebug="Debug|Command line arguments are '$*'"
+  fi
+
+  # Check for running in Import mode, and skip the command line arguments that Radarr/Sonarr add
+  # These are not needed as the same data will be scraped from environment variables
+  if [ "$striptracks_mode" = "Import" ]; then
+    local sourcepath_var="${striptracks_type}_sourcepath"
+    local destinationpath_var="${striptracks_type}_destinationpath"
+    local sourcepath="${!sourcepath_var}"
+    local destinationpath="${!destinationpath_var}"
+
+    if [[ "$1" == "$sourcepath" ]] && [[ "$2" == "$destinationpath" ]]; then
+      export striptracks_prelogmessagedebug+=$'\n'"Debug|Import mode detected, skipping command line arguments '$1' and '$2' added by ${striptracks_type^} and using environment variables instead."
+      shift 2
+    fi
   fi
 
   # Check for environment variable arguments
@@ -451,6 +478,17 @@ function process_command_line {
         fi
         # Overrides default /config/config.xml
         export striptracks_arr_config="$2"
+        shift 2
+      ;;
+      --database )
+        # *arr SQlite database file
+        if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
+          echo_ansi "Error|Invalid option: $1 requires an argument." >&2
+          usage
+          exit 20
+        fi
+        # Overrides default /config/${striptracks_type}.db
+        export striptracks_arr_db="$2"
         shift 2
       ;;
       -p|--priority )
@@ -609,14 +647,7 @@ function echo_ansi {
   fi
 }
 function initialize_mode_variables {
-  # Determines script mode and sets mode specific variables
-
-  # Switch to Import mode if *_transfermode variable is found (see issues #52 and #121)
-  local transfermode=$(printenv | sed -n 's/_transfermode *=.*$//p')
-  if [ -n "$transfermode" ]; then
-    export striptracks_mode="Import"
-    export striptracks_type="$transfermode"    # "radarr", "sonarr"
-  fi
+  # Sets script mode specific variables
 
   # Mode specific variable assignment
   if [[ "${striptracks_mode,,}" = "batch" ]]; then
@@ -633,6 +664,7 @@ function initialize_mode_variables {
       export striptracks_video="$radarr_moviefile_path"
       # shellcheck disable=SC2154
       export striptracks_video_folder="$radarr_movie_path"
+      export striptracks_video_type="movie"
       export striptracks_video_api="movie"
       # shellcheck disable=SC2154
       export striptracks_video_id="$radarr_movie_id"
@@ -645,19 +677,20 @@ function initialize_mode_variables {
       export striptracks_download_client_type="$radarr_download_client_type"
       # shellcheck disable=SC2154
       export striptracks_rescan_id="$radarr_movie_id"
-      export striptracks_json_quality_root="movieFile"
-      export striptracks_video_type="movie"
+      export striptracks_videofile_json_root="movieFile"
       export striptracks_video_rootNode=""
       # shellcheck disable=SC2154
       export striptracks_title="${radarr_movie_title:-UNKNOWN} (${radarr_movie_year:-UNKNOWN})"
-      export striptracks_language_jq=".language"
       # export striptracks_language_node="languages"
+      export striptracks_metadata_via_api=("releaseGroup" "indexerFlags" "sceneName" "edition")
+      export striptracks_metadata_via_db=("originalFilePath")
     elif [[ "${striptracks_type,,}" = "sonarr" ]]; then
       # Sonarr
       # shellcheck disable=SC2154
       export striptracks_video="$sonarr_episodefile_path"
       # shellcheck disable=SC2154
       export striptracks_video_folder="$sonarr_series_path"
+      export striptracks_video_type="series"
       export striptracks_video_api="episode"
       # shellcheck disable=SC2154
       export striptracks_video_id="$sonarr_episodefile_episodeids"
@@ -670,14 +703,15 @@ function initialize_mode_variables {
       export striptracks_download_client_type="$sonarr_download_client_type"
       # shellcheck disable=SC2154
       export striptracks_rescan_id="$sonarr_series_id"
-      export striptracks_json_quality_root="episodeFile"
-      export striptracks_video_type="series"
+      export striptracks_videofile_json_root="episodeFile"
       export striptracks_video_rootNode=".series"
       # shellcheck disable=SC2154
       export striptracks_title="${sonarr_series_title:-UNKNOWN} $(numfmt --format "%02f" ${sonarr_episodefile_seasonnumber:-0})x$(numfmt --format "%02f" ${sonarr_episodefile_episodenumbers:-0}) - ${sonarr_episodefile_episodetitles:-UNKNOWN}"
       # export striptracks_language_node="language"
       # # Sonarr requires the episodeIds array when importing episodes directly
       # export striptracks_sonarr_json=" \"episodeIds\":[.episodes[].id],"
+      export striptracks_metadata_via_api=("releaseGroup" "indexerFlags")
+      export striptracks_metadata_via_db=("sceneName")
     else
       # Called in an unexpected way
       echo_ansi "Error|Unknown or missing *_eventtype or *_transfermode environment variables.\nNot calling from Radarr/Sonarr? Try using Batch Mode option: -f <file>" >&2
@@ -792,7 +826,7 @@ function check_job {
     case "$json_test" in
       completed) local return=0; break ;;
       queued)
-        # See issue #125
+        # Correct return code (see issue #125)
         [ $striptracks_debug -ge 1 ] && echo "Debug|Job still queued. Waiting 1 second." | log
         local return=1
         sleep 1
@@ -859,7 +893,9 @@ function delete_videofile {
 function set_metadata {
   # Update file metadata in Radarr/Sonarr (see issue #97)
 
-  call_api 0 "Updating from quality '$(echo "$striptracks_videofile_info" | jq -crM .quality.quality.name)' to '$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)' and release group '$(echo "$striptracks_videofile_info" | jq -crM '.releaseGroup | select(. != null)')' to '$(echo "$striptracks_original_metadata" | jq -crM '.releaseGroup | select(. != null)')'." "PUT" "$striptracks_videofile_api/bulk" "$(echo "$striptracks_original_metadata" | jq -crM "[{id:${striptracks_videofile_id}, quality, releaseGroup}]")"
+  local metadata_field_list
+  metadata_field_list=$(IFS=,; echo "${striptracks_metadata_via_api[*]}")
+  call_api 0 "Updating video metadata." "PUT" "$striptracks_videofile_api/bulk" "$(echo "$striptracks_original_metadata" | jq -crM "[{id:${striptracks_videofile_id}, quality${metadata_field_list:+, $metadata_field_list}}]")"
   [ "${#striptracks_result}" != 0 ]
   return
 }
@@ -974,8 +1010,8 @@ function get_media_config {
   [ "$json_test" != "null" ] && [ "$json_test" != "" ]
   return
 }
-function set_video_info {
-  # Update file metadata in Radarr/Sonarr
+function set_video_monitored {
+  # Update video monitored status in Radarr/Sonarr
 
   call_api 1 "Updating monitored to '$striptracks_videomonitored'." "PUT" "$striptracks_video_api/$striptracks_video_id" "$(echo "$striptracks_videoinfo" | jq -crM .monitored="$striptracks_videomonitored")"
   [ "${#striptracks_result}" != 0 ]
@@ -984,26 +1020,28 @@ function set_video_info {
 function process_org_code {
   # Handle :org language code
 
-  local track_type="$1" # 'audio' or 'subtitles'
-  local keep_var="$2"  # 'striptracks_audiokeep', 'striptracks_subskeep', 'striptracks_default_audio', or 'striptracks_default_subtitles'
+  local var_name="$1"  # 'striptracks_audiokeep', 'striptracks_subskeep', 'striptracks_default_audio', or 'striptracks_default_subtitles'
 
-  if [[ "${!keep_var}" =~ :org ]]; then
-    # Check compatibility
-    if [ "${striptracks_mode,,}" = "batch" ]; then
-      local message="Warn|${track_type^} argument contains ':org' code, but this is undefined for Batch mode! Unexpected behavior may result."
-      echo "$message" | log
-      echo_ansi "$message" >&2
-    elif ! check_compat originallanguage; then
-      local message="Warn|${track_type^} argument contains ':org' code, but this is undefined and not compatible with this mode/version! Unexpected behavior may result."
-      echo "$message" | log
-      echo_ansi "$message" >&2
+  if [[ "${!var_name}" =~ :org ]]; then
+    if [ "$striptracks_checked_org_compat" -eq 0 ]; then
+      # Check compatibility (first time only)
+      if [ "${striptracks_mode,,}" = "batch" ]; then
+        local message="Warn|${var_name} argument contains ':org' code, but this is undefined for Batch mode! Unexpected behavior may result."
+        echo "$message" | log
+        echo_ansi "$message" >&2
+      elif ! check_compat originallanguage; then
+        local message="Warn|${var_name} argument contains ':org' code, but this is undefined and not compatible with this mode/version! Unexpected behavior may result."
+        echo "$message" | log
+        echo_ansi "$message" >&2
+      fi
     fi
+    striptracks_checked_org_compat=$((striptracks_checked_org_compat + 1))
 
     # Log debug message if applicable
-    [ $striptracks_debug -ge 1 ] && echo "Debug|${track_type^} argument ':org' specified. Changing '${!keep_var}' to '${!keep_var//:org/${striptracks_originalLangCode}}'" | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|${var_name} argument ':org' specified. Changing '${!var_name}' to '${!var_name//:org/${striptracks_originalLangCode}}'" | log
 
     # Replace :org with the original language code
-    declare -g "$keep_var=${!keep_var//:org/${striptracks_originalLangCode}}"
+    declare -g "$var_name=${!var_name//:org/${striptracks_originalLangCode}}"
   fi
 }
 function end_script {
@@ -1049,7 +1087,7 @@ function check_log {
 function check_required_binaries {
   # Check for required binaries
 
-  for striptracks_file in "/usr/bin/mkvmerge" "/usr/bin/mkvpropedit" "/usr/bin/jq"; do
+  for striptracks_file in "/usr/bin/mkvmerge" "/usr/bin/mkvpropedit" "/usr/bin/jq" "/usr/bin/sqlite3"; do
     if [ ! -f "$striptracks_file" ]; then
       local message="Error|$striptracks_file is required by this script"
       echo "$message" | log
@@ -1113,6 +1151,11 @@ function check_wsl {
     if [ ! -f "$striptracks_arr_config" ]; then
       export striptracks_arr_config="/mnt/c/ProgramData/${striptracks_type^}/config.xml"
       [ $striptracks_debug -ge 1 ] && echo "Debug|Will try to use the default WSL configuration file '$striptracks_arr_config'" | log
+    fi
+    # Adjust database file location to WSL default
+    if [ ! -f "$striptracks_arr_db" ]; then
+      export striptracks_arr_db="/mnt/c/ProgramData/${striptracks_type^}/${striptracks_type,,}.db"
+      [ $striptracks_debug -ge 1 ] && echo "Debug|Will try to use the default WSL database file '$striptracks_arr_db'" | log
     fi
   fi
 }
@@ -1243,7 +1286,7 @@ function call_api {
   curl_args+=(--url "$url")
   [ $striptracks_debug -ge 2 ] && echo "Debug|Executing: curl ${curl_args[*]}" | sed -E 's/(X-Api-Key: )[^ ]+/\1[REDACTED]/' | log
   unset striptracks_result
-  # (See issue #104)
+  # Fix for argument list too long (see issue #104)
   declare -g striptracks_result
 
   # Retry up to five times if database is locked
@@ -1462,7 +1505,7 @@ function detect_languages {
   export striptracks_videoinfo="$striptracks_result"
   export striptracks_videomonitored="$(echo "$striptracks_videoinfo" | jq -crM ".monitored")"
   # This is not strictly necessary as the ID is normally set in the environment. However, this is needed for testing scripts and it doesn't hurt to use the data returned by the API call.
-  export striptracks_videofile_id="$(echo "$striptracks_videoinfo" | jq -crM .${striptracks_json_quality_root}.id)"
+  export striptracks_videofile_id="$(echo "$striptracks_videoinfo" | jq -crM .${striptracks_videofile_json_root}.id)"
 
   # Import mode will not have a video file until after import
   if [ "${striptracks_mode,,}" != "import" ]; then
@@ -1477,8 +1520,17 @@ function detect_languages {
     export striptracks_videofile_info="$striptracks_result"
 
     # Save original metadata
-    export striptracks_original_metadata="$(echo "$striptracks_videofile_info" | jq -crM '{quality, releaseGroup}')"
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Found video file quality '$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)' and release group '$(echo "$striptracks_original_metadata" | jq -crM '.releaseGroup | select(. != null)')'" | log
+    local -a metadata_field_array=("${striptracks_metadata_via_api[@]}" "${striptracks_metadata_via_db[@]}")
+    local metadata_field_list
+    metadata_field_list=$(IFS=,; echo "${metadata_field_array[*]}")
+    export striptracks_original_metadata="$(echo "$striptracks_videofile_info" | jq -crM "{quality${metadata_field_list:+, $metadata_field_list}}")"
+    [ $striptracks_debug -ge 1 ] && {
+      local debug_text=""
+      for metadata_field in "${metadata_field_array[@]}"; do
+        debug_text+="${debug_text:+, }${metadata_field} '$(echo "$striptracks_original_metadata" | jq -crM --arg field "$metadata_field" '.[$field]')'"
+      done
+      echo "Debug|Found video file metadata quality:'$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)'${debug_text:+, $debug_text}" | log
+    }
   fi
 
   # Get quality profile info
@@ -1633,6 +1685,24 @@ function check_arr_config {
       echo_ansi "$message" >&2
       end_script 20
     fi
+  fi
+}
+function check_arr_db {
+  # Test for existence of Radarr/Sonarr database
+
+  # Bypass if using Batch mode
+  if [ "${striptracks_mode,,}" = "batch" ]; then
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Cannot check database in Batch mode." | log
+    return
+  fi
+
+  if [ -f "$striptracks_arr_db" ]; then
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Found ${striptracks_type^} database '$striptracks_arr_db'" | log
+  else
+    local message="Warn|Unable to locate ${striptracks_type^} database '$striptracks_arr_db'.  Unable to update ${striptracks_video_api} metadata."
+    echo "$message" | log
+    echo_ansi "$message" >&2
+    change_exit_status 20
   fi
 }
 function resolve_code_conflict {
@@ -1982,8 +2052,13 @@ function determine_track_order {
               ($rule.lang | in({"any":0,($track.language):0})) and
               (
                 ($rule.mods | length == 0) or
-                ( ($rule.mods | map(.forced? // false) | index(true) != null) and $track.forced ) or
-                ( ($rule.mods | map(.default? // false) | index(true) != null) and $track.default )
+                # Negative modifiers (e.g. -f, -d) must match too, so compare each modifier to the
+                # track flag instead of only looking for true. Multiple modifiers are combined with
+                # OR, matching the keep logic in process_mkvmerge_json.
+                any($rule.mods[];
+                  ( has("forced") and .forced == ($track.forced == true) ) or
+                  ( has("default") and .default == ($track.default == true) )
+                )
               )
             ) |
             .id as $id |
@@ -2137,7 +2212,7 @@ function remux_video {
     export striptracks_neworder="--track-order $striptracks_neworder"
   fi
 
-  # Execute MKVmerge (remux then rename, see issue #46)
+  # Execute MKVmerge, remux then rename (see issue #46)
   local mkvcommand="$striptracks_nice /usr/bin/mkvmerge"
   execute_mkv_command "remuxing video" "$mkvcommand" -o "$striptracks_tempvideo" -q --title "$(escape_string "$striptracks_title")" $audioarg $subsarg $striptracks_mkvmerge_default_args $striptracks_neworder "$striptracks_video"
 
@@ -2264,8 +2339,8 @@ function rescan_and_cleanup {
     return
   fi
 
-  ##### Leaving this here (and all supporting functions and variables) in case the single file import job problem can be resolved.
-  ##### See GitHub Issue #50.  Importing directly is a much better way than rescanning.
+  ##### Leaving this here (and all supporting functions and variables) in case the single file import job problem can be resolved (see issue #50).
+  ##### Importing directly is a much better way than rescanning.
   # # Scan for files to import into Radarr/Sonarr
   # if ! get_import_info; then
     #  local message="Error|${striptracks_type^} error getting import file list in \"$striptracks_video_folder\" for $striptracks_video_type ID $striptracks_rescan_id. Cannot import remuxed video."
@@ -2276,11 +2351,14 @@ function rescan_and_cleanup {
   # fi  
   # # Build JSON data
   # [ $striptracks_debug -ge 1 ] && echo "Debug|Building JSON data to import" | log
+  # local -a metadata_field_array=("${striptracks_metadata_via_api[@]}" "${striptracks_metadata_via_db[@]}")
+  # local metadata_field_list
+  # metadata_field_list=$(IFS=,; echo "${metadata_field_array[*]}")
   # striptracks_json=$(echo "$striptracks_result" | jq -jcM "
-    # map(
-    #   select(.path == \"$striptracks_newvideo\") |
-    #   {path, folderName, \"${striptracks_video_type}Id\":.${striptracks_video_type}.id,${striptracks_sonarr_json} quality, $striptracks_language_node}
-    # )
+  #   map(
+  #     select(.path == \"$striptracks_newvideo\") |
+  #     {path, folderName, \"${striptracks_video_type}Id\":.${striptracks_video_type}.id,${striptracks_sonarr_json}, ${striptracks_language_node}, quality${metadata_field_list:+, $metadata_field_list}}
+  #   )
   # ")
   
   # # Import new video into Radarr/Sonarr
@@ -2345,21 +2423,23 @@ function rescan_and_cleanup {
     return
   fi
   export striptracks_videoinfo="$striptracks_result"
-  export striptracks_videofile_id="$(echo "$striptracks_videoinfo" | jq -crM .${striptracks_json_quality_root}.id)"
+  export striptracks_videofile_id="$(echo "$striptracks_videoinfo" | jq -crM .${striptracks_videofile_json_root}.id)"
   [ $striptracks_debug -ge 1 ] && echo "Debug|Using new video file id '$striptracks_videofile_id'" | log
 
   # Check if video monitored status changed after the delete/import (see issues #87 and #90)
   if [ -n "$striptracks_videomonitored" -a "$(echo "$striptracks_videoinfo" | jq -crM ".monitored")" != "$striptracks_videomonitored" ]; then
-    local message="Warn|Video monitor status changed after deleting the original.  Setting it back to '$striptracks_videomonitored'"
+    local message="Warn|Video monitor status changed after deleting the original. Setting it back to '$striptracks_videomonitored'"
     echo "$message" | log
     # Set video monitor state
-    set_video_info
+    set_video_monitored
+  else
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Video monitor status unchanged after deleting the original." | log
   fi
-
+  
   # Get new video file info
   if ! get_videofile_info; then
     # No '.path' in returned JSON
-    local message="Warn|The '$striptracks_videofile_api' API with ${striptracks_video_api}File id $striptracks_videofile_id returned no path."
+    local message="Warn|The '$striptracks_videofile_api' API with id $striptracks_videofile_id returned no path."
     echo "$message" | log
     echo_ansi "$message" >&2
     change_exit_status 17
@@ -2367,23 +2447,38 @@ function rescan_and_cleanup {
   fi
   export striptracks_videofile_info="$striptracks_result"
 
-  # Check that the metadata didn't get lost in the rescan. This is not necessary in Import mode
-  if [ -n "$striptracks_original_metadata" ] && [ -n "$striptracks_videofile_info" ] && [ "$(echo "$striptracks_videofile_info" | jq -crM .quality.quality.name)" != "$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)" -o "$(echo "$striptracks_videofile_info" | jq -crM '.releaseGroup | select(. != null)')" != "$(echo "$striptracks_original_metadata" | jq -crM '.releaseGroup | select(. != null)')" ]; then
-    # Put back the missing metadata
-    set_metadata
-    # Check that the returned result shows the updates
-    if [ "$(echo "$striptracks_result" | jq -crM .[].quality.quality.name)" = "$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)" ]; then
-      # Updated successfully
-      echo "Info|Successfully updated quality to '$(echo "$striptracks_result" | jq -crM .[].quality.quality.name)' and release group to '$(echo "$striptracks_result" | jq -crM '.[].releaseGroup | select(. != null)')'" | log
-    else
-      local message="Warn|Unable to update ${striptracks_type^} $striptracks_video_api '$striptracks_title' to quality '$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)' or release group to '$(echo "$striptracks_original_metadata" | jq -crM '.releaseGroup | select(. != null)')'"
-      echo "$message" | log
-      echo_ansi "$message" >&2
-      change_exit_status 17
-    fi
+  # Update the metadata lost in the rescan (see issue #128)
+  set_metadata
+  # Check that the returned result shows the updates
+  if [ "$(echo "$striptracks_result" | jq -crM .[].quality.quality.name)" = "$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)" ]; then
+    # Updated successfully
+    echo "Info|Successfully updated metadata via API." | log
   else
-    # The metadata was already set correctly
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Metadata quality '$(echo "$striptracks_videofile_info" | jq -crM .quality.quality.name)' and release group '$(echo "$striptracks_videofile_info" | jq -crM '.releaseGroup | select(. != null)')' remained unchanged." | log
+    local message="Warn|Unable to update ${striptracks_type^} $striptracks_video_api '$striptracks_title' metadata."
+    echo "$message" | log
+    echo_ansi "$message" >&2
+    change_exit_status 17
+  fi
+
+  # Really, *really* bad way to update the Radarr/Sonarr database, but there is no other way to get originalFilePath/sceneName updated (see issue #128)
+  local debug_text=""
+  local sqlite_sets=""
+  for metadata_field in "${striptracks_metadata_via_db[@]}"; do
+    debug_text+="${debug_text:+, }${metadata_field} '$(echo "$striptracks_original_metadata" | jq -crM --arg field "$metadata_field" '.[$field]')'"
+    local db_col_value=$(echo "$striptracks_original_metadata" | jq -crM --arg field "$metadata_field" '.[$field]')
+    sqlite_sets+="${sqlite_sets:+,}${metadata_field}='${db_col_value//\'/\'\'}'"
+  done
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Updating ${striptracks_type^} database directly for ${striptracks_videofile_api} id ${striptracks_videofile_id} with ${debug_text}" | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: /usr/bin/sqlite3 -safe \"${striptracks_arr_db}\" \"UPDATE ${striptracks_video_api^}Files SET ${sqlite_sets} WHERE Id=${striptracks_videofile_id};\"" | log
+  result=$(/usr/bin/sqlite3 -safe "${striptracks_arr_db}" "UPDATE ${striptracks_video_api^}Files SET ${sqlite_sets} WHERE Id=${striptracks_videofile_id};")
+  local return=$?
+  if [ $return -eq 0 ]; then
+    echo "Info|Successfully updated metadata via database edit." | log
+  else
+    local message="Error|[$return] ${striptracks_type^} error when updating ${striptracks_type^} database."
+    echo "$message" | log
+    echo_ansi "$message" >&2
+    change_exit_status 20
   fi
 
   # Check the languages returned
@@ -2461,7 +2556,7 @@ function rescan_and_cleanup {
   }
   # Check if new video is in list of files that can be renamed
   if [ -n "$striptracks_result" -a "$striptracks_result" != "[]" ]; then
-    local renamedvideo="$(echo "$striptracks_result" | jq -crM ".[] | select(.${striptracks_json_quality_root}Id == $striptracks_videofile_id) | .newPath")"
+    local renamedvideo="$(echo "$striptracks_result" | jq -crM ".[] | select(.${striptracks_videofile_json_root}Id == $striptracks_videofile_id) | .newPath")"
     # Rename video if needed
     if [ -n "$renamedvideo" ]; then
       rename_videofile "$striptracks_videofile_id" "$renamedvideo"

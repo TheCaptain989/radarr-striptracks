@@ -26,3 +26,10 @@ test_missing_mkvpropedit() {
   assert_matches "^Error\|/usr/bin/mkvpropedit is required" "$(check_required_binaries 2>&1)"
   mv /usr/bin/mkvpropedit.bak /usr/bin/mkvpropedit
 }
+
+test_missing_sqlite() {
+  mv /usr/bin/sqlite3 /usr/bin/sqlite3.bak
+  assert_status_code 4 "check_required_binaries 2>/dev/null" && \
+  assert_matches "^Error\|/usr/bin/sqlite3 is required" "$(check_required_binaries 2>&1)"
+  mv /usr/bin/sqlite3.bak /usr/bin/sqlite3
+}
