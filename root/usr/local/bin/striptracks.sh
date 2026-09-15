@@ -12,7 +12,7 @@
 
 # NOTE: ShellCheck linter directives appear as comments
 
-# Dependencies:      # sudo apt install mkvtoolnix jq
+# Dependencies:      # sudo apt install mkvtoolnix jq sqlite
 #  From mkvtoolnix:
 #   mkvmerge
 #   mkvpropedit

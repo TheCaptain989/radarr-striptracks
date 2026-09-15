@@ -60,7 +60,7 @@ function Test-WSL {
 function Install-LinuxPackages {
   # Install the required Linux packages
   $local:PlanTextPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password))
-  $local:WSLStatus = wsl -- echo "$PlanTextPassword" `| sudo -S bash -c "apt update && apt install mkvtoolnix jq" 2>&1
+  $local:WSLStatus = wsl -- echo "$PlanTextPassword" `| sudo -S bash -c "apt update && apt install mkvtoolnix jq sqlite" 2>&1
   if ($LASTEXITCODE -ne 0) {
       switch ($LASTEXITCODE) {
         1 { Write-Error -Message "Your password is incorrect." -Category AuthenticationError -TargetObject $WSLStatus }
