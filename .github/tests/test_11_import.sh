@@ -63,6 +63,7 @@ setup_metadata_test() {
   export striptracks_metadata_via_api=("releaseGroup" "indexerFlags" "sceneName" "edition")
   export striptracks_videofile_api="moviefile"
   export striptracks_videofile_id=42
+  # shellcheck disable=SC2016
   fake call_api 'echo "${!#}" >metadata_payload.json; striptracks_result="[{\"id\":42}]"'
 }
 
