@@ -895,7 +895,8 @@ function set_metadata {
 
   local metadata_field_list
   metadata_field_list=$(IFS=,; echo "${striptracks_metadata_via_api[*]}")
-  call_api 0 "Updating video metadata." "PUT" "$striptracks_videofile_api/bulk" "$(echo "$striptracks_original_metadata" | jq -crM "[{id:${striptracks_videofile_id}, quality${metadata_field_list:+, $metadata_field_list}}]")"
+  # Only send fields that are present and not null, so that nulls don't overwrite existing values
+  call_api 0 "Updating video metadata." "PUT" "$striptracks_videofile_api/bulk" "$(echo "$striptracks_original_metadata" | jq -crM "[{quality${metadata_field_list:+, $metadata_field_list}} | with_entries(select(.value != null)) | {id:${striptracks_videofile_id}} + .]")"
   [ "${#striptracks_result}" != 0 ]
   return
 }
@@ -1523,11 +1524,14 @@ function detect_languages {
     local -a metadata_field_array=("${striptracks_metadata_via_api[@]}" "${striptracks_metadata_via_db[@]}")
     local metadata_field_list
     metadata_field_list=$(IFS=,; echo "${metadata_field_array[*]}")
-    export striptracks_original_metadata="$(echo "$striptracks_videofile_info" | jq -crM "{quality${metadata_field_list:+, $metadata_field_list}}")"
+    # Only save fields that are present and not null
+    export striptracks_original_metadata="$(echo "$striptracks_videofile_info" | jq -crM "{quality${metadata_field_list:+, $metadata_field_list}} | with_entries(select(.value != null))")"
     [ $striptracks_debug -ge 1 ] && {
       local debug_text=""
       for metadata_field in "${metadata_field_array[@]}"; do
-        debug_text+="${debug_text:+, }${metadata_field} '$(echo "$striptracks_original_metadata" | jq -crM --arg field "$metadata_field" '.[$field]')'"
+        local metadata_value="$(echo "$striptracks_original_metadata" | jq -crM --arg field "$metadata_field" '.[$field] | select(. != null)')"
+        [ -z "$metadata_value" ] && continue
+        debug_text+="${debug_text:+, }${metadata_field} '${metadata_value}'"
       done
       echo "Debug|Found video file metadata quality:'$(echo "$striptracks_original_metadata" | jq -crM .quality.quality.name)'${debug_text:+, $debug_text}" | log
     }
@@ -2464,21 +2468,30 @@ function rescan_and_cleanup {
   local debug_text=""
   local sqlite_sets=""
   for metadata_field in "${striptracks_metadata_via_db[@]}"; do
-    debug_text+="${debug_text:+, }${metadata_field} '$(echo "$striptracks_original_metadata" | jq -crM --arg field "$metadata_field" '.[$field]')'"
-    local db_col_value=$(echo "$striptracks_original_metadata" | jq -crM --arg field "$metadata_field" '.[$field]')
+    # Only include fields that are present and not null
+    local db_col_value=$(echo "$striptracks_original_metadata" | jq -crM --arg field "$metadata_field" '.[$field] | select(. != null)')
+    if [ -z "$db_col_value" ]; then
+      [ $striptracks_debug -ge 1 ] && echo "Debug|Skipping null metadata field '${metadata_field}' in database update." | log
+      continue
+    fi
+    debug_text+="${debug_text:+, }${metadata_field} '${db_col_value}'"
     sqlite_sets+="${sqlite_sets:+,}${metadata_field}='${db_col_value//\'/\'\'}'"
   done
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Updating ${striptracks_type^} database directly for ${striptracks_videofile_api} id ${striptracks_videofile_id} with ${debug_text}" | log
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: /usr/bin/sqlite3 -safe \"${striptracks_arr_db}\" \"UPDATE ${striptracks_video_api^}Files SET ${sqlite_sets} WHERE Id=${striptracks_videofile_id};\"" | log
-  result=$(/usr/bin/sqlite3 -safe "${striptracks_arr_db}" "UPDATE ${striptracks_video_api^}Files SET ${sqlite_sets} WHERE Id=${striptracks_videofile_id};")
-  local return=$?
-  if [ $return -eq 0 ]; then
-    echo "Info|Successfully updated metadata via database edit." | log
+  if [ -n "$sqlite_sets" ]; then
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Updating ${striptracks_type^} database directly for ${striptracks_videofile_api} id ${striptracks_videofile_id} with ${debug_text}" | log
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: /usr/bin/sqlite3 -safe \"${striptracks_arr_db}\" \"UPDATE ${striptracks_video_api^}Files SET ${sqlite_sets} WHERE Id=${striptracks_videofile_id};\"" | log
+    result=$(/usr/bin/sqlite3 -safe "${striptracks_arr_db}" "UPDATE ${striptracks_video_api^}Files SET ${sqlite_sets} WHERE Id=${striptracks_videofile_id};")
+    local return=$?
+    if [ $return -eq 0 ]; then
+      echo "Info|Successfully updated metadata via database edit." | log
+    else
+      local message="Error|[$return] ${striptracks_type^} error when updating ${striptracks_type^} database."
+      echo "$message" | log
+      echo_ansi "$message" >&2
+      change_exit_status 20
+    fi
   else
-    local message="Error|[$return] ${striptracks_type^} error when updating ${striptracks_type^} database."
-    echo "$message" | log
-    echo_ansi "$message" >&2
-    change_exit_status 20
+    [ $striptracks_debug -ge 1 ] && echo "Debug|All metadata fields are null. Skipping database edit." | log
   fi
 
   # Check the languages returned
