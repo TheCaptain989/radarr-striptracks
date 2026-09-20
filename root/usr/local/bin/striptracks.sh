@@ -1137,6 +1137,7 @@ function check_eventtype {
   # Handle Test event
   if [[ "${striptracks_event}" = "Test" ]]; then
     echo "Info|${striptracks_type^} event: ${striptracks_event}" | log
+    check_config_file
     local message="Info|Script was test executed successfully."
     echo "$message" | log
     echo_ansi "$message"
