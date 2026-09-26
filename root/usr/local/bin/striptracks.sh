@@ -60,8 +60,8 @@ function main {
   process_command_line "$@"
   initialize_mode_variables
   check_log
-  check_required_binaries
   log_first_debug_messages
+  check_required_binaries
   check_wsl
   check_eventtype
   log_script_start
