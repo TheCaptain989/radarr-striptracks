@@ -14,7 +14,13 @@ EOF
 
 # Determine if packages need to be installed
 commands=(/usr/bin/mkvmerge /usr/bin/sqlite3)
-packages=(mkvtoolnix sqlite)
+if [ -f /sbin/apk ]; then
+  # Alpine
+  packages=(mkvtoolnix sqlite)
+else
+  # Ubuntu/Debian ('sqlite' is SQLite 2.x, which cannot open SQLite 3 databases)
+  packages=(mkvtoolnix sqlite3)
+fi
 for index in "${!commands[@]}"
 do
   if [ ! -f "${commands[$index]}" ]; then
