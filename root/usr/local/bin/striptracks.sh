@@ -12,7 +12,7 @@
 
 # NOTE: ShellCheck linter directives appear as comments
 
-# Dependencies:      # sudo apt install mkvtoolnix jq sqlite
+# Dependencies:      # sudo apt install mkvtoolnix jq sqlite3
 #  From mkvtoolnix:
 #   mkvmerge
 #   mkvpropedit
@@ -289,6 +289,7 @@ function initialize_variables {
   fi
   export striptracks_arr_db="/config/${striptracks_type,,}.db"
   export striptracks_checked_org_compat=0
+  export striptracks_curl_compatible=0
   declare -g -x -a striptracks_skip_profile
 }
 function parse_arg_string {
@@ -968,9 +969,10 @@ function check_compat {
   #  0 - the feature is compatible
   #  1 - the feature is incompatible
 
-  local compat_type="$1" # 'apiv3', 'languageprofile', 'customformat', 'originallanguage', 'qualitylanguage'
+  local compat_type="$1" # 'apiv3', 'languageprofile', 'customformat', 'originallanguage', 'qualitylanguage', 'curljson', 'sqlitesafe'
 
   local return=1
+  local compat_with="${striptracks_type^} v${striptracks_arr_version}"
   case "$compat_type" in
     apiv3)
       [ ${striptracks_arr_version/.*/} -ge 3 ] && local return=0
@@ -993,6 +995,16 @@ function check_compat {
       # Language option in Quality Profile
       [ "${striptracks_type,,}" = "radarr" ] && [ ${striptracks_arr_version/.*/} -ge 3 ] && local return=0
     ;;
+    curljson)
+      # curl --json option added in 7.82
+      local compat_with="curl v${striptracks_curl_version:-unknown}"
+      [ -n "$striptracks_curl_version" ] && version_ge "$striptracks_curl_version" "7.82" && local return=0
+    ;;
+    sqlitesafe)
+      # sqlite3 -safe option added in 3.37
+      local compat_with="sqlite3 v${striptracks_sqlite_version:-unknown}"
+      [ -n "$striptracks_sqlite_version" ] && version_ge "$striptracks_sqlite_version" "3.37" && local return=0
+    ;;
     *)
       # Unknown feature
       local message="Error|Unknown feature $compat_type in ${striptracks_type^}"
@@ -1000,8 +1012,26 @@ function check_compat {
       echo_ansi "$message" >&2
     ;;
   esac
-  [ $striptracks_debug -ge 1 ] && echo "Debug|Feature $compat_type is $([ $return -eq 1 ] && echo "not ")compatible with ${striptracks_type^} v${striptracks_arr_version}" | log
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Feature $compat_type is $([ $return -eq 1 ] && echo "not ")compatible with ${compat_with}" | log
   return $return
+}
+function version_ge {
+  # Compare two dotted version strings
+
+  # Exit codes:
+  #  0 - first version is greater than or equal to the second
+  #  1 - first version is less than the second
+
+  local -a ver1 ver2
+  # Strip any non-numeric suffix (e.g. '-DEV')
+  IFS=. read -ra ver1 <<< "${1%%[^0-9.]*}"
+  IFS=. read -ra ver2 <<< "${2%%[^0-9.]*}"
+  local i
+  for ((i=0; i < ${#ver2[@]}; i++)); do
+    [ "${ver1[i]:-0}" -gt "${ver2[i]}" ] && return 0
+    [ "${ver1[i]:-0}" -lt "${ver2[i]}" ] && return 1
+  done
+  return 0
 }
 function get_media_config {
   # Get media management configuration
@@ -1096,6 +1126,14 @@ function check_required_binaries {
       end_script 4
     fi
   done
+
+  # Detect versions for compatibility checks
+  export striptracks_curl_version="$(curl --version 2>/dev/null | awk 'NR==1 {print $2}')"
+  export striptracks_sqlite_version="$(/usr/bin/sqlite3 -version 2>/dev/null | awk '{print $1}')"
+  [ $striptracks_debug -ge 1 ] && echo "Debug|Detected curl version ${striptracks_curl_version:-unknown} and sqlite3 version ${striptracks_sqlite_version:-unknown}" | log
+  if ! check_compat curljson; then
+     export striptracks_curl_compatible=1
+  fi
 }
 function log_first_debug_messages {
   # First log messages
@@ -1253,7 +1291,12 @@ function call_api {
   while (( "$#" )); do
     case "$1" in
       "{"*|"["*)
-        curl_data_args+=(--json "$1")
+        if [ $striptracks_curl_compatible -eq 0 ]; then
+          curl_data_args+=(--json "$1")
+        else
+          # Content-Type and Accept headers are set explicitly below
+          curl_data_args+=(--data-raw "$1")
+        fi
       ;;
       *=*)
         curl_data_args+=(--data-urlencode "$1")
@@ -2479,9 +2522,11 @@ function rescan_and_cleanup {
     sqlite_sets+="${sqlite_sets:+,}${metadata_field}='${db_col_value//\'/\'\'}'"
   done
   if [ -n "$sqlite_sets" ]; then
+    local -a sqlite_args=()
+    check_compat sqlitesafe && sqlite_args+=(-safe)
     [ $striptracks_debug -ge 1 ] && echo "Debug|Updating ${striptracks_type^} database directly for ${striptracks_videofile_api} id ${striptracks_videofile_id} with ${debug_text}" | log
-    [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: /usr/bin/sqlite3 -safe \"${striptracks_arr_db}\" \"UPDATE ${striptracks_video_api^}Files SET ${sqlite_sets} WHERE Id=${striptracks_videofile_id};\"" | log
-    result=$(/usr/bin/sqlite3 -safe "${striptracks_arr_db}" "UPDATE ${striptracks_video_api^}Files SET ${sqlite_sets} WHERE Id=${striptracks_videofile_id};")
+    [ $striptracks_debug -ge 1 ] && echo "Debug|Executing: /usr/bin/sqlite3 ${sqlite_args[*]}${sqlite_args[*]:+ }\"${striptracks_arr_db}\" \"UPDATE ${striptracks_video_api^}Files SET ${sqlite_sets} WHERE Id=${striptracks_videofile_id};\"" | log
+    result=$(/usr/bin/sqlite3 "${sqlite_args[@]}" "${striptracks_arr_db}" "UPDATE ${striptracks_video_api^}Files SET ${sqlite_sets} WHERE Id=${striptracks_videofile_id};")
     local return=$?
     if [ $return -eq 0 ]; then
       echo "Info|Successfully updated metadata via database edit." | log

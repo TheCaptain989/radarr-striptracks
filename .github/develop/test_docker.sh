@@ -31,7 +31,7 @@ docker exec $container_name /bin/bash -c "test -f /usr/bin/sqlite3"
 sqlite_installed=$?
 if [ $bash_unit_installed -ne 0 -o $mkvtoolnix_installed -ne 0 -o $sqlite_installed -ne 0 ]; then
   echo "Installing mkvtoolnix, sqlite, and bash-unit in $container_name container"
-  docker exec -it $container_name /bin/bash -c "cd /tmp && apk add --no-cache mkvtoolnix sqlite&& curl -s https://raw.githubusercontent.com/bash-unit/bash_unit/main/install.sh | bash"
+  docker exec -it $container_name /bin/bash -c "cd /tmp && apk add --no-cache mkvtoolnix sqlite && curl -s https://raw.githubusercontent.com/bash-unit/bash_unit/main/install.sh | bash"
   if [ $? -ne 0 ]; then
     echo "Failed to install mkvtoolnix, sqlite, or bash-unit in $container_name container"
     exit 1
