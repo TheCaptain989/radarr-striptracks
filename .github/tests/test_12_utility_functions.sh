@@ -57,6 +57,34 @@ test_check_compat_languageprofile() {
   assert_equals 0 $?
 }
 
+test_check_compat_curljson1() {
+  striptracks_curl_version="7.82.0"
+  assert "check_compat curljson"
+  striptracks_curl_version="8.22.0"
+  assert "check_compat curljson"
+  striptracks_curl_version="7.81.0"
+  assert_fail "check_compat curljson"
+}
+
+test_check_compat_sqlitesafe() {
+  striptracks_sqlite_version="3.37.0"
+  assert "check_compat sqlitesafe"
+  striptracks_sqlite_version="3.53.0"
+  assert "check_compat sqlitesafe"
+  striptracks_sqlite_version="3.34.1"
+  assert_fail "check_compat sqlitesafe"
+}
+
+test_version_ge() {
+  assert "version_ge 8.22.0 7.82"
+  assert "version_ge 7.82.0 7.82"
+  assert "version_ge 7.82 7.82"
+  assert "version_ge 8.22.0-DEV 7.82"
+  assert "version_ge 3.100.0 3.37"
+  assert_fail "version_ge 7.81.0 7.82"
+  assert_fail "version_ge 3.9 3.37"
+}
+
 test_resolve_code_conflict() {
   striptracks_audiokeep=":eng:fra"
   striptracks_profileLangCodes=":eng"
