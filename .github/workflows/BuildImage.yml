@@ -39,7 +39,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          apk add --no-cache mkvtoolnix
+          apk add --no-cache mkvtoolnix sqlite
 
       - name: Unit testing with bash_unit
         run: |
