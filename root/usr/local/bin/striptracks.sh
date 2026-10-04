@@ -18,6 +18,8 @@
 #   mkvpropedit
 #  From jq:
 #   jq
+#  From sqlite3:
+#   sqlite3
 #  Generally always available:
 #   sed
 #   awk
@@ -176,7 +178,7 @@ Options and Arguments:
                   [default: /config/config.xml]
 
       --database <database_file>
-                  Radarr/Sonarr SQlite database file
+                  Radarr/Sonarr SQLite database file
                   [default: /config/radarr.db or /config/sonarr.db]
 
   -p, --priority idle|low|medium|high
@@ -482,7 +484,7 @@ function process_command_line {
         shift 2
       ;;
       --database )
-        # *arr SQlite database file
+        # *arr SQLite database file
         if [ -z "$2" ] || [ ${2:0:1} = "-" ]; then
           echo_ansi "Error|Invalid option: $1 requires an argument." >&2
           usage
